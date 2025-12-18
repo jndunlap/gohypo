@@ -1,0 +1,107 @@
+{{template "base.html" .}}
+
+{{define "content"}}
+<div class="max-w-7xl mx-auto px-6 py-6">
+    <div class="mb-6 flex items-start justify-between border-b border-cold-steel pb-4">
+        <div>
+            <h1 class="tactical-header text-2xl tracking-[0.2em]">Variable Eligibility Report</h1>
+            <p class="text-[11px] text-ghost-gray mt-2 font-mono uppercase">
+                Exclusion Rationale // Admissible: {{.AdmissibleCount}} // Rejected: {{.RejectedCount}} // Total: {{.TotalCount}}
+            </p>
+        </div>
+        <div class="flex gap-3">
+            <a href="/vitality" class="tactical-button text-[10px] px-6">View Registry Vitality</a>
+            <a href="/relationships" class="tactical-button text-[10px] px-6">View Relationships</a>
+        </div>
+    </div>
+
+    <div class="registry-container overflow-hidden">
+        <div class="border-b border-cold-steel px-4 py-3 flex items-center justify-between">
+            <h3 class="tactical-header text-[11px] tracking-widest">REJECTION MATRIX</h3>
+            <div class="computed-value text-[9px] text-ghost-gray uppercase tracking-tighter">VETO_LOGIC: ERR_* // METRICS: NULLS, VAR, N</div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full forensic-table border-collapse">
+                <thead>
+                    <tr class="bg-void">
+                        <th class="text-left py-3 px-4 text-[9px]">ENTITY_IDENTIFIER</th>
+                        <th class="text-left py-3 px-2 text-[9px]">STATUS</th>
+                        <th class="text-left py-3 px-2 text-[9px]">VETO_LOGIC</th>
+                        <th class="text-right py-3 px-2 text-[9px]">NULLS</th>
+                        <th class="text-right py-3 px-2 text-[9px]">VAR</th>
+                        <th class="text-right py-3 px-2 text-[9px]">N</th>
+                        <th class="text-right py-3 px-2 text-[9px]">CARD</th>
+                        <th class="text-right py-3 px-2 text-[9px]">ENTROPY</th>
+                        <th class="text-left py-3 px-2 text-[9px]">MODE</th>
+                        <th class="text-left py-3 px-4 text-[9px]">REPLAY</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/[0.03]">
+                    {{if .Rows}}
+                    {{range .Rows}}
+                    <tr class="group hover:bg-white/[0.02] transition-colors border-b border-white/[0.03] {{if eq .Status "REJECTED"}}bg-crimson-ghost/5{{else}}bg-hyper-lime/5{{end}}">
+                        <td class="py-3 px-4">
+                            <div class="flex flex-col">
+                                <span class="computed-value text-sm text-ghost-white group-hover:text-hyper-lime transition-colors">{{.VariableKey}}</span>
+                                <span class="computed-value text-[8px] text-ghost-gray mt-1">PTR: 0x{{printf "%.8s" .VariableKey}}</span>
+                            </div>
+                        </td>
+                        <td class="py-3 px-2">
+                            {{if eq .Status "REJECTED"}}
+                                <span class="tactical-header text-[8px] px-2 py-0.5 bg-crimson-ghost/10 text-crimson-ghost border border-crimson-ghost/30 uppercase tracking-tighter">REJECTED</span>
+                            {{else}}
+                                <span class="tactical-header text-[8px] px-2 py-0.5 bg-hyper-lime/10 text-hyper-lime border border-hyper-lime/30 uppercase tracking-tighter">ADMISSIBLE</span>
+                            {{end}}
+                        </td>
+                        <td class="py-3 px-2">
+                            <div class="flex flex-wrap gap-2">
+                                {{if .VetoLogic}}
+                                    {{range .VetoLogic}}
+                                        <span class="computed-value text-[9px] px-2 py-0.5 bg-crimson-ghost/10 text-crimson-ghost border border-crimson-ghost/30 uppercase tracking-tighter">{{.}}</span>
+                                    {{end}}
+                                {{else}}
+                                    <span class="computed-value text-[9px] px-2 py-0.5 bg-hyper-lime/10 text-hyper-lime border border-hyper-lime/30 uppercase tracking-tighter">VAL_SIGNAL</span>
+                                {{end}}
+                            </div>
+                        </td>
+                        <td class="text-right py-3 px-2">
+                            <span class="computed-value text-xs {{if ge .MissingRate 0.3}}text-crimson-ghost{{else}}text-ghost-white{{end}}">{{printf "%.1f%%" (mul .MissingRate 100)}}</span>
+                        </td>
+                        <td class="text-right py-3 px-2">
+                            <span class="computed-value text-xs text-ghost-gray">{{printf "%.4g" .Variance}}</span>
+                        </td>
+                        <td class="text-right py-3 px-2">
+                            <span class="computed-value text-xs text-ghost-gray">{{.SampleSize}}</span>
+                        </td>
+                        <td class="text-right py-3 px-2">
+                            <span class="computed-value text-xs text-ghost-gray">{{.Cardinality}}</span>
+                        </td>
+                        <td class="text-right py-3 px-2">
+                            <span class="computed-value text-xs {{if ge .Entropy 0.7}}text-hyper-lime{{else if ge .Entropy 0.4}}text-electric-cobalt{{else}}text-crimson-ghost{{end}}">{{printf "%.3f" .Entropy}}</span>
+                        </td>
+                        <td class="py-3 px-2">
+                            <span class="computed-value text-[9px] text-ghost-gray font-mono">{{.AsOfMode}}</span>
+                        </td>
+                        <td class="py-3 px-4">
+                            <button class="computed-value text-[9px] text-hyper-lime underline underline-offset-4"
+                                    onclick="navigator.clipboard.writeText('{{.ReplayCommand}}')">
+                                COPY_REPLAY_CMD
+                            </button>
+                        </td>
+                    </tr>
+                    {{end}}
+                    {{else}}
+                    <tr>
+                        <td colspan="10" class="py-10 text-center">
+                            <div class="computed-value text-sm text-ghost-gray">No variable profiles available.</div>
+                            <div class="tactical-header text-[9px] text-ghost-gray/60 mt-2">Enable PROFILE stage to compute eligibility gates.</div>
+                        </td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{{end}}

@@ -1,0 +1,174 @@
+{{if .HasDiagnosticsAny}}
+<div class="tactical-card p-6 border-l-2 border-l-[#2e5bff] relative overflow-hidden">
+    <div class="hash-watermark uppercase">System_Diagnostic_v1.0</div>
+    <div class="flex items-start justify-between gap-4 mb-6">
+        <div>
+            <h3 class="tactical-header text-xs text-[#f5f5f5]">Forensic Filter Rationale</h3>
+            <div class="text-[11px] text-[#666] mt-1 leading-relaxed">
+                Post-mortem analysis of signal stagnation. Explaining why discovery space was filtered prior to extraction.
+            </div>
+        </div>
+        <div class="computed-value text-[9px] text-[#444]">
+            {{if .HasManifest}}ARTIFACT: SWEEP_MANIFEST{{else}}ARTIFACT: NULL{{end}}
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+        <div class="border-l border-[#222] pl-4">
+            <div class="tactical-header text-[8px] text-[#444] mb-1">Variables Audited</div>
+            <div class="computed-value text-xl text-[#f5f5f5]">{{.ProfileCount}}</div>
+        </div>
+        <div class="border-l border-[#222] pl-4">
+            <div class="tactical-header text-[8px] text-[#444] mb-1">Signal Stagnation</div>
+            <div class="computed-value text-xl text-[#b22222]">{{.ZeroVarianceVars}} <span class="text-[10px]">VARS</span></div>
+        </div>
+        <div class="border-l border-[#222] pl-4">
+            <div class="tactical-header text-[8px] text-[#444] mb-1">Information Gaps</div>
+            <div class="computed-value text-xl text-[#b22222]">{{.HighMissingVars}} <span class="text-[10px]">VARS</span></div>
+        </div>
+        <div class="border-l border-[#222] pl-4">
+            <div class="tactical-header text-[8px] text-[#444] mb-1">Primary Inhibitor</div>
+            <div class="computed-value text-xs text-[#f5f5f5] mt-2 truncate">{{if .TopSkipReason}}{{.TopSkipReason}}{{else}}NONE{{end}}</div>
+        </div>
+    </div>
+
+    {{if .HasSkippedPairs}}
+    <div class="mb-8">
+        <div class="tactical-header text-[9px] text-[#444] mb-3">Pairwise Filter Attrition (By Reason)</div>
+        <div class="flex flex-wrap gap-3">
+            {{range $reason, $count := .SkipCounts}}
+            <div class="flex items-center gap-3 bg-[#0a0a0a] border border-[#222] px-3 py-1.5 shadow-inner">
+                <span class="computed-value text-[10px] text-[#f5f5f5]">{{$reason}}</span>
+                <span class="computed-value text-[10px] text-[#b22222] font-bold">{{$count}}</span>
+            </div>
+            {{end}}
+        </div>
+    </div>
+    {{end}}
+
+    <div class="mb-10">
+        <div class="tactical-header text-[9px] text-[#444] mb-4">Tactical Recovery Directives</div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-[#0a0a0a] border border-[#222] p-4 group hover:border-[#444] transition-colors">
+                <div class="tactical-header text-[10px] text-[#f5f5f5] mb-2 flex items-center justify-between">
+                    <span>High Missingness</span>
+                    <i class="fas fa-database text-[10px] text-[#333] group-hover:text-[#a3ff12]"></i>
+                </div>
+                <div class="text-[10px] text-[#666] mb-3 leading-relaxed">System filtered pairs with &gt;30% missing observations to prevent bias.</div>
+                <details class="cursor-pointer group">
+                    <summary class="tactical-header text-[8px] text-[#444] group-hover:text-[#f5f5f5] list-none flex items-center gap-2">
+                        <i class="fas fa-caret-right transition-transform group-open:rotate-90"></i> View Imputation Options
+                    </summary>
+                    <ul class="mt-3 space-y-2 border-t border-[#111] pt-3">
+                        <li class="computed-value text-[9px] text-[#888]">• REGISTRY_ZERO_FILL (BIASED)</li>
+                        <li class="computed-value text-[9px] text-[#888]">• AGGREGATE_MEAN_FILL</li>
+                        <li class="computed-value text-[9px] text-[#888]">• BAYESIAN_IMPUTATION_V2</li>
+                    </ul>
+                </details>
+            </div>
+            <div class="bg-[#0a0a0a] border border-[#222] p-4 group hover:border-[#444] transition-colors">
+                <div class="tactical-header text-[10px] text-[#f5f5f5] mb-2 flex items-center justify-between">
+                    <span>Low Variance</span>
+                    <i class="fas fa-wave-square text-[10px] text-[#333] group-hover:text-[#a3ff12]"></i>
+                </div>
+                <div class="text-[10px] text-[#666] mb-3 leading-relaxed">Near-constant vectors detected. Signals cannot be extracted from static data.</div>
+                <details class="cursor-pointer group">
+                    <summary class="tactical-header text-[8px] text-[#444] group-hover:text-[#f5f5f5] list-none flex items-center gap-2">
+                        <i class="fas fa-caret-right transition-transform group-open:rotate-90"></i> View Transformation Ideas
+                    </summary>
+                    <ul class="mt-3 space-y-2 border-t border-[#111] pt-3">
+                        <li class="computed-value text-[9px] text-[#888]">• DERIVE_BINARY_STATE_CHANGE</li>
+                        <li class="computed-value text-[9px] text-[#888]">• INCREASE_TEMPORAL_RESOLUTION</li>
+                        <li class="computed-value text-[9px] text-[#888]">• INJECT_INTERACTION_VECTORS</li>
+                    </ul>
+                </details>
+            </div>
+            <div class="bg-[#0a0a0a] border border-[#222] p-4 group hover:border-[#444] transition-colors">
+                <div class="tactical-header text-[10px] text-[#f5f5f5] mb-2 flex items-center justify-between">
+                    <span>Low N-Count</span>
+                    <i class="fas fa-users text-[10px] text-[#333] group-hover:text-[#a3ff12]"></i>
+                </div>
+                <div class="text-[10px] text-[#666] mb-3 leading-relaxed">Insufficient paired observations. Statistical extractions would be unstable.</div>
+                <details class="cursor-pointer group">
+                    <summary class="tactical-header text-[8px] text-[#444] group-hover:text-[#f5f5f5] list-none flex items-center gap-2">
+                        <i class="fas fa-caret-right transition-transform group-open:rotate-90"></i> View Collection Directives
+                    </summary>
+                    <ul class="mt-3 space-y-2 border-t border-[#111] pt-3">
+                        <li class="computed-value text-[9px] text-[#888]">• EXPAND_COHORT_WINDOW</li>
+                        <li class="computed-value text-[9px] text-[#888]">• REDUCE_LAG_THROTTLE</li>
+                        <li class="computed-value text-[9px] text-[#888]">• MERGE_CROSS_SNAPSHOT_DATA</li>
+                    </ul>
+                </details>
+            </div>
+        </div>
+    </div>
+
+    {{if .HasProfiles}}
+    <div>
+        <div class="tactical-header text-[9px] text-[#444] mb-4 uppercase">Entity Vitality Audit (Worst-First)</div>
+        <div class="overflow-hidden border border-[#222] bg-[#0a0a0a]">
+            <table class="w-full forensic-table border-collapse">
+                <thead>
+                    <tr>
+                        <th class="text-left">Registry Entity</th>
+                        <th class="text-right">Missing</th>
+                        <th class="text-right">Variance</th>
+                        <th class="text-right">N-Count</th>
+                        <th class="text-left">Signal Vitality</th>
+                        <th class="text-left">Inhibitors</th>
+                        <th class="text-left hidden md:table-cell">Protocol Recommendation</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .VariableProfiles}}
+                    <tr class="hover:bg-white/5 transition-colors">
+                        <td class="computed-value text-xs text-[#f5f5f5] whitespace-nowrap">{{.VariableKey}}</td>
+                        <td class="computed-value text-xs text-right text-[#f5f5f5]">{{.MissingRatePct}}</td>
+                        <td class="computed-value text-xs text-right text-[#666]">{{.Variance}}</td>
+                        <td class="computed-value text-xs text-right text-[#666]">{{.SampleSize}}</td>
+                        <td class="py-2 px-3">
+                            <div class="flex flex-col gap-1">
+                                <div class="flex items-center justify-between text-[8px] text-[#444] mb-0.5 uppercase">
+                                    <span>Vitality</span>
+                                    <span>{{if .Flags}}LOW{{else}}NOMINAL{{end}}</span>
+                                </div>
+                                <div class="w-24 h-1 bg-[#111] border border-[#222] overflow-hidden">
+                                    <div class="h-full {{if .Flags}}bg-[#b22222] shadow-[0_0_5px_#b22222]{{else}}bg-[#a3ff12] shadow-[0_0_5px_#a3ff12]{{end}}" style="width: {{if .Flags}}35%{{else}}98%{{end}}"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-2 px-3">
+                            {{if .Flags}}
+                            <div class="flex gap-1">
+                                {{range .Flags}}
+                                <span class="computed-value text-[8px] px-1.5 py-0.5 bg-[#b22222]/20 text-[#b22222] border border-[#b22222]/30 uppercase">{{.}}</span>
+                                {{end}}
+                            </div>
+                            {{else}}
+                            <span class="text-[#333] computed-value text-[10px]">NO_INHIBITORS</span>
+                            {{end}}
+                        </td>
+                        <td class="py-2 px-3 hidden md:table-cell">
+                            <div class="computed-value text-[9px] text-[#444] group-hover:text-[#888]">
+                                {{if .Recommendation}}{{if .Recommendation2}}CRITICAL: {{.Recommendation}} // {{.Recommendation2}}{{else}}WARNING: {{.Recommendation}}{{end}}{{else}}SYSTEM_NOMINAL{{end}}
+                            </div>
+                        </td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {{else}}
+    <div class="flex flex-col items-center justify-center p-12 border border-dashed border-[#222]">
+        <div class="tactical-header text-[10px] text-[#333]">Audit Buffer Empty</div>
+    </div>
+    {{end}}
+</div>
+{{else}}
+<div class="tactical-card p-12 border border-dashed border-[#222] flex flex-col items-center justify-center text-center">
+    <div class="text-[#222] mb-4 text-4xl"><i class="fas fa-terminal"></i></div>
+    <h3 class="tactical-header text-xs text-[#444] mb-2">No Forensic Artifacts Available</h3>
+    <p class="text-[10px] text-[#222] max-w-xs">Run Profile + Mapping stages to generate the forensic audit trail.</p>
+</div>
+{{end}}

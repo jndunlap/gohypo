@@ -1,0 +1,55 @@
+{{template "base.html" .}}
+
+{{define "content"}}
+<div class="max-w-7xl mx-auto px-6 py-8">
+    <div class="mb-10 flex items-center justify-between border-b border-cold-steel pb-6">
+        <div>
+            <h1 class="tactical-header text-2xl tracking-[0.2em]">Evidence Ledger</h1>
+            <p class="text-[11px] text-ghost-gray mt-2 font-mono uppercase">Immutable Artifact Repository // Append-Only Storage</p>
+        </div>
+    </div>
+
+    <!-- Artifact Stream -->
+    <div class="space-y-4">
+        {{range .Artifacts}}
+        <div class="tactical-card p-6">
+            <div class="flex items-start justify-between mb-4">
+                <div class="flex items-center space-x-4">
+                    <div class="computed-value text-sm">{{printf "%.12s" .ID}}</div>
+                    <div class="px-3 py-1 text-xs font-mono uppercase tracking-wider
+                        {{if eq .Kind.String "relationship"}}text-electric-cobalt{{else if eq .Kind.String "hypothesis"}}text-system{{else if eq .Kind.String "run"}}text-hyper-lime{{else}}text-ghost-gray{{end}}">
+                        {{.Kind}}
+                    </div>
+                </div>
+                <div class="computed-value text-xs">{{.CreatedAt.Format "15:04:05"}}</div>
+            </div>
+
+            <div class="text-ghost-white mb-4 font-mono text-sm">
+                {{if eq .Kind.String "relationship"}}
+                    STATISTICAL RELATIONSHIP DISCOVERED
+                {{else if eq .Kind.String "hypothesis"}}
+                    CAUSAL HYPOTHESIS GENERATED
+                {{else if eq .Kind.String "run"}}
+                    PIPELINE EXECUTION COMPLETED
+                {{else}}
+                    {{.Kind}} ARTIFACT COMMITTED
+                {{end}}
+            </div>
+
+            <div class="flex items-center justify-between">
+                <div class="text-ghost-gray font-mono text-xs">
+                    FINGERPRINT: {{printf "%.8s" .ID}}...
+                </div>
+                <div class="hash-watermark">{{printf "%.6s" .ID}}</div>
+            </div>
+        </div>
+        {{end}}
+
+        {{if not .Artifacts}}
+        <div class="tactical-card p-8 text-center">
+            <div class="computed-value text-ghost-gray">// NO ARTIFACTS IN LEDGER...</div>
+        </div>
+        {{end}}
+    </div>
+</div>
+{{end}}

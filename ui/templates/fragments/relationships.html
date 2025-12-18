@@ -1,0 +1,115 @@
+{{if and .FieldRelationships (gt (len .FieldRelationships) 0)}}
+<div class="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6 tactical-card p-6 border-l-2 border-l-[#a3ff12]">
+    <div class="flex-1">
+        <div class="flex items-center justify-between mb-3">
+            <label for="threshold-slider" class="tactical-header text-[10px] text-[#f5f5f5]">Adjust Rigor Profile ({{.SignificanceRule}})</label>
+            <span class="computed-value text-[11px] text-[#a3ff12] bg-[#111] px-3 py-1 border border-[#222] shadow-inner">{{.Threshold}}</span>
+        </div>
+        <input 
+            type="range" 
+            id="threshold-slider" 
+            name="threshold" 
+            min="0.001" 
+            max="0.500" 
+            step="0.001" 
+            value="{{if .Threshold}}{{.Threshold}}{{else}}0.050{{end}}"
+            class="w-full tactical-slider"
+            hx-get="/api/fragments/relationships"
+            hx-trigger="change, mouseup delay:100ms"
+            hx-target="#relationships-container"
+            hx-swap="innerHTML"
+        >
+        <div class="flex justify-between mt-2">
+            <span class="tactical-header text-[8px] text-[#444]">Confirmatory (0.001)</span>
+            <span class="tactical-header text-[8px] text-[#444]">Exploratory (0.500)</span>
+        </div>
+    </div>
+    <div class="flex-shrink-0 border-l border-[#222] pl-8 hidden sm:block">
+        <div class="tactical-header text-[9px] text-[#666] mb-1">Signals Passed</div>
+        <div class="computed-value text-3xl font-light text-[#a3ff12]">{{.PairsPassed}}</div>
+    </div>
+</div>
+
+{{if eq .PairsPassed 0}}
+<div class="mb-8 border border-[#3a3a1a] bg-[#1a1a0a] p-5">
+    <div class="flex items-start gap-4">
+        <div class="text-[#a3ff12] mt-1"><i class="fas fa-exclamation-triangle"></i></div>
+        <div>
+            <h3 class="tactical-header text-xs text-[#a3ff12] mb-1">Zero Validated Signals Detected</h3>
+            <p class="text-[11px] text-[#888] leading-relaxed">No pairwise extractions met the current validation protocol (p ≤ {{.Threshold}}). Relax the rigor profile to inspect shadow candidates or run diagnostics to identify signal stagnation.</p>
+        </div>
+    </div>
+</div>
+{{end}}
+
+<div class="overflow-hidden border border-[#222] bg-[#0a0a0a]">
+    <table class="w-full forensic-table border-collapse">
+        <thead>
+            <tr>
+                <th class="text-left">Vector X</th>
+                <th class="text-left">Vector Y</th>
+                <th class="text-left hidden sm:table-cell">Method</th>
+                <th class="text-right">Effect</th>
+                <th class="text-right">p-value</th>
+                <th class="text-right">N-count</th>
+                <th class="text-left hidden md:table-cell">Extraction Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .FieldRelationships}}
+            <tr class="transition-all duration-300 {{if .Significant}}bg-[#0a1a0a]/20{{else if .IsShadow}}bg-[#0a0a1a]/10 opacity-60 grayscale{{else}}opacity-30 grayscale blur-[0.5px]{{end}}">
+                <td class="computed-value text-xs text-[#f5f5f5] whitespace-nowrap {{if .Significant}}font-medium{{end}}">{{.FieldX}}</td>
+                <td class="computed-value text-xs text-[#f5f5f5] whitespace-nowrap {{if .Significant}}font-medium{{end}}">{{.FieldY}}</td>
+                <td class="tactical-header text-[9px] text-[#444] hidden sm:table-cell">{{if .TestType}}{{.TestType}}{{else}}—{{end}}</td>
+                <td class="computed-value text-xs text-right whitespace-nowrap {{if .Significant}}text-[#a3ff12]{{else}}text-[#666]{{end}}">
+                    {{if .EffectSize}}{{printf "%.3f" .EffectSize}}{{else}}—{{end}}
+                </td>
+                <td class="computed-value text-xs text-right whitespace-nowrap {{if .Significant}}text-[#a3ff12] font-bold{{else if .IsShadow}}text-[#2e5bff]{{else}}text-[#444]{{end}}">
+                    {{if .PValue}}{{printf "%.4f" .PValue}}{{else}}—{{end}}
+                </td>
+                <td class="computed-value text-xs text-right text-[#666] whitespace-nowrap">
+                    {{if .SampleSize}}{{.SampleSize}}{{else}}—{{end}}
+                </td>
+                <td class="py-2.5 px-3 hidden md:table-cell">
+                    {{if .Significant}}
+                    <span class="tactical-header text-[8px] px-2 py-0.5 bg-[#a3ff12] text-black">Validated</span>
+                    {{else if .IsShadow}}
+                    <span class="tactical-header text-[8px] px-2 py-0.5 border border-[#2e5bff] text-[#2e5bff]">Shadow Candidate</span>
+                    {{else}}
+                    <span class="tactical-header text-[8px] text-[#333]">Filtered</span>
+                    {{end}}
+                </td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+</div>
+{{else}}
+<div class="flex flex-col items-center justify-center p-20 border border-[#222] bg-[#0a0a0a]">
+    <div class="text-[#333] mb-4 text-3xl"><i class="fas fa-microscope"></i></div>
+    <div class="tactical-header text-xs text-[#444] mb-2">Registry Extraction Null</div>
+    <p class="text-[10px] text-[#333] max-w-xs text-center">The current matrix bundle contains no observable variance. Update the registry or inject temporal interaction variables.</p>
+</div>
+{{end}}
+<div class="border border-gray-300 bg-gray-50 p-4 sm:p-6">
+    <h3 class="text-sm font-medium text-black mb-3">No relationships discovered</h3>
+    <div class="text-xs text-gray-600 mb-4">
+        <strong>Possible reasons:</strong>
+        <ul class="mt-2 space-y-1 ml-4">
+            <li>• Pairwise stage not run (no statistical tests executed)</li>
+            <li>• Variables may have been rejected (high missing rate, low variance, or low N)</li>
+            <li>• Stage plan may not have included pairwise analysis</li>
+        </ul>
+    </div>
+    <div class="flex gap-3 pt-4 border-t border-gray-300">
+        <button
+            class="text-xs px-3 py-1 border border-gray-300 text-black hover:bg-gray-100"
+            hx-get="/api/fragments/diagnostics"
+            hx-target="#diagnostics-panel"
+            hx-swap="innerHTML"
+        >
+            Open Diagnostic Mode
+        </button>
+    </div>
+    <div id="diagnostics-panel" class="mt-4"></div>
+</div>

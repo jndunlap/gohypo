@@ -1,0 +1,127 @@
+{{template "base.html" .}}
+
+{{define "content"}}
+<div class="max-w-7xl mx-auto px-6 py-8">
+    <div class="mb-10 flex items-center justify-between border-b border-cold-steel pb-6">
+        <div>
+            <h1 class="tactical-header text-2xl tracking-[0.2em]">Heuristic Control Console</h1>
+            <p class="text-[11px] text-ghost-gray mt-2 font-mono uppercase">System Node: L1_HYPOTHESIS_GENERATOR // Inference_Port: 8080</p>
+        </div>
+        <div class="flex gap-4">
+            <div class="bg-obsidian border border-cold-steel px-4 py-2">
+                <div class="tactical-header text-[8px] text-ghost-gray mb-1">Active Directive Hash</div>
+                <div class="computed-value text-xs uppercase">DIR_v4.2-STABLE_8F3A</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- System Parameters Sidebar -->
+        <div class="space-y-8">
+            <section class="tactical-card p-6 border-l-2 border-l-electric-cobalt">
+                <h3 class="tactical-header text-[10px] mb-6">Operational Parameters</h3>
+                
+                <div class="space-y-8">
+                    <div>
+                        <div class="flex justify-between mb-2">
+                            <label class="tactical-header text-[9px] text-ghost-gray">Inference Adapter</label>
+                            <span class="computed-value text-[9px]">v1.4.2</span>
+                        </div>
+                        <select class="w-full tactical-input text-xs bg-void border-cold-steel py-2">
+                            <option>GPT-4o (Extraction_Optimized)</option>
+                            <option>Claude 3.5 Sonnet (Causal_Refinement)</option>
+                            <option>Llama-3-70B (Local_Airgap_Inference)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between mb-2">
+                            <label class="tactical-header text-[9px] text-ghost-gray">Creative Entropy</label>
+                            <span class="computed-value text-[10px]" id="entropy-val">0.20</span>
+                        </div>
+                        <input type="range" min="0" max="100" value="20" class="w-full tactical-slider" 
+                               oninput="document.getElementById('entropy-val').innerText = (this.value/100).toFixed(2)">
+                        <div class="flex justify-between mt-2">
+                            <span class="tactical-header text-[7px] text-ghost-gray">Strict Causal</span>
+                            <span class="tactical-header text-[7px] text-ghost-gray">Exploratory Synthesis</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between mb-2">
+                            <label class="tactical-header text-[9px] text-ghost-gray">Context Window Throttle</label>
+                            <span class="computed-value text-[10px]">128K TOKENS</span>
+                        </div>
+                        <div class="w-full h-1 bg-void border border-cold-steel">
+                            <div class="h-full bg-electric-cobalt" style="width: 65%"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="tactical-card p-6">
+                <h3 class="tactical-header text-[10px] mb-4">Pipeline Integration</h3>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between p-3 bg-void border border-cold-steel">
+                        <span class="tactical-header text-[8px] text-ghost-gray">Auto-Refine Shadow Signals</span>
+                        <div class="w-8 h-4 bg-hyper-lime/20 border border-hyper-lime/40 relative">
+                            <div class="absolute right-1 top-1 bottom-1 w-2 bg-hyper-lime"></div>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-void border border-cold-steel opacity-50">
+                        <span class="tactical-header text-[8px] text-ghost-gray">Deterministic Seed Lock</span>
+                        <div class="w-8 h-4 bg-white/5 border border-white/10 relative">
+                            <div class="absolute left-1 top-1 bottom-1 w-2 bg-white/20"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Research Directive Editor -->
+        <div class="lg:col-span-2 space-y-8">
+            <section class="tactical-card p-0 overflow-hidden flex flex-col h-[600px]">
+                <div class="bg-faint-gray border-b border-cold-steel px-6 py-3 flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <span class="tactical-header text-[10px] text-ghost-white">Active Research Directive</span>
+                        <span class="computed-value text-[9px] text-ghost-gray">DIR_v4.2-STABLE</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="tactical-header text-[8px] px-3 py-1 border border-cold-steel hover:bg-void">Revert</button>
+                        <button class="tactical-header text-[8px] px-3 py-1 bg-hyper-lime text-black">Commit to Ledger</button>
+                    </div>
+                </div>
+                <div class="flex-1 relative bg-void">
+                    <div class="absolute left-0 top-0 bottom-0 w-12 bg-faint-gray border-r border-cold-steel flex flex-col items-center pt-4 gap-2">
+                        {{range $i := until 20}}
+                        <span class="computed-value text-[9px] text-white/10">{{add $i 1}}</span>
+                        {{end}}
+                    </div>
+                    <textarea class="absolute inset-0 ml-12 p-6 bg-transparent border-none outline-none computed-value text-sm text-ghost-white resize-none leading-relaxed" spellcheck="false">
+# SYSTEM_ROLE: FORENSIC_STATISTICIAN
+# OBJECTIVE: EXTRACT_CAUSAL_HYPOTHESES_FROM_L0_MAPPING
+
+Given the following validated statistical extractions, formulate high-rigor causal narratives.
+Prioritize relationships where stability_score > 0.85 and phantom_gate == PASSED.
+
+[TEMPLATE_DIRECTIVE]
+1. Identify the primary Vector_X -> Vector_Y interaction.
+2. Cross-reference with Registry contracts for confounding interaction vectors.
+3. Apply the "Falsification First" principle to counter-hypotheses.
+
+[OUTPUT_FORMAT]
+- NARRATIVE_EXTRACTION: <text>
+- CAUSAL_MECHANISM: <enum: direct, mediated, interaction>
+- CONFIDENCE_COEFFICIENT: <float: 0.0-1.0>
+- VITALITY_IMPACT: <text>
+                    </textarea>
+                </div>
+                <div class="bg-faint-gray border-t border-cold-steel px-6 py-2 flex items-center justify-between">
+                    <div class="computed-value text-[9px] text-ghost-gray uppercase">Token Count: 412 // Estimated Latency: 1.2s</div>
+                    <div class="computed-value text-[9px] text-hyper-lime uppercase">Validation: PASS</div>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+{{end}}

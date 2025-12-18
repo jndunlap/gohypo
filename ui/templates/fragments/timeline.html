@@ -1,0 +1,33 @@
+<div class="space-y-2 sm:space-y-3">
+    {{range $stageName, $stage := .StageStatuses}}
+    <div class="flex items-start gap-2 sm:gap-3 pb-2 sm:pb-3 {{if ne $stageName "Battery"}}border-b border-gray-200{{end}}">
+        {{if eq $stage.Status "COMPLETE"}}
+        <div class="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+            <span class="text-[10px] sm:text-xs text-green-700">✓</span>
+        </div>
+        <div class="flex-1 min-w-0">
+            <div class="text-xs sm:text-sm font-medium text-black">{{$stageName}}</div>
+            <div class="text-[10px] sm:text-xs text-gray-600 mt-0.5 sm:mt-1 font-mono break-words">
+                Artifacts: {{$stage.ArtifactCount}}{{if gt $stage.Runtime 0}} | Runtime: {{$stage.Runtime}}ms{{end}}
+            </div>
+        </div>
+        {{else if eq $stage.Status "FAILED"}}
+        <div class="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+            <span class="text-[10px] sm:text-xs text-red-700">✗</span>
+        </div>
+        <div class="flex-1 min-w-0">
+            <div class="text-xs sm:text-sm font-medium text-black">{{$stageName}}</div>
+            <div class="text-[10px] sm:text-xs text-red-600 mt-0.5 sm:mt-1 break-words">FAILED: artifact missing</div>
+        </div>
+        {{else}}
+        <div class="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+            <span class="text-[10px] sm:text-xs text-gray-400">⏳</span>
+        </div>
+        <div class="flex-1 min-w-0">
+            <div class="text-xs sm:text-sm font-medium text-gray-500">{{$stageName}}</div>
+            <div class="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1 break-words">Not run (stage not enabled)</div>
+        </div>
+        {{end}}
+    </div>
+    {{end}}
+</div>

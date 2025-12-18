@@ -1,0 +1,55 @@
+{{template "base.html" .}}
+
+{{define "content"}}
+<div class="max-w-7xl mx-auto px-6 py-8">
+    <div class="mb-10 flex items-center justify-between border-b border-cold-steel pb-6">
+        <div>
+            <h1 class="tactical-header text-2xl tracking-[0.2em]">Resolution Contracts</h1>
+            <p class="text-[11px] text-ghost-gray mt-2 font-mono uppercase">Deterministic Data Mapping // Registry Hash: {{.RegistryHash}}</p>
+        </div>
+    </div>
+
+    <!-- Contract Registry -->
+    <div class="tactical-card overflow-hidden">
+        <div class="bg-faint-gray border-b border-cold-steel px-6 py-3 flex items-center justify-between">
+            <h3 class="tactical-header text-[10px]">Variable Resolution Registry</h3>
+            <div class="flex gap-4">
+                <span class="computed-value text-[9px] text-ghost-gray">{{len .Contracts}} CONTRACTS REGISTERED</span>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full forensic-table border-collapse">
+                <thead>
+                    <tr>
+                        <th class="text-left">Variable Key</th>
+                        <th class="text-left">Resolution Mode</th>
+                        <th class="text-left">Statistical Type</th>
+                        <th class="text-left">Imputation</th>
+                        <th class="text-left">Window</th>
+                        <th class="text-left">Scalar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .Contracts}}
+                    <tr class="hover:bg-white/[0.02] transition-colors border-b border-white/[0.03]">
+                        <td class="computed-value text-xs text-ghost-white">{{.VarKey}}</td>
+                        <td class="computed-value text-xs text-electric-cobalt">{{.AsOfMode}}</td>
+                        <td class="computed-value text-xs text-ghost-gray">{{.StatisticalType}}</td>
+                        <td class="computed-value text-xs text-ghost-gray">{{.ImputationPolicy}}</td>
+                        <td class="computed-value text-xs text-ghost-gray">{{if .WindowDays}}{{.WindowDays}}d{{else}}N/A{{end}}</td>
+                        <td>
+                            {{if .ScalarGuarantee}}
+                            <span class="computed-value text-[8px] px-1.5 py-0.5 bg-hyper-lime/10 text-hyper-lime border border-hyper-lime/30 uppercase">TRUE</span>
+                            {{else}}
+                            <span class="computed-value text-[8px] px-1.5 py-0.5 bg-crimson-ghost/10 text-crimson-ghost border border-crimson-ghost/30 uppercase">FALSE</span>
+                            {{end}}
+                        </td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{{end}}

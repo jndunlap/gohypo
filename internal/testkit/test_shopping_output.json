@@ -1,0 +1,1838 @@
+[
+  {
+    "entity_id": "customer_0001",
+    "observed_at": "2023-12-28T11:44:59.231278675Z",
+    "source": "customer_service",
+    "field_key": "customer_created",
+    "value": {
+      "type": "timestamp",
+      "timestamp_val": "2023-12-28T11:44:59.231278675Z",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0001",
+    "observed_at": "2023-12-28T11:44:59.231278675Z",
+    "source": "customer_service",
+    "field_key": "country",
+    "value": {
+      "type": "string",
+      "string_val": "GB",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0001",
+    "observed_at": "2023-12-28T11:44:59.231278675Z",
+    "source": "customer_service",
+    "field_key": "signup_channel",
+    "value": {
+      "type": "string",
+      "string_val": "paid_search",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0001",
+    "observed_at": "2023-12-28T11:44:59.231278675Z",
+    "source": "customer_service",
+    "field_key": "marketing_opt_in",
+    "value": {
+      "type": "boolean",
+      "boolean_val": true,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0001",
+    "observed_at": "2023-12-28T11:44:59.231278675Z",
+    "source": "customer_service",
+    "field_key": "tenure_days",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 0,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0001",
+    "observed_at": "2023-12-28T11:44:59.231278675Z",
+    "source": "customer_service",
+    "field_key": "risk_score",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 0.19159664996119283,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0001",
+    "observed_at": "2023-12-28T11:44:59.231278675Z",
+    "source": "customer_service",
+    "field_key": "random_noise_1",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 81.28771359243787,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0001",
+    "observed_at": "2023-12-28T11:44:59.231278675Z",
+    "source": "customer_service",
+    "field_key": "random_noise_2",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 38.44458499444616,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0001",
+    "observed_at": "2023-12-28T11:44:59.231278675Z",
+    "source": "customer_service",
+    "field_key": "random_noise_3",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 38.30446530497163,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0001",
+    "observed_at": "2023-12-28T11:44:59.231278675Z",
+    "source": "customer_service",
+    "field_key": "random_noise_4",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 64.6376350605799,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0001",
+    "observed_at": "2023-12-28T11:44:59.231278675Z",
+    "source": "customer_service",
+    "field_key": "random_noise_5",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 73.56293173290688,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0001",
+    "observed_at": "2023-12-28T11:44:59.231278675Z",
+    "source": "customer_service",
+    "field_key": "deprecated_field",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 0,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0001",
+    "observed_at": "2024-01-08T21:59:01.086169615Z",
+    "source": "customer_service",
+    "field_key": "customer_profile_updated",
+    "value": {
+      "type": "timestamp",
+      "timestamp_val": "2024-01-08T21:59:01.086169615Z",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0001",
+    "observed_at": "2024-01-08T21:59:01.086169615Z",
+    "source": "customer_service",
+    "field_key": "tenure_days",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 11.426410357534026,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0001",
+    "observed_at": "2024-01-01T11:27:26.231278675Z",
+    "source": "session_tracking",
+    "field_key": "session_started",
+    "value": {
+      "type": "timestamp",
+      "timestamp_val": "2024-01-01T11:27:26.231278675Z",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0001",
+    "observed_at": "2024-01-01T11:27:26.231278675Z",
+    "source": "session_tracking",
+    "field_key": "device_type",
+    "value": {
+      "type": "string",
+      "string_val": "desktop",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0001",
+    "observed_at": "2024-01-01T11:27:26.231278675Z",
+    "source": "session_tracking",
+    "field_key": "traffic_source",
+    "value": {
+      "type": "string",
+      "string_val": "email",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0001",
+    "observed_at": "2024-01-01T11:27:26.231278675Z",
+    "source": "session_tracking",
+    "field_key": "pages_viewed",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 9,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0001",
+    "observed_at": "2024-01-01T11:27:26.231278675Z",
+    "source": "session_tracking",
+    "field_key": "session_duration_sec",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 764,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0001",
+    "observed_at": "2024-01-01T11:28:48.231278675Z",
+    "source": "cart_service",
+    "field_key": "add_to_cart",
+    "value": {
+      "type": "string",
+      "string_val": "product_0015",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0001",
+    "observed_at": "2024-01-01T11:28:48.231278675Z",
+    "source": "cart_service",
+    "field_key": "cart_value",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 71.58604125484933,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0001",
+    "observed_at": "2024-01-01T11:43:44.231278675Z",
+    "source": "checkout_service",
+    "field_key": "checkout_started",
+    "value": {
+      "type": "timestamp",
+      "timestamp_val": "2024-01-01T11:43:44.231278675Z",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0001",
+    "observed_at": "2024-01-01T11:43:44.231278675Z",
+    "source": "checkout_service",
+    "field_key": "discount_pct",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 7,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0001",
+    "observed_at": "2024-01-01T11:44:40.231278675Z",
+    "source": "payment_service",
+    "field_key": "payment_authorized",
+    "value": {
+      "type": "timestamp",
+      "timestamp_val": "2024-01-01T11:44:40.231278675Z",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0001",
+    "observed_at": "2024-01-01T11:44:40.231278675Z",
+    "source": "payment_service",
+    "field_key": "payment_method",
+    "value": {
+      "type": "string",
+      "string_val": "credit_card",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0001",
+    "observed_at": "2024-01-02T11:44:59.231278675Z",
+    "source": "analytics_service",
+    "field_key": "conversion_7d",
+    "value": {
+      "type": "boolean",
+      "boolean_val": true,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0001",
+    "observed_at": "2024-01-01T11:44:59.231278675Z",
+    "source": "order_service",
+    "field_key": "order_placed",
+    "value": {
+      "type": "timestamp",
+      "timestamp_val": "2024-01-01T11:44:59.231278675Z",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0001",
+    "observed_at": "2024-01-01T11:44:59.231278675Z",
+    "source": "order_service",
+    "field_key": "order_id",
+    "value": {
+      "type": "string",
+      "string_val": "order_customer_0001_01",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0001",
+    "observed_at": "2024-01-01T11:44:59.231278675Z",
+    "source": "order_service",
+    "field_key": "order_total",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 144.99392738379748,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0001",
+    "observed_at": "2024-01-01T11:44:59.231278675Z",
+    "source": "order_service",
+    "field_key": "items_count",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 3,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0001",
+    "observed_at": "2024-01-01T11:44:59.231278675Z",
+    "source": "order_service",
+    "field_key": "shipping_speed",
+    "value": {
+      "type": "string",
+      "string_val": "standard",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0001",
+    "observed_at": "2024-01-02T11:44:59.231278675Z",
+    "source": "fulfillment_service",
+    "field_key": "order_shipped",
+    "value": {
+      "type": "timestamp",
+      "timestamp_val": "2024-01-02T11:44:59.231278675Z",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0001",
+    "observed_at": "2024-01-02T11:44:59.231278675Z",
+    "source": "fulfillment_service",
+    "field_key": "shipping_days",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 1,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0001",
+    "observed_at": "2024-01-05T11:44:59.231278675Z",
+    "source": "delivery_service",
+    "field_key": "delivered",
+    "value": {
+      "type": "timestamp",
+      "timestamp_val": "2024-01-05T11:44:59.231278675Z",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0001",
+    "observed_at": "2024-01-05T11:44:59.231278675Z",
+    "source": "delivery_service",
+    "field_key": "was_returned",
+    "value": {
+      "type": "boolean",
+      "boolean_val": false,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0002",
+    "observed_at": "2023-12-19T07:03:31.635748408Z",
+    "source": "customer_service",
+    "field_key": "customer_created",
+    "value": {
+      "type": "timestamp",
+      "timestamp_val": "2023-12-19T07:03:31.635748408Z",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0002",
+    "observed_at": "2023-12-19T07:03:31.635748408Z",
+    "source": "customer_service",
+    "field_key": "country",
+    "value": {
+      "type": "string",
+      "string_val": "DE",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0002",
+    "observed_at": "2023-12-19T07:03:31.635748408Z",
+    "source": "customer_service",
+    "field_key": "signup_channel",
+    "value": {
+      "type": "string",
+      "string_val": "paid_search",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0002",
+    "observed_at": "2023-12-19T07:03:31.635748408Z",
+    "source": "customer_service",
+    "field_key": "marketing_opt_in",
+    "value": {
+      "type": "boolean",
+      "boolean_val": false,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0002",
+    "observed_at": "2023-12-19T07:03:31.635748408Z",
+    "source": "customer_service",
+    "field_key": "tenure_days",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 0,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0002",
+    "observed_at": "2023-12-19T07:03:31.635748408Z",
+    "source": "customer_service",
+    "field_key": "risk_score",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 0.12760838133289865,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0002",
+    "observed_at": "2023-12-19T07:03:31.635748408Z",
+    "source": "customer_service",
+    "field_key": "random_noise_1",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 5.684660777989169,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0002",
+    "observed_at": "2023-12-19T07:03:31.635748408Z",
+    "source": "customer_service",
+    "field_key": "random_noise_2",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 70.44754625643156,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0002",
+    "observed_at": "2023-12-19T07:03:31.635748408Z",
+    "source": "customer_service",
+    "field_key": "random_noise_3",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 57.18495287265078,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0002",
+    "observed_at": "2023-12-19T07:03:31.635748408Z",
+    "source": "customer_service",
+    "field_key": "random_noise_4",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 83.461040379165,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0002",
+    "observed_at": "2023-12-19T07:03:31.635748408Z",
+    "source": "customer_service",
+    "field_key": "random_noise_5",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 54.358296700450104,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0002",
+    "observed_at": "2023-12-19T07:03:31.635748408Z",
+    "source": "customer_service",
+    "field_key": "deprecated_field",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 0,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0002",
+    "observed_at": "2023-12-21T06:13:39.635748408Z",
+    "source": "session_tracking",
+    "field_key": "session_started",
+    "value": {
+      "type": "timestamp",
+      "timestamp_val": "2023-12-21T06:13:39.635748408Z",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0002",
+    "observed_at": "2023-12-21T06:13:39.635748408Z",
+    "source": "session_tracking",
+    "field_key": "device_type",
+    "value": {
+      "type": "string",
+      "string_val": "desktop",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0002",
+    "observed_at": "2023-12-21T06:13:39.635748408Z",
+    "source": "session_tracking",
+    "field_key": "traffic_source",
+    "value": {
+      "type": "string",
+      "string_val": "email",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0002",
+    "observed_at": "2023-12-21T06:13:39.635748408Z",
+    "source": "session_tracking",
+    "field_key": "pages_viewed",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 2,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0002",
+    "observed_at": "2023-12-21T06:13:39.635748408Z",
+    "source": "session_tracking",
+    "field_key": "session_duration_sec",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 1536,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0002",
+    "observed_at": "2023-12-21T06:15:57.635748408Z",
+    "source": "cart_service",
+    "field_key": "add_to_cart",
+    "value": {
+      "type": "string",
+      "string_val": "product_0002",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0002",
+    "observed_at": "2023-12-21T06:15:57.635748408Z",
+    "source": "cart_service",
+    "field_key": "cart_value",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 27.039104424734553,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0002",
+    "observed_at": "2023-12-21T06:58:44.635748408Z",
+    "source": "checkout_service",
+    "field_key": "checkout_started",
+    "value": {
+      "type": "timestamp",
+      "timestamp_val": "2023-12-21T06:58:44.635748408Z",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0002",
+    "observed_at": "2023-12-21T06:58:44.635748408Z",
+    "source": "checkout_service",
+    "field_key": "discount_pct",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 16,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0002",
+    "observed_at": "2023-12-21T07:02:35.635748408Z",
+    "source": "payment_service",
+    "field_key": "payment_authorized",
+    "value": {
+      "type": "timestamp",
+      "timestamp_val": "2023-12-21T07:02:35.635748408Z",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0002",
+    "observed_at": "2023-12-21T07:02:35.635748408Z",
+    "source": "payment_service",
+    "field_key": "payment_method",
+    "value": {
+      "type": "string",
+      "string_val": "credit_card",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0002",
+    "observed_at": "2023-12-22T07:03:31.635748408Z",
+    "source": "analytics_service",
+    "field_key": "conversion_7d",
+    "value": {
+      "type": "boolean",
+      "boolean_val": true,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0002",
+    "observed_at": "2023-12-21T07:03:31.635748408Z",
+    "source": "order_service",
+    "field_key": "order_placed",
+    "value": {
+      "type": "timestamp",
+      "timestamp_val": "2023-12-21T07:03:31.635748408Z",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0002",
+    "observed_at": "2023-12-21T07:03:31.635748408Z",
+    "source": "order_service",
+    "field_key": "order_id",
+    "value": {
+      "type": "string",
+      "string_val": "order_customer_0002_01",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0002",
+    "observed_at": "2023-12-21T07:03:31.635748408Z",
+    "source": "order_service",
+    "field_key": "order_total",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 184.20221069924233,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0002",
+    "observed_at": "2023-12-21T07:03:31.635748408Z",
+    "source": "order_service",
+    "field_key": "items_count",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 2,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0002",
+    "observed_at": "2023-12-21T07:03:31.635748408Z",
+    "source": "order_service",
+    "field_key": "shipping_speed",
+    "value": {
+      "type": "string",
+      "string_val": "standard",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0002",
+    "observed_at": "2023-12-23T07:03:31.635748408Z",
+    "source": "fulfillment_service",
+    "field_key": "order_shipped",
+    "value": {
+      "type": "timestamp",
+      "timestamp_val": "2023-12-23T07:03:31.635748408Z",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0002",
+    "observed_at": "2023-12-23T07:03:31.635748408Z",
+    "source": "fulfillment_service",
+    "field_key": "shipping_days",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 2,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0002",
+    "observed_at": "2023-12-25T07:03:31.635748408Z",
+    "source": "delivery_service",
+    "field_key": "delivered",
+    "value": {
+      "type": "timestamp",
+      "timestamp_val": "2023-12-25T07:03:31.635748408Z",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0002",
+    "observed_at": "2023-12-25T07:03:31.635748408Z",
+    "source": "delivery_service",
+    "field_key": "was_returned",
+    "value": {
+      "type": "boolean",
+      "boolean_val": false,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0003",
+    "observed_at": "2023-12-21T13:47:28.29988783Z",
+    "source": "customer_service",
+    "field_key": "customer_created",
+    "value": {
+      "type": "timestamp",
+      "timestamp_val": "2023-12-21T13:47:28.29988783Z",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0003",
+    "observed_at": "2023-12-21T13:47:28.29988783Z",
+    "source": "customer_service",
+    "field_key": "country",
+    "value": {
+      "type": "string",
+      "string_val": "US",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0003",
+    "observed_at": "2023-12-21T13:47:28.29988783Z",
+    "source": "customer_service",
+    "field_key": "signup_channel",
+    "value": {
+      "type": "string",
+      "string_val": "paid_search",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0003",
+    "observed_at": "2023-12-21T13:47:28.29988783Z",
+    "source": "customer_service",
+    "field_key": "marketing_opt_in",
+    "value": {
+      "type": "boolean",
+      "boolean_val": true,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0003",
+    "observed_at": "2023-12-21T13:47:28.29988783Z",
+    "source": "customer_service",
+    "field_key": "tenure_days",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 0,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0003",
+    "observed_at": "2023-12-21T13:47:28.29988783Z",
+    "source": "customer_service",
+    "field_key": "risk_score",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 0.2402826919523068,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0003",
+    "observed_at": "2023-12-21T13:47:28.29988783Z",
+    "source": "customer_service",
+    "field_key": "random_noise_1",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 87.42713214368413,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0003",
+    "observed_at": "2023-12-21T13:47:28.29988783Z",
+    "source": "customer_service",
+    "field_key": "random_noise_2",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 91.47118028736698,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0003",
+    "observed_at": "2023-12-21T13:47:28.29988783Z",
+    "source": "customer_service",
+    "field_key": "random_noise_3",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 96.39609247403921,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0003",
+    "observed_at": "2023-12-21T13:47:28.29988783Z",
+    "source": "customer_service",
+    "field_key": "random_noise_4",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 27.29622711062987,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0003",
+    "observed_at": "2023-12-21T13:47:28.29988783Z",
+    "source": "customer_service",
+    "field_key": "random_noise_5",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 73.45916514822362,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0003",
+    "observed_at": "2023-12-21T13:47:28.29988783Z",
+    "source": "customer_service",
+    "field_key": "deprecated_field",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 0,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0003",
+    "observed_at": "2023-12-28T12:55:02.29988783Z",
+    "source": "session_tracking",
+    "field_key": "session_started",
+    "value": {
+      "type": "timestamp",
+      "timestamp_val": "2023-12-28T12:55:02.29988783Z",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0003",
+    "observed_at": "2023-12-28T12:55:02.29988783Z",
+    "source": "session_tracking",
+    "field_key": "device_type",
+    "value": {
+      "type": "string",
+      "string_val": "mobile",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0003",
+    "observed_at": "2023-12-28T12:55:02.29988783Z",
+    "source": "session_tracking",
+    "field_key": "traffic_source",
+    "value": {
+      "type": "string",
+      "string_val": "email",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0003",
+    "observed_at": "2023-12-28T12:55:02.29988783Z",
+    "source": "session_tracking",
+    "field_key": "pages_viewed",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 8,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0003",
+    "observed_at": "2023-12-28T12:55:02.29988783Z",
+    "source": "session_tracking",
+    "field_key": "session_duration_sec",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 1058,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0003",
+    "observed_at": "2023-12-28T12:55:33.29988783Z",
+    "source": "cart_service",
+    "field_key": "add_to_cart",
+    "value": {
+      "type": "string",
+      "string_val": "product_0008",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0003",
+    "observed_at": "2023-12-28T12:55:33.29988783Z",
+    "source": "cart_service",
+    "field_key": "cart_value",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 141.07503757884322,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0003",
+    "observed_at": "2023-12-28T13:43:17.29988783Z",
+    "source": "checkout_service",
+    "field_key": "checkout_started",
+    "value": {
+      "type": "timestamp",
+      "timestamp_val": "2023-12-28T13:43:17.29988783Z",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0003",
+    "observed_at": "2023-12-28T13:43:17.29988783Z",
+    "source": "checkout_service",
+    "field_key": "discount_pct",
+    "value": {
+      "type": "missing",
+      "is_missing": true
+    }
+  },
+  {
+    "entity_id": "customer_0003",
+    "observed_at": "2023-12-28T13:46:32.29988783Z",
+    "source": "payment_service",
+    "field_key": "payment_authorized",
+    "value": {
+      "type": "timestamp",
+      "timestamp_val": "2023-12-28T13:46:32.29988783Z",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0003",
+    "observed_at": "2023-12-28T13:46:32.29988783Z",
+    "source": "payment_service",
+    "field_key": "payment_method",
+    "value": {
+      "type": "string",
+      "string_val": "debit_card",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0003",
+    "observed_at": "2023-12-29T13:47:28.29988783Z",
+    "source": "analytics_service",
+    "field_key": "conversion_7d",
+    "value": {
+      "type": "boolean",
+      "boolean_val": true,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0003",
+    "observed_at": "2023-12-28T13:47:28.29988783Z",
+    "source": "order_service",
+    "field_key": "order_placed",
+    "value": {
+      "type": "timestamp",
+      "timestamp_val": "2023-12-28T13:47:28.29988783Z",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0003",
+    "observed_at": "2023-12-28T13:47:28.29988783Z",
+    "source": "order_service",
+    "field_key": "order_id",
+    "value": {
+      "type": "string",
+      "string_val": "order_customer_0003_01",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0003",
+    "observed_at": "2023-12-28T13:47:28.29988783Z",
+    "source": "order_service",
+    "field_key": "order_total",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 56.18244110750424,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0003",
+    "observed_at": "2023-12-28T13:47:28.29988783Z",
+    "source": "order_service",
+    "field_key": "items_count",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 5,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0003",
+    "observed_at": "2023-12-28T13:47:28.29988783Z",
+    "source": "order_service",
+    "field_key": "shipping_speed",
+    "value": {
+      "type": "string",
+      "string_val": "standard",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0003",
+    "observed_at": "2024-01-01T13:47:28.29988783Z",
+    "source": "fulfillment_service",
+    "field_key": "order_shipped",
+    "value": {
+      "type": "timestamp",
+      "timestamp_val": "2024-01-01T13:47:28.29988783Z",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0003",
+    "observed_at": "2024-01-01T13:47:28.29988783Z",
+    "source": "fulfillment_service",
+    "field_key": "shipping_days",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 4,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0003",
+    "observed_at": "2024-01-04T13:47:28.29988783Z",
+    "source": "delivery_service",
+    "field_key": "delivered",
+    "value": {
+      "type": "timestamp",
+      "timestamp_val": "2024-01-04T13:47:28.29988783Z",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0003",
+    "observed_at": "2024-01-04T13:47:28.29988783Z",
+    "source": "delivery_service",
+    "field_key": "was_returned",
+    "value": {
+      "type": "boolean",
+      "boolean_val": false,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0004",
+    "observed_at": "2023-12-28T16:35:06.660838268Z",
+    "source": "customer_service",
+    "field_key": "customer_created",
+    "value": {
+      "type": "timestamp",
+      "timestamp_val": "2023-12-28T16:35:06.660838268Z",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0004",
+    "observed_at": "2023-12-28T16:35:06.660838268Z",
+    "source": "customer_service",
+    "field_key": "country",
+    "value": {
+      "type": "string",
+      "string_val": "AU",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0004",
+    "observed_at": "2023-12-28T16:35:06.660838268Z",
+    "source": "customer_service",
+    "field_key": "signup_channel",
+    "value": {
+      "type": "string",
+      "string_val": "organic",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0004",
+    "observed_at": "2023-12-28T16:35:06.660838268Z",
+    "source": "customer_service",
+    "field_key": "marketing_opt_in",
+    "value": {
+      "type": "boolean",
+      "boolean_val": false,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0004",
+    "observed_at": "2023-12-28T16:35:06.660838268Z",
+    "source": "customer_service",
+    "field_key": "tenure_days",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 0,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0004",
+    "observed_at": "2023-12-28T16:35:06.660838268Z",
+    "source": "customer_service",
+    "field_key": "risk_score",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 0.12556240420865802,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0004",
+    "observed_at": "2023-12-28T16:35:06.660838268Z",
+    "source": "customer_service",
+    "field_key": "random_noise_1",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 82.46932082557765,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0004",
+    "observed_at": "2023-12-28T16:35:06.660838268Z",
+    "source": "customer_service",
+    "field_key": "random_noise_2",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 73.97693948201359,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0004",
+    "observed_at": "2023-12-28T16:35:06.660838268Z",
+    "source": "customer_service",
+    "field_key": "random_noise_3",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 32.53525950689158,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0004",
+    "observed_at": "2023-12-28T16:35:06.660838268Z",
+    "source": "customer_service",
+    "field_key": "random_noise_4",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 0.14109740758089742,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0004",
+    "observed_at": "2023-12-28T16:35:06.660838268Z",
+    "source": "customer_service",
+    "field_key": "random_noise_5",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 11.043267407263512,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0004",
+    "observed_at": "2023-12-28T16:35:06.660838268Z",
+    "source": "customer_service",
+    "field_key": "deprecated_field",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 0,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0004",
+    "observed_at": "2023-12-30T15:36:36.660838268Z",
+    "source": "session_tracking",
+    "field_key": "session_started",
+    "value": {
+      "type": "timestamp",
+      "timestamp_val": "2023-12-30T15:36:36.660838268Z",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0004",
+    "observed_at": "2023-12-30T15:36:36.660838268Z",
+    "source": "session_tracking",
+    "field_key": "device_type",
+    "value": {
+      "type": "string",
+      "string_val": "desktop",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0004",
+    "observed_at": "2023-12-30T15:36:36.660838268Z",
+    "source": "session_tracking",
+    "field_key": "traffic_source",
+    "value": {
+      "type": "string",
+      "string_val": "organic",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0004",
+    "observed_at": "2023-12-30T15:36:36.660838268Z",
+    "source": "session_tracking",
+    "field_key": "pages_viewed",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 9,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0004",
+    "observed_at": "2023-12-30T15:36:36.660838268Z",
+    "source": "session_tracking",
+    "field_key": "session_duration_sec",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 1505,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0004",
+    "observed_at": "2023-12-30T15:45:50.660838268Z",
+    "source": "cart_service",
+    "field_key": "add_to_cart",
+    "value": {
+      "type": "string",
+      "string_val": "product_0004",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0004",
+    "observed_at": "2023-12-30T15:45:50.660838268Z",
+    "source": "cart_service",
+    "field_key": "cart_value",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 187.3764084670787,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0004",
+    "observed_at": "2023-12-30T16:32:28.660838268Z",
+    "source": "checkout_service",
+    "field_key": "checkout_started",
+    "value": {
+      "type": "timestamp",
+      "timestamp_val": "2023-12-30T16:32:28.660838268Z",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0004",
+    "observed_at": "2023-12-30T16:32:28.660838268Z",
+    "source": "checkout_service",
+    "field_key": "discount_pct",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 6,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0004",
+    "observed_at": "2023-12-30T16:34:32.660838268Z",
+    "source": "payment_service",
+    "field_key": "payment_authorized",
+    "value": {
+      "type": "timestamp",
+      "timestamp_val": "2023-12-30T16:34:32.660838268Z",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0004",
+    "observed_at": "2023-12-30T16:34:32.660838268Z",
+    "source": "payment_service",
+    "field_key": "payment_method",
+    "value": {
+      "type": "string",
+      "string_val": "credit_card",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0004",
+    "observed_at": "2023-12-31T16:35:06.660838268Z",
+    "source": "analytics_service",
+    "field_key": "conversion_7d",
+    "value": {
+      "type": "boolean",
+      "boolean_val": true,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0004",
+    "observed_at": "2023-12-30T16:35:06.660838268Z",
+    "source": "order_service",
+    "field_key": "order_placed",
+    "value": {
+      "type": "timestamp",
+      "timestamp_val": "2023-12-30T16:35:06.660838268Z",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0004",
+    "observed_at": "2023-12-30T16:35:06.660838268Z",
+    "source": "order_service",
+    "field_key": "order_id",
+    "value": {
+      "type": "string",
+      "string_val": "order_customer_0004_01",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0004",
+    "observed_at": "2023-12-30T16:35:06.660838268Z",
+    "source": "order_service",
+    "field_key": "order_total",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 157.6845939226265,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0004",
+    "observed_at": "2023-12-30T16:35:06.660838268Z",
+    "source": "order_service",
+    "field_key": "items_count",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 3,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0004",
+    "observed_at": "2023-12-30T16:35:06.660838268Z",
+    "source": "order_service",
+    "field_key": "shipping_speed",
+    "value": {
+      "type": "string",
+      "string_val": "standard",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0004",
+    "observed_at": "2024-01-02T16:35:06.660838268Z",
+    "source": "fulfillment_service",
+    "field_key": "order_shipped",
+    "value": {
+      "type": "timestamp",
+      "timestamp_val": "2024-01-02T16:35:06.660838268Z",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0004",
+    "observed_at": "2024-01-02T16:35:06.660838268Z",
+    "source": "fulfillment_service",
+    "field_key": "shipping_days",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 3,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0004",
+    "observed_at": "2024-01-04T16:35:06.660838268Z",
+    "source": "delivery_service",
+    "field_key": "delivered",
+    "value": {
+      "type": "timestamp",
+      "timestamp_val": "2024-01-04T16:35:06.660838268Z",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0004",
+    "observed_at": "2024-01-04T16:35:06.660838268Z",
+    "source": "delivery_service",
+    "field_key": "was_returned",
+    "value": {
+      "type": "boolean",
+      "boolean_val": false,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0005",
+    "observed_at": "2023-12-19T02:40:35.201548099Z",
+    "source": "customer_service",
+    "field_key": "customer_created",
+    "value": {
+      "type": "timestamp",
+      "timestamp_val": "2023-12-19T02:40:35.201548099Z",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0005",
+    "observed_at": "2023-12-19T02:40:35.201548099Z",
+    "source": "customer_service",
+    "field_key": "country",
+    "value": {
+      "type": "string",
+      "string_val": "AU",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0005",
+    "observed_at": "2023-12-19T02:40:35.201548099Z",
+    "source": "customer_service",
+    "field_key": "signup_channel",
+    "value": {
+      "type": "string",
+      "string_val": "social",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0005",
+    "observed_at": "2023-12-19T02:40:35.201548099Z",
+    "source": "customer_service",
+    "field_key": "marketing_opt_in",
+    "value": {
+      "type": "boolean",
+      "boolean_val": false,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0005",
+    "observed_at": "2023-12-19T02:40:35.201548099Z",
+    "source": "customer_service",
+    "field_key": "tenure_days",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 0,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0005",
+    "observed_at": "2023-12-19T02:40:35.201548099Z",
+    "source": "customer_service",
+    "field_key": "risk_score",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 0.056079911975243604,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0005",
+    "observed_at": "2023-12-19T02:40:35.201548099Z",
+    "source": "customer_service",
+    "field_key": "random_noise_1",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 93.24883994061994,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0005",
+    "observed_at": "2023-12-19T02:40:35.201548099Z",
+    "source": "customer_service",
+    "field_key": "random_noise_2",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 42.39618668516094,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0005",
+    "observed_at": "2023-12-19T02:40:35.201548099Z",
+    "source": "customer_service",
+    "field_key": "random_noise_3",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 15.89392700316504,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0005",
+    "observed_at": "2023-12-19T02:40:35.201548099Z",
+    "source": "customer_service",
+    "field_key": "random_noise_4",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 46.33732919182397,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0005",
+    "observed_at": "2023-12-19T02:40:35.201548099Z",
+    "source": "customer_service",
+    "field_key": "random_noise_5",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 32.72043689538233,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0005",
+    "observed_at": "2023-12-19T02:40:35.201548099Z",
+    "source": "customer_service",
+    "field_key": "deprecated_field",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 0,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0005",
+    "observed_at": "2023-12-24T02:20:12.201548099Z",
+    "source": "session_tracking",
+    "field_key": "session_started",
+    "value": {
+      "type": "timestamp",
+      "timestamp_val": "2023-12-24T02:20:12.201548099Z",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0005",
+    "observed_at": "2023-12-24T02:20:12.201548099Z",
+    "source": "session_tracking",
+    "field_key": "device_type",
+    "value": {
+      "type": "string",
+      "string_val": "mobile",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0005",
+    "observed_at": "2023-12-24T02:20:12.201548099Z",
+    "source": "session_tracking",
+    "field_key": "traffic_source",
+    "value": {
+      "type": "string",
+      "string_val": "paid_search",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0005",
+    "observed_at": "2023-12-24T02:20:12.201548099Z",
+    "source": "session_tracking",
+    "field_key": "pages_viewed",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 5,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0005",
+    "observed_at": "2023-12-24T02:20:12.201548099Z",
+    "source": "session_tracking",
+    "field_key": "session_duration_sec",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 1572,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0005",
+    "observed_at": "2023-12-24T02:24:32.201548099Z",
+    "source": "cart_service",
+    "field_key": "add_to_cart",
+    "value": {
+      "type": "string",
+      "string_val": "product_0002",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0005",
+    "observed_at": "2023-12-24T02:24:32.201548099Z",
+    "source": "cart_service",
+    "field_key": "cart_value",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 111.47090605209254,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0005",
+    "observed_at": "2023-12-24T02:39:02.201548099Z",
+    "source": "checkout_service",
+    "field_key": "checkout_started",
+    "value": {
+      "type": "timestamp",
+      "timestamp_val": "2023-12-24T02:39:02.201548099Z",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0005",
+    "observed_at": "2023-12-24T02:39:02.201548099Z",
+    "source": "checkout_service",
+    "field_key": "discount_pct",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 10,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0005",
+    "observed_at": "2023-12-24T02:39:57.201548099Z",
+    "source": "payment_service",
+    "field_key": "payment_authorized",
+    "value": {
+      "type": "timestamp",
+      "timestamp_val": "2023-12-24T02:39:57.201548099Z",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0005",
+    "observed_at": "2023-12-24T02:39:57.201548099Z",
+    "source": "payment_service",
+    "field_key": "payment_method",
+    "value": {
+      "type": "string",
+      "string_val": "paypal",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0005",
+    "observed_at": "2023-12-25T02:40:35.201548099Z",
+    "source": "analytics_service",
+    "field_key": "conversion_7d",
+    "value": {
+      "type": "boolean",
+      "boolean_val": true,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0005",
+    "observed_at": "2023-12-24T02:40:35.201548099Z",
+    "source": "order_service",
+    "field_key": "order_placed",
+    "value": {
+      "type": "timestamp",
+      "timestamp_val": "2023-12-24T02:40:35.201548099Z",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0005",
+    "observed_at": "2023-12-24T02:40:35.201548099Z",
+    "source": "order_service",
+    "field_key": "order_id",
+    "value": {
+      "type": "string",
+      "string_val": "order_customer_0005_01",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0005",
+    "observed_at": "2023-12-24T02:40:35.201548099Z",
+    "source": "order_service",
+    "field_key": "order_total",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 305.4811239859566,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0005",
+    "observed_at": "2023-12-24T02:40:35.201548099Z",
+    "source": "order_service",
+    "field_key": "items_count",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 5,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0005",
+    "observed_at": "2023-12-24T02:40:35.201548099Z",
+    "source": "order_service",
+    "field_key": "shipping_speed",
+    "value": {
+      "type": "string",
+      "string_val": "standard",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0005",
+    "observed_at": "2023-12-26T02:40:35.201548099Z",
+    "source": "fulfillment_service",
+    "field_key": "order_shipped",
+    "value": {
+      "type": "timestamp",
+      "timestamp_val": "2023-12-26T02:40:35.201548099Z",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0005",
+    "observed_at": "2023-12-26T02:40:35.201548099Z",
+    "source": "fulfillment_service",
+    "field_key": "shipping_days",
+    "value": {
+      "type": "numeric",
+      "numeric_val": 2,
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0005",
+    "observed_at": "2023-12-28T02:40:35.201548099Z",
+    "source": "delivery_service",
+    "field_key": "delivered",
+    "value": {
+      "type": "timestamp",
+      "timestamp_val": "2023-12-28T02:40:35.201548099Z",
+      "is_missing": false
+    }
+  },
+  {
+    "entity_id": "customer_0005",
+    "observed_at": "2023-12-28T02:40:35.201548099Z",
+    "source": "delivery_service",
+    "field_key": "was_returned",
+    "value": {
+      "type": "boolean",
+      "boolean_val": false,
+      "is_missing": false
+    }
+  }
+]

@@ -1,0 +1,190 @@
+{{template "base.html" .}}
+
+{{define "content"}}
+<div class="max-w-6xl mx-auto px-2 sm:px-4 py-4 sm:py-8">
+    <!-- Header -->
+    <div class="mb-4 sm:mb-8 border-b border-gray-200 pb-3 sm:pb-4">
+        <h1 class="text-xl sm:text-2xl font-light text-black tracking-tight">GoHypo</h1>
+    </div>
+
+    <!-- Run Summary Panel (always visible) -->
+    <div class="mb-4 sm:mb-8 border border-gray-200 p-3 sm:p-6 bg-white">
+        <h2 class="text-sm sm:text-base font-medium text-black mb-3 sm:mb-4">Run Summary</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 text-xs sm:text-sm">
+            <div>
+                <div class="text-xs text-gray-500 mb-1">Status</div>
+                <div>
+                    {{if eq .RunStatus "NOT_RUN"}}
+                    <span class="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700">NOT_RUN</span>
+                    {{else if eq .RunStatus "RUNNING"}}
+                    <span class="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700">RUNNING</span>
+                    {{else if eq .RunStatus "COMPLETE"}}
+                    <span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-700">COMPLETE</span>
+                    {{else if eq .RunStatus "FAILED"}}
+                    <span class="px-2 py-1 text-xs font-medium bg-red-100 text-red-700">FAILED</span>
+                    {{else}}
+                    <span class="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700">{{.RunStatus}}</span>
+                    {{end}}
+                </div>
+            </div>
+            <div>
+                <div class="text-xs text-gray-500 mb-1">Dataset</div>
+                <div class="font-mono text-black">{{if .DatasetInfo.name}}{{.DatasetInfo.name}}{{else}}Unknown{{end}}</div>
+            </div>
+            <div>
+                <div class="text-xs text-gray-500 mb-1">Variables</div>
+                <div class="font-mono text-black text-xs sm:text-sm break-words">{{.VariablesTotal}} total | {{.VariablesEligible}} eligible{{if gt .VariablesRejected 0}} | {{.VariablesRejected}} rejected{{end}}</div>
+            </div>
+            <div>
+                <div class="text-xs text-gray-500 mb-1">Pairs</div>
+                <div class="font-mono text-black text-xs sm:text-sm break-words">{{.PairsAttempted}} attempted | {{.PairsTested}} tested | {{.PairsSkipped}} skipped</div>
+            </div>
+            <div>
+                <div class="text-xs text-gray-500 mb-1">Significance Rule</div>
+                <div class="font-mono text-black">{{.SignificanceRule}}</div>
+            </div>
+            {{if .Seed}}
+            <div>
+                <div class="text-xs text-gray-500 mb-1">Seed</div>
+                <div class="font-mono text-black">{{.Seed}}</div>
+            </div>
+            {{end}}
+            {{if .Fingerprint}}
+            <div>
+                <div class="text-xs text-gray-500 mb-1">Fingerprint</div>
+                <div class="font-mono text-xs text-black">{{.Fingerprint}}</div>
+            </div>
+            {{end}}
+        </div>
+    </div>
+
+    <!-- NOT_RUN Empty State -->
+    {{if eq .RunStatus "NOT_RUN"}}
+    <div class="mb-8 border border-gray-300 bg-gray-50 p-8 text-center">
+        <div class="mb-4">
+            <span class="px-4 py-2 text-sm font-medium bg-gray-200 text-gray-700">NOT RUN</span>
+        </div>
+        <h2 class="text-lg font-medium text-black mb-2">Pairwise sweep has not been executed</h2>
+        <p class="text-sm text-gray-600 mb-6">Run Layer 0 Sweep to discover relationships between variables.</p>
+        <button class="px-4 py-2 bg-black text-white text-sm font-medium hover:bg-gray-800">Run Pairwise Sweep</button>
+        <div class="mt-6 pt-6 border-t border-gray-300 text-left">
+            <div class="text-xs text-gray-500 mb-2">What will be computed:</div>
+            <ul class="space-y-1 text-xs text-gray-600">
+                <li>• Profile: Variable eligibility and data quality metrics</li>
+                <li>• Pairwise: Statistical tests between all eligible variable pairs</li>
+                <li>• FDR: False discovery rate correction (if enabled)</li>
+            </ul>
+        </div>
+    </div>
+    {{end}}
+
+    <!-- Relationships Section (HTMX fragment) -->
+    {{if eq .RunStatus "COMPLETE"}}
+    <div class="mb-4 sm:mb-8 border border-gray-200 p-3 sm:p-6">
+        <h2 class="text-base sm:text-lg font-medium text-black mb-3 sm:mb-4">Relationships</h2>
+        <div id="relationships-table" hx-get="/api/fragments/relationships" hx-trigger="load" hx-swap="innerHTML">
+            <div class="text-xs sm:text-sm text-gray-500">Loading relationships...</div>
+        </div>
+    </div>
+    {{end}}
+
+    <!-- Evidence Timeline (HTMX fragment) -->
+    <div class="mb-4 sm:mb-8 border border-gray-200 p-3 sm:p-6">
+        <h2 class="text-base sm:text-lg font-medium text-black mb-3 sm:mb-4">Evidence Timeline</h2>
+        <div id="evidence-timeline" hx-get="/api/fragments/timeline" hx-trigger="load" hx-swap="innerHTML">
+            <div class="text-xs sm:text-sm text-gray-500">Loading timeline...</div>
+        </div>
+    </div>
+
+    <!-- Fields Information -->
+    {{if .FieldStats}}
+    <div class="mb-4 sm:mb-8 border border-gray-200 p-3 sm:p-6 bg-gray-50">
+        <h2 class="text-base font-medium text-black mb-3 sm:mb-4">Fields ({{len .FieldStats}})</h2>
+        <div class="overflow-x-auto -mx-3 sm:mx-0">
+            <div class="inline-block min-w-full align-middle">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-[10px] sm:text-xs border-collapse">
+                        <thead>
+                            <tr class="border-b border-gray-300">
+                                <th class="text-left py-2 px-2 sm:px-3 font-medium text-black sticky left-0 bg-gray-50 z-10">Field</th>
+                                <th class="text-left py-2 px-2 sm:px-3 font-medium text-black">Type</th>
+                                <th class="text-right py-2 px-2 sm:px-3 font-medium text-black">Missing</th>
+                                <th class="text-right py-2 px-2 sm:px-3 font-medium text-black">Unique</th>
+                                <th class="text-right py-2 px-2 sm:px-3 font-medium text-black hidden sm:table-cell">Variance</th>
+                                <th class="text-right py-2 px-2 sm:px-3 font-medium text-black hidden md:table-cell">Cardinality</th>
+                                <th class="text-right py-2 px-2 sm:px-3 font-medium text-black">N</th>
+                                <th class="text-right py-2 px-2 sm:px-3 font-medium text-black">In Rel</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{range .FieldStats}}
+                            <tr class="border-b border-gray-200 hover:bg-white">
+                                <td class="py-2 px-2 sm:px-3 font-mono text-black font-medium sticky left-0 bg-white z-10 whitespace-nowrap">{{.Name}}</td>
+                                <td class="py-2 px-2 sm:px-3 text-gray-600">
+                                    {{if eq .Type "numeric"}}
+                                    <span class="px-1 py-0.5 bg-blue-100 text-blue-700 text-[10px] sm:text-xs">num</span>
+                                    {{else if eq .Type "categorical"}}
+                                    <span class="px-1 py-0.5 bg-green-100 text-green-700 text-[10px] sm:text-xs">cat</span>
+                                    {{else}}
+                                    <span class="text-gray-400">—</span>
+                                    {{end}}
+                                </td>
+                                <td class="py-2 px-2 sm:px-3 font-mono text-right text-gray-600 whitespace-nowrap">
+                                    {{if .MissingRatePct}}{{.MissingRatePct}}%{{else}}—{{end}}
+                                </td>
+                                <td class="py-2 px-2 sm:px-3 font-mono text-right text-gray-600 whitespace-nowrap">
+                                    {{if .UniqueCount}}{{.UniqueCount}}{{else}}—{{end}}
+                                </td>
+                                <td class="py-2 px-2 sm:px-3 font-mono text-right text-gray-600 hidden sm:table-cell whitespace-nowrap">
+                                    {{if .Variance}}{{printf "%.3f" .Variance}}{{else}}—{{end}}
+                                </td>
+                                <td class="py-2 px-2 sm:px-3 font-mono text-right text-gray-600 hidden md:table-cell whitespace-nowrap">
+                                    {{if .Cardinality}}{{.Cardinality}}{{else}}—{{end}}
+                                </td>
+                                <td class="py-2 px-2 sm:px-3 font-mono text-right text-gray-600 whitespace-nowrap">
+                                    {{if .SampleSize}}{{.SampleSize}}{{else}}—{{end}}
+                                </td>
+                                <td class="py-2 px-2 sm:px-3 font-mono text-right text-black whitespace-nowrap">
+                                    {{.InRelationships}}
+                                </td>
+                            </tr>
+                            {{end}}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    {{else if .Fields}}
+    <div class="mb-8 border border-gray-200 p-6 bg-gray-50">
+        <h2 class="text-base font-medium text-black mb-4">Fields ({{len .Fields}})</h2>
+        <div class="flex flex-wrap gap-2">
+            {{range .Fields}}
+            <span class="text-xs px-2 py-1 bg-gray-200 text-gray-700 font-mono">{{.}}</span>
+            {{end}}
+        </div>
+    </div>
+    {{end}}
+
+    <!-- Dataset Information -->
+    {{if .DatasetInfo}}
+    <div class="mb-4 sm:mb-8 border border-gray-200 p-3 sm:p-6 bg-gray-50">
+        <h2 class="text-base font-medium text-black mb-3 sm:mb-4">Dataset Information</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 text-xs sm:text-sm">
+            {{if .DatasetInfo.snapshotID}}
+            <div>
+                <div class="text-xs text-gray-500 mb-1">Snapshot ID</div>
+                <div class="font-mono text-xs text-black">{{.DatasetInfo.snapshotID}}</div>
+            </div>
+            {{end}}
+            {{if .DatasetInfo.snapshotAt}}
+            <div>
+                <div class="text-xs text-gray-500 mb-1">Snapshot Time</div>
+                <div class="font-mono text-xs text-black">{{.DatasetInfo.snapshotAt}}</div>
+            </div>
+            {{end}}
+        </div>
+    </div>
+    {{end}}
+</div>
+{{end}}
