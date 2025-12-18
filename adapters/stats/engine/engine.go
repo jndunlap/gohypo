@@ -3,17 +3,21 @@ package engine
 import (
 	"math"
 
+	"gohypo/adapters/stats/senses"
 	"gohypo/domain/dataset"
 )
 
 // StatsEngine provides statistical computation capabilities
 type StatsEngine struct {
+	senseEngine *senses.SenseEngine
 	// Engine can be extended with configuration, caching, etc.
 }
 
 // NewStatsEngine creates a new statistical engine
 func NewStatsEngine() *StatsEngine {
-	return &StatsEngine{}
+	return &StatsEngine{
+		senseEngine: senses.NewSenseEngine(),
+	}
 }
 
 // profileColumn profiles a single column from the matrix bundle
@@ -78,4 +82,3 @@ func (e *StatsEngine) profileColumn(bundle *dataset.MatrixBundle, colIndex int) 
 		"mean":             mean,
 	}
 }
-

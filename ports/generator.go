@@ -53,8 +53,9 @@ type GenerationAudit struct {
 // HypothesisGeneration is the full output of hypothesis generation.
 // Candidates are what the user can review; Audit is what the system persists for replay/debugging.
 type HypothesisGeneration struct {
-	Candidates []HypothesisCandidate `json:"candidates"`
-	Audit      GenerationAudit       `json:"audit"`
+	Candidates      []HypothesisCandidate `json:"candidates"`
+	DiscoveryBriefs interface{}           `json:"discovery_briefs,omitempty"`
+	Audit           GenerationAudit       `json:"audit"`
 }
 
 // HypothesisCandidate represents a generated hypothesis

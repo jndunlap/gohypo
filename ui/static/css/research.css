@@ -1,0 +1,522 @@
+/* Research UI Components - Live Discovery Command Interface */
+
+/* ===== Evidence Cards (Light Mode) ===== */
+.evidence-card {
+    background: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-left: 4px solid #E5E7EB;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    color: #1A1A1B;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.evidence-card:hover {
+    border-color: #D1D5DB;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+    transform: translateY(-1px);
+}
+
+.evidence-card.validated {
+    border-left-color: #10B981;
+    background: #FFFFFF;
+}
+
+.evidence-card.rejected {
+    border-left-color: #EF4444;
+    opacity: 0.95;
+}
+
+/* Status Indicator (Status Pills) */
+.status-indicator {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+}
+
+.status-icon {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 11px;
+    font-weight: 500;
+    font-family: 'Sora', sans-serif;
+}
+
+.status-icon.validated {
+    background-color: #ECFDF5;
+    color: #059669;
+    border: 1px solid #10B981;
+}
+
+.status-icon.rejected {
+    background-color: #FEE2E2;
+    color: #DC2626;
+    border: 1px solid #EF4444;
+}
+
+/* Claim Preview */
+.claim-preview {
+    margin-bottom: 12px;
+    padding-right: 100px; /* Space for status indicator */
+}
+
+.claim-text {
+    font-family: 'Sora', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #1A1A1B;
+    font-weight: 400;
+}
+
+/* Logic Badge (Status Pill) */
+.logic-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    margin-bottom: 8px;
+    font-family: 'Sora', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    background-color: #EFF6FF;
+    color: #2563EB;
+    border: 1px solid #2563EB;
+    border-radius: 16px;
+}
+
+/* Validation Summary (Status Pills) */
+.validation-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+    font-size: 11px;
+}
+
+.validation-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background-color: #F8F9FA;
+    border: 1px solid #E5E7EB;
+    color: #6B7280;
+    font-family: 'Sora', sans-serif;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+.validation-label {
+    font-weight: 600;
+    color: #2563EB;
+}
+
+.validation-item.detector {
+    background-color: #ECFDF5;
+    border-color: #10B981;
+    color: #059669;
+}
+
+.validation-item.scanner {
+    background-color: #EFF6FF;
+    border-color: #2563EB;
+    color: #1D4ED8;
+}
+
+.validation-item.proxy {
+    background-color: #FEE2E2;
+    border-color: #EF4444;
+    color: #DC2626;
+}
+
+/* Referee Summary (Status Pills) */
+.referee-summary {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+    font-size: 11px;
+    font-family: 'Sora', sans-serif;
+    color: #6B7280;
+}
+
+.referee-item {
+    padding: 4px 10px;
+    background-color: #F8F9FA;
+    border: 1px solid #E5E7EB;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+/* Timestamp & Processing Time */
+.timestamp,
+.processing-time {
+    font-size: 11px;
+    font-family: 'Sora', sans-serif;
+    color: #6B7280;
+    margin-top: 8px;
+    font-weight: 400;
+}
+
+/* ===== Evidence Ledger ===== */
+.evidence-ledger {
+    max-height: 600px;
+    overflow-y: auto;
+    padding-right: var(--space-2, 8px);
+}
+
+.empty-ledger {
+    text-align: center;
+    padding: 64px 16px;
+    color: #6B7280;
+}
+
+.empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.empty-title {
+    font-family: 'Sora', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    color: #1A1A1B;
+    margin-bottom: 8px;
+}
+
+.empty-subtitle {
+    font-family: 'Sora', sans-serif;
+    font-size: 14px;
+    color: #6B7280;
+    line-height: 1.5;
+}
+
+.load-more-container {
+    text-align: center;
+    padding: var(--space-4, 16px);
+}
+
+.load-more-btn {
+    padding: 10px 20px;
+    background: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    color: #1A1A1B;
+    font-family: 'Sora', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    text-transform: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 6px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.load-more-btn:hover {
+    border-color: #2563EB;
+    color: #2563EB;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* ===== Control Strip (Light Mode) ===== */
+.control-strip {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #FFFFFF;
+    border-top: 1px solid #E5E7EB;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    z-index: 100;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Global Stats */
+.global-stats {
+    display: flex;
+    gap: var(--space-4, 16px);
+    align-items: center;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.stat-label {
+    font-family: 'Sora', sans-serif;
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #6B7280;
+    letter-spacing: 0.05em;
+    font-weight: 500;
+}
+
+.stat-value {
+    font-family: 'Sora', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: #2563EB;
+}
+
+/* Progress Container */
+.progress-container {
+    flex: 1;
+    max-width: 400px;
+    min-width: 200px;
+}
+
+.progress-bar {
+    height: 6px;
+    background: #F3F4F6;
+    border: none;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 6px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #10B981, #059669);
+    transition: width 0.3s ease;
+    border-radius: 3px;
+}
+
+.progress-text {
+    font-family: 'Sora', sans-serif;
+    font-size: 12px;
+    color: #6B7280;
+    text-align: center;
+    font-weight: 400;
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    gap: var(--space-2, 8px);
+    align-items: center;
+}
+
+.primary-btn,
+.secondary-btn,
+.tertiary-btn {
+    padding: 10px 20px;
+    border: 1px solid #E5E7EB;
+    font-family: 'Sora', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    text-transform: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 6px;
+}
+
+.primary-btn {
+    background: #2563EB;
+    color: #FFFFFF;
+    border-color: #2563EB;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.primary-btn:hover:not(.disabled) {
+    background: #1D4ED8;
+    border-color: #1D4ED8;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.secondary-btn {
+    background: #FFFFFF;
+    color: #1A1A1B;
+    border-color: #E5E7EB;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.secondary-btn:hover:not(.disabled) {
+    background: #F8F9FA;
+    border-color: #D1D5DB;
+    color: #1A1A1B;
+}
+
+.tertiary-btn {
+    background: #F8F9FA;
+    color: #6B7280;
+    border-color: #E5E7EB;
+}
+
+.tertiary-btn:hover:not(.disabled) {
+    background: #F3F4F6;
+    border-color: #D1D5DB;
+    color: #1A1A1B;
+}
+
+.primary-btn.disabled,
+.secondary-btn.disabled,
+.tertiary-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* Spinner (Light Mode) */
+.spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(37, 99, 235, 0.2);
+    border-top-color: #2563EB;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.htmx-indicator {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.htmx-request .htmx-indicator {
+    opacity: 1;
+}
+
+/* ===== Research Ledger Zone ===== */
+.research-ledger-zone {
+    min-height: 300px;
+    max-height: 500px;
+}
+
+.zone-header {
+    margin-bottom: var(--space-3, 12px);
+}
+
+/* ===== Evidence Detail Modal ===== */
+.evidence-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(4px);
+}
+
+.modal-content {
+    position: relative;
+    background: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+    padding: 24px;
+    max-width: 800px;
+    max-height: 80vh;
+    overflow-y: auto;
+    z-index: 1001;
+    color: #1A1A1B;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #E5E7EB;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: #6B7280;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+    border-radius: 4px;
+}
+
+.modal-close:hover {
+    color: #1A1A1B;
+    background: #F3F4F6;
+}
+
+.modal-body {
+    font-family: 'Sora', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #1A1A1B;
+}
+
+/* ===== Responsive Design ===== */
+@media (max-width: 1024px) {
+    .control-strip {
+        flex-direction: column;
+        gap: var(--space-2, 8px);
+        padding: var(--space-2, 8px);
+    }
+    
+    .global-stats {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .progress-container {
+        max-width: 100%;
+        width: 100%;
+    }
+    
+    .action-buttons {
+        flex-wrap: wrap;
+        justify-content: center;
+        width: 100%;
+    }
+    
+    .action-buttons button {
+        flex: 1;
+        min-width: 120px;
+    }
+}
+
+@media (max-width: 768px) {
+    .evidence-card {
+        padding: var(--space-2, 8px);
+    }
+    
+    .claim-text {
+        font-size: 11px;
+    }
+    
+    .validation-summary {
+        font-size: 9px;
+    }
+}

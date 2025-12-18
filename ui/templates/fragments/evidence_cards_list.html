@@ -1,0 +1,44 @@
+{{/* Evidence Rows List Fragment - Table Design */}}
+<div id="research-ledger">
+  {{if .Hypotheses}}
+    <div class="w-full">
+      <table class="w-full divide-y divide-gray-200 bg-white">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Status</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hypothesis</th>
+            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Effect Size</th>
+            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-32">P-Value</th>
+            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Sample</th>
+            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          {{range .Hypotheses}}
+            {{template "fragments/evidence_card.html" .}}
+          {{end}}
+        </tbody>
+      </table>
+    </div>
+  {{else}}
+    <div class="text-center py-12">
+      <div class="text-4xl mb-4">🔬</div>
+      <h3 class="text-lg font-medium text-gray-900 mb-2">No Research Hypotheses Yet</h3>
+      <p class="text-gray-500">Click "Generate Research" to create hypothesis cards</p>
+    </div>
+  {{end}}
+
+  {{if .ShowLoadMore}}
+  <div class="text-center mt-8">
+    <button hx-get="/api/research/ledger?page={{.NextPage}}"
+            hx-target="#research-ledger"
+            hx-swap="beforeend"
+            hx-indicator="#load-more-spinner"
+            class="btn-secondary">
+      <span class="mr-2">Load More Hypotheses</span>
+      <span id="load-more-spinner" class="spinner hidden"></span>
+    </button>
+  </div>
+  {{end}}
+</div>
+

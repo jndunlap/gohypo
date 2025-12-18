@@ -7,16 +7,17 @@ import (
 
 // FieldProfile contains the complete statistical profile of a field_key
 type FieldProfile struct {
-	FieldKey      string            `json:"field_key"`
-	Source        string            `json:"source"`
-	SampleSize    int               `json:"sample_size"`
-	InferredType  InferredType      `json:"inferred_type"`
-	Cardinality   CardinalityStats  `json:"cardinality"`
-	MissingStats  MissingStats      `json:"missing_stats"`
-	TypeSpecific  TypeSpecificStats `json:"type_specific"`
-	TemporalStats TemporalStats     `json:"temporal_stats"`
-	QualityScore  float64           `json:"quality_score"` // 0-1, higher is better
-	ComputedAt    core.Timestamp    `json:"computed_at"`
+	FieldKey       string            `json:"field_key"`
+	Source         string            `json:"source"`
+	SampleSize     int               `json:"sample_size"`
+	InferredType   InferredType      `json:"inferred_type"`
+	TypeConfidence float64           `json:"type_confidence"` // 0-1 confidence in type inference
+	Cardinality    CardinalityStats  `json:"cardinality"`
+	MissingStats   MissingStats      `json:"missing_stats"`
+	TypeSpecific   TypeSpecificStats `json:"type_specific"`
+	TemporalStats  TemporalStats     `json:"temporal_stats"`
+	QualityScore   float64           `json:"quality_score"` // 0-1, higher is better
+	ComputedAt     core.Timestamp    `json:"computed_at"`
 }
 
 // InferredType represents the automatically detected data type
@@ -106,19 +107,31 @@ type TemporalStats struct {
 
 // ProfilingConfig defines the profiling parameters
 type ProfilingConfig struct {
-	SampleSize         int     `json:"sample_size"`          // How many events to sample
-	TypeThreshold      float64 `json:"type_threshold"`       // % success for type inference
-	CategoricalMaxCard int     `json:"categorical_max_card"` // Max categories before truncation
-	MinQualityScore    float64 `json:"min_quality_score"`    // Minimum acceptable quality
+	SampleSize                int     `json:"sample_size"`                 // How many events to sample
+	TypeThreshold             float64 `json:"type_threshold"`              // % success for type inference
+	CategoricalMaxCard        int     `json:"categorical_max_card"`        // Max categories before truncation
+	MinQualityScore           float64 `json:"min_quality_score"`           // Minimum acceptable quality
+	NumericThreshold          float64 `json:"numeric_threshold"`           // % of values that must parse as numbers (default 0.95)
+	BooleanThreshold          float64 `json:"boolean_threshold"`           // % of values that must parse as booleans (default 0.98)
+	TimestampThreshold        float64 `json:"timestamp_threshold"`         // % of values that must parse as timestamps (default 0.90)
+	AmbiguousNumericThreshold float64 `json:"ambiguous_numeric_threshold"` // % for ambiguous numeric detection (default 0.8)
+	CategoricalUniqueRatio    float64 `json:"categorical_unique_ratio"`    // Max unique ratio for categorical codes (default 0.3)
+	CategoricalIntegerRatio   float64 `json:"categorical_integer_ratio"`   // Min integer ratio for categorical codes (default 0.8)
 }
 
 // DefaultProfilingConfig returns sensible defaults
 func DefaultProfilingConfig() ProfilingConfig {
 	return ProfilingConfig{
-		SampleSize:         10000,
-		TypeThreshold:      0.8, // 80% of values must parse successfully
-		CategoricalMaxCard: 100, // Cap at 100 categories
-		MinQualityScore:    0.3, // Require at least 30% quality
+		SampleSize:                10000,
+		TypeThreshold:             0.8,  // 80% of values must parse successfully
+		CategoricalMaxCard:        100,  // Cap at 100 categories
+		MinQualityScore:           0.3,  // Require at least 30% quality
+		NumericThreshold:          0.95, // 95% must parse as numbers for high confidence
+		BooleanThreshold:          0.98, // 98% must parse as booleans for high confidence
+		TimestampThreshold:        0.90, // 90% must parse as timestamps
+		AmbiguousNumericThreshold: 0.8,  // 80% for ambiguous numeric detection
+		CategoricalUniqueRatio:    0.3,  // Max 30% unique ratio for categorical codes
+		CategoricalIntegerRatio:   0.8,  // Min 80% integer ratio for categorical codes
 	}
 }
 

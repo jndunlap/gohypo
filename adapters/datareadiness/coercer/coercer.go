@@ -124,17 +124,70 @@ func (c *TypeCoercer) coerceToString(strVal string) ingestion.Value {
 }
 
 // tryParseNumeric attempts to parse as numeric with strict rules
+// Handles international formats: parentheses for negatives, European decimals, currency symbols
 func (c *TypeCoercer) tryParseNumeric(strVal string) (ingestion.Value, bool) {
 	if strVal == "" {
 		return ingestion.Value{}, false
 	}
 
-	// Remove common numeric formatting
-	cleanVal := strings.ReplaceAll(strVal, ",", "")
-	cleanVal = strings.ReplaceAll(cleanVal, "$", "")
+	// Trim whitespace
+	cleanVal := strings.TrimSpace(strVal)
+
+	// Handle parentheses for negative numbers: (123) -> -123
+	isNegative := false
+	if strings.HasPrefix(cleanVal, "(") && strings.HasSuffix(cleanVal, ")") {
+		cleanVal = strings.TrimPrefix(cleanVal, "(")
+		cleanVal = strings.TrimSuffix(cleanVal, ")")
+		isNegative = true
+	}
+
+	// Remove currency symbols: $, €, £, ¥
+	currencySymbols := []string{"$", "€", "£", "¥", "USD", "EUR", "GBP", "JPY"}
+	for _, symbol := range currencySymbols {
+		cleanVal = strings.ReplaceAll(cleanVal, symbol, "")
+	}
+	cleanVal = strings.TrimSpace(cleanVal)
+
+	// Remove percentage sign
 	cleanVal = strings.ReplaceAll(cleanVal, "%", "")
 
-	// Try parsing as float
+	// Detect European/French number format (1.234,56 or 1 234,56)
+	// Check if there's a comma that might be a decimal separator
+	hasComma := strings.Contains(cleanVal, ",")
+	hasPeriod := strings.Contains(cleanVal, ".")
+	hasSpace := strings.Contains(cleanVal, " ")
+
+	// European format: period as thousands separator, comma as decimal
+	// French format: space as thousands separator, comma as decimal
+	if hasComma && (hasPeriod || hasSpace) {
+		// Count digits after comma - if <= 2, likely European decimal
+		commaIdx := strings.LastIndex(cleanVal, ",")
+		afterComma := cleanVal[commaIdx+1:]
+		if len(afterComma) <= 3 && strings.Count(afterComma, "0123456789") == len(afterComma) {
+			// Replace comma with period for decimal, remove periods/spaces as thousands separators
+			cleanVal = strings.ReplaceAll(cleanVal, ".", "")
+			cleanVal = strings.ReplaceAll(cleanVal, " ", "")
+			cleanVal = strings.ReplaceAll(cleanVal, ",", ".")
+		} else {
+			// Comma is likely thousands separator, remove it
+			cleanVal = strings.ReplaceAll(cleanVal, ",", "")
+		}
+	} else if hasComma && !hasPeriod {
+		// Only comma present - could be decimal separator (European) or thousands separator
+		// Try as decimal first (more common in European format)
+		cleanVal = strings.ReplaceAll(cleanVal, ",", ".")
+	} else {
+		// Standard format: remove commas and spaces (thousands separators)
+		cleanVal = strings.ReplaceAll(cleanVal, ",", "")
+		cleanVal = strings.ReplaceAll(cleanVal, " ", "")
+	}
+
+	// Apply negative sign if parentheses were detected
+	if isNegative {
+		cleanVal = "-" + cleanVal
+	}
+
+	// Try parsing as float (handles scientific notation automatically)
 	if val, err := strconv.ParseFloat(cleanVal, 64); err == nil {
 		// Additional validation: not infinity, not NaN
 		if !math.IsInf(val, 0) && !math.IsNaN(val) {

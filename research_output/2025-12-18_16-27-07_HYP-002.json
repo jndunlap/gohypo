@@ -1,0 +1,43 @@
+{
+  "id": "HYP-002",
+  "business_hypothesis": "Higher values of campaign_sub_metric_2 are associated with higher conversion rates.",
+  "science_hypothesis": "A positive monotonic association exists (Spearman rho ≥ 0.40) between campaign_sub_metric_2 and conversion_rate, robust to controls for top_funnel_spend_usd and date effects.",
+  "null_case": "No monotonic relationship: Spearman rho ∈ [-0.10, 0.10] or p \u003e 0.05, and partial Spearman controlling for spend has rho ≈ 0.",
+  "validation_methods": [
+    {
+      "type": "Detector",
+      "method_name": "Monotonicity_Spline_Checker",
+      "execution_plan": "Compute Spearman rho between campaign_sub_metric_2 and conversion_rate and fit a monotonic spline, then compute a partial Spearman controlling for top_funnel_spend_usd and date fixed effects. Pass if Spearman rho ≥ 0.40 and partial rho ≥ 0.30 with p \u003c 0.05 and the spline shows a non-decreasing slope across the central 80% of campaign_sub_metric_2 values."
+    },
+    {
+      "type": "Scanner",
+      "method_name": "Behavioral_Cohort_Scanner",
+      "execution_plan": "Bin campaign_sub_metric_2 into quintiles, compute mean conversion_rate per quintile, and run a Cochran-Armitage trend test or linear regression on quintile medians to detect monotonic trend. Pass if conversion_rate increases monotonically across quintiles with trend test p \u003c 0.05 and the relative increase top vs bottom quintile ≥ 10%."
+    },
+    {
+      "type": "Referee",
+      "method_name": "Bootstrap_Rho_Referee",
+      "execution_plan": "Bootstrap the paired samples 10,000 times to generate a distribution of Spearman rho and compute 95% and 99% confidence intervals while checking stability across random seeds and subsamples. Pass if the 95% CI lower bound ≥ 0.20, the 99% CI lower bound ≥ 0.10, and the bootstrap stability (fraction of bootstraps with rho \u003e 0) ≥ 0.85."
+    }
+  ],
+  "referee_gates": {
+    "confidence_target": 0.99,
+    "stability_threshold": 0.85
+  },
+  "validated": true,
+  "rejected": false,
+  "effect_size": 1.340898763601577,
+  "p_value": 0.038192109558256825,
+  "sample_size": 8011,
+  "created_at": "2025-12-18T16:27:07.4863755-05:00",
+  "processing_time": 0,
+  "metadata": {
+    "model": "gpt-5-mini",
+    "session_id": "4fe8decd-fb49-466c-8484-9b9ba1ba69e2"
+  },
+  "validation_strategy": {
+    "detector": "",
+    "scanner": "",
+    "proxy": ""
+  }
+}

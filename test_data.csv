@@ -1,0 +1,6 @@
+customer_id,age,income,region,is_active,purchase_count
+C001,25,45000,North,yes,5
+C002,34,78000,South,no,12
+C003,45,120000,East,yes,8
+C004,28,56000,West,yes,3
+C005,52,95000,North,no,15

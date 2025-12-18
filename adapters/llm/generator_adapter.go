@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"gohypo/domain/core"
+	"gohypo/domain/discovery"
 	"gohypo/domain/stats"
 	"gohypo/ports"
 )
@@ -52,26 +53,30 @@ func NewGeneratorAdapter(config Config, fallbackGen ports.GeneratorPort) (*Gener
 
 // relationshipWithScore holds a relationship and its score for sorting
 type relationshipWithScore struct {
-	Payload stats.RelationshipPayload
-	Score   float64
+	Payload      stats.RelationshipPayload
+	Score        float64
+	SenseResults []stats.SenseResult
 }
 
 // ExtractTopRelationships filters and ranks relationships by statistical strength
+// Returns relationships, their sense results, and a map from relationship keys to artifact IDs
 func (g *GeneratorAdapter) ExtractTopRelationships(
 	artifacts []core.Artifact,
 	maxCount int,
-) ([]stats.RelationshipPayload, map[string]core.ArtifactID, error) {
+) ([]stats.RelationshipPayload, [][]stats.SenseResult, map[string]core.ArtifactID, error) {
 
 	relationships := []relationshipWithScore{}
 	relKeyToID := make(map[string]core.ArtifactID)
 
-	// Extract relationships matching heuristic pattern
+	// Extract relationships with sense results
 	for _, artifact := range artifacts {
 		if artifact.Kind != core.ArtifactRelationship {
 			continue
 		}
 
 		var relPayload stats.RelationshipPayload
+		var senseResults []stats.SenseResult
+
 		switch p := artifact.Payload.(type) {
 		case stats.RelationshipPayload:
 			relPayload = p
@@ -96,25 +101,55 @@ func (g *GeneratorAdapter) ExtractTopRelationships(
 				SampleSize: int(sampleSize),
 				FamilyID:   core.Hash(familyID),
 			}
+
+			// Extract sense results if present
+			if senseData, ok := p["sense_results"].([]interface{}); ok {
+				senseResults = make([]stats.SenseResult, 0, len(senseData))
+				for _, s := range senseData {
+					if senseMap, ok := s.(map[string]interface{}); ok {
+						sense := stats.SenseResult{
+							SenseName:   getString(senseMap, "sense_name"),
+							EffectSize:  getFloat64(senseMap, "effect_size"),
+							PValue:      getFloat64(senseMap, "p_value"),
+							Confidence:  getFloat64(senseMap, "confidence"),
+							Signal:      getString(senseMap, "signal"),
+							Description: getString(senseMap, "description"),
+						}
+						if metadata, ok := senseMap["metadata"].(map[string]interface{}); ok {
+							sense.Metadata = metadata
+						}
+						senseResults = append(senseResults, sense)
+					}
+				}
+			}
 		default:
 			continue
 		}
 
-		// GUARDRAIL: Only statistically significant relationships
-		if relPayload.PValue > 0.05 || relPayload.EffectSize < 0.1 {
-			continue
+		// ENHANCED GUARDRAIL: Check both traditional significance AND sense results
+		// If any sense shows strong signal, include it even if traditional test is marginal
+		hasSenseSignal := false
+		for _, sense := range senseResults {
+			if sense.Confidence > 0.7 && sense.Signal != "weak" {
+				hasSenseSignal = true
+				break
+			}
 		}
 
-		// Build stable relationship key for citation lookup
-		relKey := g.buildRelationshipKey(relPayload)
-		relKeyToID[relKey] = core.ArtifactID(artifact.ID)
+		// Keep if either: (1) traditional test significant, or (2) strong sense signal
+		if relPayload.PValue <= 0.05 || hasSenseSignal {
+			// Build stable relationship key for citation lookup
+			relKey := g.buildRelationshipKey(relPayload)
+			relKeyToID[relKey] = core.ArtifactID(artifact.ID)
 
-		// Score relationship (same as heuristic)
-		score := g.scoreRelationship(relPayload)
-		relationships = append(relationships, relationshipWithScore{
-			Payload: relPayload,
-			Score:   score,
-		})
+			// Enhanced scoring that considers sense results
+			score := g.scoreRelationshipWithSenses(relPayload, senseResults)
+			relationships = append(relationships, relationshipWithScore{
+				Payload:      relPayload,
+				Score:        score,
+				SenseResults: senseResults,
+			})
+		}
 	}
 
 	// Sort by score (descending)
@@ -127,13 +162,15 @@ func (g *GeneratorAdapter) ExtractTopRelationships(
 		relationships = relationships[:maxCount]
 	}
 
-	// Extract payloads
+	// Extract payloads and sense results
 	result := make([]stats.RelationshipPayload, len(relationships))
+	senseResults := make([][]stats.SenseResult, len(relationships))
 	for i, rel := range relationships {
 		result[i] = rel.Payload
+		senseResults[i] = rel.SenseResults
 	}
 
-	return result, relKeyToID, nil
+	return result, senseResults, relKeyToID, nil
 }
 
 // buildRelationshipKey creates stable key matching artifacts.relationshipKey() pattern
@@ -153,28 +190,96 @@ func (g *GeneratorAdapter) scoreRelationship(rel stats.RelationshipPayload) floa
 	return significanceScore*0.5 + effectScore*0.5
 }
 
+// scoreRelationshipWithSenses computes enhanced score using all five senses
+func (g *GeneratorAdapter) scoreRelationshipWithSenses(rel stats.RelationshipPayload, senses []stats.SenseResult) float64 {
+	baseScore := g.scoreRelationship(rel)
+
+	if len(senses) == 0 {
+		return baseScore
+	}
+
+	// Calculate average confidence across all senses
+	totalConfidence := 0.0
+	significantSenses := 0
+
+	for _, sense := range senses {
+		if sense.PValue < 0.05 {
+			significantSenses++
+		}
+		totalConfidence += sense.Confidence
+	}
+
+	avgConfidence := totalConfidence / float64(len(senses))
+
+	// Bonus for multiple significant senses (evidence agreement)
+	agreementBonus := float64(significantSenses) / float64(len(senses)) * 0.2
+
+	// Weighted combination: 50% base score, 30% avg confidence, 20% agreement
+	return baseScore*0.5 + avgConfidence*0.3 + agreementBonus
+}
+
+// Helper functions for extracting from interface maps
+func getString(m map[string]interface{}, key string) string {
+	if v, ok := m[key].(string); ok {
+		return v
+	}
+	return ""
+}
+
+func getFloat64(m map[string]interface{}, key string) float64 {
+	if v, ok := m[key].(float64); ok {
+		return v
+	}
+	return 0.0
+}
+
+// buildSenseSummary creates a human-readable summary of sense results
+func (g *GeneratorAdapter) buildSenseSummary(senses []stats.SenseResult) string {
+	if len(senses) == 0 {
+		return "No sense results available"
+	}
+
+	parts := []string{}
+	for _, sense := range senses {
+		if sense.PValue < 0.05 {
+			parts = append(parts, fmt.Sprintf("%s: %s signal (p=%.3f, effect=%.3f)",
+				sense.SenseName, sense.Signal, sense.PValue, sense.EffectSize))
+		}
+	}
+
+	if len(parts) == 0 {
+		return "No significant signals detected"
+	}
+
+	return strings.Join(parts, "; ")
+}
+
 // PromptData structures the input for LLM
 type PromptData struct {
-	Relationships []relationshipForPrompt `json:"relationships"`
-	Variables     []string                `json:"variables"` // Unique variable names
-	MaxHypotheses int                     `json:"max_hypotheses"`
-	RigorProfile  string                  `json:"rigor_profile"` // "basic", "standard", "decision"
+	Relationships   []relationshipForPrompt    `json:"relationships"`
+	Variables       []string                   `json:"variables"` // Unique variable names
+	DiscoveryBriefs []discovery.DiscoveryBrief `json:"discovery_briefs,omitempty"`
+	MaxHypotheses   int                        `json:"max_hypotheses"`
+	RigorProfile    string                     `json:"rigor_profile"` // "basic", "standard", "decision"
 }
 
 type relationshipForPrompt struct {
-	VariableX  string  `json:"variable_x"`
-	VariableY  string  `json:"variable_y"`
-	TestType   string  `json:"test_type"`
-	EffectSize float64 `json:"effect_size"`
-	PValue     float64 `json:"p_value"`
-	QValue     float64 `json:"q_value,omitempty"`
-	SampleSize int     `json:"sample_size"`
-	RelKey     string  `json:"rel_key"` // For citation
+	VariableX    string              `json:"variable_x"`
+	VariableY    string              `json:"variable_y"`
+	TestType     string              `json:"test_type"`
+	EffectSize   float64             `json:"effect_size"`
+	PValue       float64             `json:"p_value"`
+	QValue       float64             `json:"q_value,omitempty"`
+	SampleSize   int                 `json:"sample_size"`
+	RelKey       string              `json:"rel_key"`                 // For citation
+	SenseResults []stats.SenseResult `json:"sense_results,omitempty"` // Five statistical senses
+	SenseSummary string              `json:"sense_summary,omitempty"` // Human-readable summary
 }
 
-// BuildPrompt creates LLM prompt from relationships
+// BuildPrompt creates LLM prompt from relationships with sense results
 func (g *GeneratorAdapter) BuildPrompt(
 	relationships []stats.RelationshipPayload,
+	senseResults [][]stats.SenseResult,
 	relKeyToID map[string]core.ArtifactID,
 	req ports.HypothesisRequest,
 ) (string, error) {
@@ -191,27 +296,36 @@ func (g *GeneratorAdapter) BuildPrompt(
 	}
 	sort.Strings(variables) // Deterministic ordering
 
-	// Convert relationships to prompt format
+	// Convert relationships to prompt format with sense results
 	relForPrompt := make([]relationshipForPrompt, len(relationships))
 	for i, rel := range relationships {
 		relKey := g.buildRelationshipKey(rel)
+
+		var senses []stats.SenseResult
+		if i < len(senseResults) {
+			senses = senseResults[i]
+		}
+
 		relForPrompt[i] = relationshipForPrompt{
-			VariableX:  string(rel.VariableX),
-			VariableY:  string(rel.VariableY),
-			TestType:   string(rel.TestType),
-			EffectSize: rel.EffectSize,
-			PValue:     rel.PValue,
-			QValue:     rel.QValue,
-			SampleSize: rel.SampleSize,
-			RelKey:     relKey,
+			VariableX:    string(rel.VariableX),
+			VariableY:    string(rel.VariableY),
+			TestType:     string(rel.TestType),
+			EffectSize:   rel.EffectSize,
+			PValue:       rel.PValue,
+			QValue:       rel.QValue,
+			SampleSize:   rel.SampleSize,
+			RelKey:       relKey,
+			SenseResults: senses,
+			SenseSummary: g.buildSenseSummary(senses),
 		}
 	}
 
 	promptData := PromptData{
-		Relationships: relForPrompt,
-		Variables:     variables,
-		MaxHypotheses: req.MaxHypotheses,
-		RigorProfile:  string(req.RigorProfile),
+		Relationships:   relForPrompt,
+		Variables:       variables,
+		DiscoveryBriefs: topDiscoveryBriefsForPrompt(relationships, senseResults),
+		MaxHypotheses:   req.MaxHypotheses,
+		RigorProfile:    string(req.RigorProfile),
 	}
 
 	jsonData, err := json.MarshalIndent(promptData, "", "  ")
@@ -221,8 +335,19 @@ func (g *GeneratorAdapter) BuildPrompt(
 
 	prompt := fmt.Sprintf(`You are a causal inference expert generating testable hypotheses from statistical relationships.
 
-Statistical Relationships:
+Statistical Relationships (with Five Statistical Senses):
 %s
+
+CRITICAL CONTEXT - Five Statistical Senses:
+Each relationship includes results from five mathematical senses that detect different patterns:
+1. **Mutual Information**: Detects non-linear relationships that correlation misses
+2. **Welch's t-Test**: Identifies behavioral differences between groups
+3. **Chi-Square**: Finds categorical distribution anomalies  
+4. **Spearman**: Handles rank-order relationships robust to outliers
+5. **Cross-Correlation**: Discovers temporal dependencies with lag detection
+
+Use the "sense_summary" field for each relationship to understand the full pattern.
+Strong signals from multiple senses indicate robust, multi-dimensional relationships.
 
 Domain Context:
 - Variables: %s
@@ -236,7 +361,7 @@ Requirements:
   - effect_key: variable that is likely affected (must exist in Variables list)
   - mechanism_category: one of [direct_causal, effect_modification, confounding_path, proxy_relationship, measurement_bias]
   - confounder_keys: array of variable names to control for (must exist in Variables list)
-  - rationale: 2-3 sentence explanation of why this might be causal
+  - rationale: 2-3 sentence explanation leveraging sense results (mention which senses support causality)
   - suggested_rigor: one of [basic, standard, decision]
   - supporting_artifacts: array of relationship keys (use "rel_key" from relationships above)
 
@@ -248,6 +373,20 @@ Output ONLY a JSON array of hypothesis candidates, no other text.`,
 		req.RigorProfile)
 
 	return prompt, nil
+}
+
+func topDiscoveryBriefsForPrompt(relationships []stats.RelationshipPayload, senseResults [][]stats.SenseResult) []discovery.DiscoveryBrief {
+	briefs := discovery.BuildDiscoveryBriefsFromRelationships("", "", relationships, senseResults)
+	if len(briefs) == 0 {
+		return nil
+	}
+	sort.Slice(briefs, func(i, j int) bool {
+		return briefs[i].ConfidenceScore > briefs[j].ConfidenceScore
+	})
+	if len(briefs) > 5 {
+		briefs = briefs[:5]
+	}
+	return briefs
 }
 
 // LLMCandidate is the raw LLM response structure
@@ -402,8 +541,8 @@ func (g *GeneratorAdapter) GenerateHypotheses(
 	ctx, cancel := context.WithTimeout(ctx, g.config.Timeout)
 	defer cancel()
 
-	// Extract top relationships
-	relationships, relKeyToID, err := g.ExtractTopRelationships(
+	// Extract top relationships with sense results
+	relationships, senseResults, relKeyToID, err := g.ExtractTopRelationships(
 		req.Context.RelationshipArts,
 		req.MaxHypotheses*2, // Get 2x for filtering
 	)
@@ -434,8 +573,8 @@ func (g *GeneratorAdapter) GenerateHypotheses(
 		validVariables[rel.VariableY] = true
 	}
 
-	// Build prompt
-	prompt, err := g.BuildPrompt(relationships, relKeyToID, req)
+	// Build prompt with sense results
+	prompt, err := g.BuildPrompt(relationships, senseResults, relKeyToID, req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build prompt: %w", err)
 	}
@@ -481,7 +620,8 @@ func (g *GeneratorAdapter) GenerateHypotheses(
 	}
 
 	return &ports.HypothesisGeneration{
-		Candidates: validated,
+		Candidates:      validated,
+		DiscoveryBriefs: topDiscoveryBriefsForPrompt(relationships, senseResults),
 		Audit: ports.GenerationAudit{
 			GeneratorType: "llm",
 			Model:         g.config.Model,

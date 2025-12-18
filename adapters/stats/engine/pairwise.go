@@ -4,6 +4,7 @@ import (
 	"context"
 	"math"
 
+	"gohypo/adapters/stats/senses"
 	"gohypo/domain/core"
 	"gohypo/domain/dataset"
 	"gohypo/domain/stage"
@@ -11,15 +12,16 @@ import (
 
 // RelationshipArtifact represents a statistical relationship (internal to engine)
 type RelationshipArtifact struct {
-	VariableX        core.VariableKey `json:"variable_x"`
-	VariableY        core.VariableKey `json:"variable_y"`
-	TestUsed         string           `json:"test_used"`
-	EffectSize       float64          `json:"effect_size"`
-	PValue           float64          `json:"p_value"`
-	PermutationP     float64          `json:"permutation_p"`
-	StabilityScore   float64          `json:"stability_score"`
-	PhantomBenchmark float64          `json:"phantom_benchmark"`
-	CohortSize       int              `json:"cohort_size"`
+	VariableX        core.VariableKey     `json:"variable_x"`
+	VariableY        core.VariableKey     `json:"variable_y"`
+	TestUsed         string               `json:"test_used"`
+	EffectSize       float64              `json:"effect_size"`
+	PValue           float64              `json:"p_value"`
+	PermutationP     float64              `json:"permutation_p"`
+	StabilityScore   float64              `json:"stability_score"`
+	PhantomBenchmark float64              `json:"phantom_benchmark"`
+	CohortSize       int                  `json:"cohort_size"`
+	SenseResults     []senses.SenseResult `json:"sense_results,omitempty"` // All five statistical senses
 }
 
 // executeProfileStage profiles the dataset columns
@@ -49,12 +51,15 @@ func (e *StatsEngine) executeProfileStage(ctx context.Context, bundle *dataset.M
 	return result, nil
 }
 
-// executePairwiseStage runs pairwise statistical tests
+// executePairwiseStage runs pairwise statistical tests with all five senses
 func (e *StatsEngine) executePairwiseStage(ctx context.Context, bundle *dataset.MatrixBundle, spec stage.StageSpec) (*stage.StageResult, error) {
 	tests, ok := spec.Config["tests"].([]string)
 	if !ok {
 		tests = []string{"pearson"} // default
 	}
+
+	// Initialize sense engine for multi-dimensional analysis
+	senseEngine := senses.NewSenseEngine()
 
 	result := &stage.StageResult{
 		StageName: spec.Name,
@@ -79,23 +84,46 @@ func (e *StatsEngine) executePairwiseStage(ctx context.Context, bundle *dataset.
 			xData, _ := bundle.GetColumnData(metaX.VariableKey)
 			yData, _ := bundle.GetColumnData(metaY.VariableKey)
 
+			// Run traditional test for backward compatibility
 			relArtifact := e.runPairwiseTest(testName, metaX.VariableKey, metaY.VariableKey, xData, yData, bundle.RowCount())
 
-			// Convert to core.Artifact
+			// Run all five statistical senses for comprehensive analysis
+			relArtifact.SenseResults = senseEngine.AnalyzeAll(ctx, xData, yData, metaX.VariableKey, metaY.VariableKey)
+
+			// Convert to core.Artifact with enriched sense data
+			payload := map[string]interface{}{
+				"variable_x":        string(relArtifact.VariableX),
+				"variable_y":        string(relArtifact.VariableY),
+				"test_used":         relArtifact.TestUsed,
+				"effect_size":       relArtifact.EffectSize,
+				"p_value":           relArtifact.PValue,
+				"permutation_p":     relArtifact.PermutationP,
+				"stability_score":   relArtifact.StabilityScore,
+				"phantom_benchmark": relArtifact.PhantomBenchmark,
+				"cohort_size":       relArtifact.CohortSize,
+			}
+
+			// Add sense results to payload
+			if len(relArtifact.SenseResults) > 0 {
+				senseData := make([]map[string]interface{}, len(relArtifact.SenseResults))
+				for k, sense := range relArtifact.SenseResults {
+					senseData[k] = map[string]interface{}{
+						"sense_name":  sense.SenseName,
+						"effect_size": sense.EffectSize,
+						"p_value":     sense.PValue,
+						"confidence":  sense.Confidence,
+						"signal":      sense.Signal,
+						"description": sense.Description,
+						"metadata":    sense.Metadata,
+					}
+				}
+				payload["sense_results"] = senseData
+			}
+
 			artifact := core.Artifact{
-				ID:   core.NewID(),
-				Kind: core.ArtifactRelationship,
-				Payload: map[string]interface{}{
-					"variable_x":        string(relArtifact.VariableX),
-					"variable_y":        string(relArtifact.VariableY),
-					"test_used":         relArtifact.TestUsed,
-					"effect_size":       relArtifact.EffectSize,
-					"p_value":           relArtifact.PValue,
-					"permutation_p":     relArtifact.PermutationP,
-					"stability_score":   relArtifact.StabilityScore,
-					"phantom_benchmark": relArtifact.PhantomBenchmark,
-					"cohort_size":       relArtifact.CohortSize,
-				},
+				ID:        core.NewID(),
+				Kind:      core.ArtifactRelationship,
+				Payload:   payload,
 				CreatedAt: core.Now(),
 			}
 			artifacts = append(artifacts, artifact)
@@ -132,18 +160,26 @@ func (e *StatsEngine) selectTest(typeX, typeY dataset.StatisticalType, available
 }
 
 // runPairwiseTest executes a specific statistical test
+// Uses real sense implementations for accurate results
 func (e *StatsEngine) runPairwiseTest(testName string, varX, varY core.VariableKey, x, y []float64, n int) RelationshipArtifact {
 	var effectSize, pValue float64
+	ctx := context.Background()
 
 	switch testName {
 	case "pearson":
 		effectSize, pValue = e.pearsonCorrelation(x, y)
 	case "spearman":
-		effectSize, pValue = e.spearmanCorrelation(x, y)
+		spearmanSense := senses.NewSpearmanSense()
+		result := spearmanSense.Analyze(ctx, x, y, varX, varY)
+		effectSize, pValue = result.EffectSize, result.PValue
 	case "chisquare":
-		effectSize, pValue = e.chiSquareTest(x, y)
+		chiSense := senses.NewChiSquareSense()
+		result := chiSense.Analyze(ctx, x, y, varX, varY)
+		effectSize, pValue = result.EffectSize, result.PValue
 	case "ttest":
-		effectSize, pValue = e.tTest(x, y)
+		tSense := senses.NewWelchTTestSense()
+		result := tSense.Analyze(ctx, x, y, varX, varY)
+		effectSize, pValue = result.EffectSize, result.PValue
 	default:
 		effectSize, pValue = 0, 1.0
 	}
@@ -193,21 +229,7 @@ func (e *StatsEngine) pearsonCorrelation(x, y []float64) (float64, float64) {
 	return r, pValue
 }
 
-// Helper functions (simplified implementations)
-func (e *StatsEngine) spearmanCorrelation(x, y []float64) (float64, float64) {
-	// Simplified Spearman implementation
-	return e.pearsonCorrelation(x, y)
-}
-
-func (e *StatsEngine) chiSquareTest(x, y []float64) (float64, float64) {
-	// Simplified chi-square implementation
-	return 0.5, 0.05
-}
-
-func (e *StatsEngine) tTest(x, y []float64) (float64, float64) {
-	// Simplified t-test implementation
-	return 0.3, 0.01
-}
+// Dead code removed - now using real sense implementations from adapters/stats/senses/
 
 func (e *StatsEngine) tCDF(t float64, df int) float64 {
 	// Simplified t-distribution CDF approximation

@@ -1,0 +1,377 @@
+You are a Lead Research Architect for the GoHypo Engine.
+
+CONTEXT: We are in "Greenfield" status. Our engine can read data, but it doesn't know how to test anything yet. You are designing the first blueprints for our research laboratory.
+
+INDUSTRY CONTEXT (Forensic Scout Analysis):
+This is transportation/logistics (freight/trucking) billing data from a TMS capturing per-order invoice rows — fares like linehaul_chg and other_charge, total_charges, payment_method and revenue codes alongside shipment metadata (order_id, customer_id, distance_um, weight_um) and billing workflow flags (billing_user_id, printed, invoiced_flag, canceled). The primary friction is malformed/empty date fields (bill_date, ship_date, delivery_date showing '00:00.0') which will break billing cycle reconciliation and downstream reporting; operational status flags like invoiced_flag and canceled are the key variables that determine whether the monetary fields should be recognized.
+
+
+
+INPUT DATA:
+{
+  "discovery_briefs": null,
+  "field_metadata": [
+    {
+      "name": "bill_type",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "linehaul_chg_r",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "other_charge_n",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "total_charges_c",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "total_charges_d",
+      "semantic_type": "",
+      "data_type": "string"
+    },
+    {
+      "name": "excisetax_total_n",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "totalcharge_and_excisetax_d",
+      "semantic_type": "",
+      "data_type": "string"
+    },
+    {
+      "name": "is_dedicated_bill",
+      "semantic_type": "",
+      "data_type": "boolean"
+    },
+    {
+      "name": "bill_date",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "delivery_date",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "entered_user_id",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "id",
+      "semantic_type": "",
+      "data_type": "string"
+    },
+    {
+      "name": "linehaul_chg_d",
+      "semantic_type": "",
+      "data_type": "string"
+    },
+    {
+      "name": "is_summary_bill",
+      "semantic_type": "",
+      "data_type": "boolean"
+    },
+    {
+      "name": "billing_user_id",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "other_charge",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "other_charge_c",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "totalcharge_and_excisetax_c",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "is_split_bill",
+      "semantic_type": "",
+      "data_type": "boolean"
+    },
+    {
+      "name": "linehaul_chg_c",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "other_charge_r",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "payment_method",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "ship_date",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "excisetax_total_c",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "excisetax_total_r",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "totalcharge_and_excisetax_n",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "company_id",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "order_id",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "ready_to_process",
+      "semantic_type": "",
+      "data_type": "boolean"
+    },
+    {
+      "name": "rebilled",
+      "semantic_type": "",
+      "data_type": "boolean"
+    },
+    {
+      "name": "revenue_id",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "total_charges_n",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "total_charges_r",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "excisetax_total_d",
+      "semantic_type": "",
+      "data_type": "string"
+    },
+    {
+      "name": "distance_um",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "invoiced_flag",
+      "semantic_type": "",
+      "data_type": "boolean"
+    },
+    {
+      "name": "post_module",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "total_charges",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "weight_um",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "excisetax_total",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "totalcharge_and_excisetax",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "lock_miles",
+      "semantic_type": "",
+      "data_type": "boolean"
+    },
+    {
+      "name": "canceled",
+      "semantic_type": "",
+      "data_type": "boolean"
+    },
+    {
+      "name": "customer_id",
+      "semantic_type": "",
+      "data_type": "string"
+    },
+    {
+      "name": "linehaul_chg",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "linehaul_chg_n",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "printed",
+      "semantic_type": "",
+      "data_type": "boolean"
+    },
+    {
+      "name": "is_fixed",
+      "semantic_type": "",
+      "data_type": "boolean"
+    },
+    {
+      "name": "other_charge_d",
+      "semantic_type": "",
+      "data_type": "string"
+    },
+    {
+      "name": "round_trip_flag",
+      "semantic_type": "",
+      "data_type": "boolean"
+    },
+    {
+      "name": "totalcharge_and_excisetax_r",
+      "semantic_type": "",
+      "data_type": "categorical"
+    }
+  ],
+  "statistical_artifacts": [
+    {
+      "id": "rel_001",
+      "kind": "ArtifactRelationship",
+      "payload": {
+        "correlation_type": "positive",
+        "effect_size": 0.65,
+        "p_value": 0.001,
+        "test_used": "pearson",
+        "variable_x": "brand_search_volume",
+        "variable_y": "campaign_sub_metric_1"
+      }
+    },
+    {
+      "id": "rel_002",
+      "kind": "ArtifactRelationship",
+      "payload": {
+        "correlation_type": "positive",
+        "effect_size": 0.45,
+        "p_value": 0.01,
+        "test_used": "spearman",
+        "variable_x": "conversion_rate",
+        "variable_y": "campaign_sub_metric_2"
+      }
+    },
+    {
+      "id": "rel_003",
+      "kind": "ArtifactRelationship",
+      "payload": {
+        "correlation_type": "positive",
+        "effect_size": 0.78,
+        "p_value": 0.0001,
+        "test_used": "pearson",
+        "variable_x": "top_funnel_spend_usd",
+        "variable_y": "impressions_per_user"
+      }
+    }
+  ],
+  "total_fields": 51,
+  "total_stats_artifacts": 3
+}
+
+This includes:
+- field_metadata: All available data fields with their types
+- statistical_artifacts: Complete statistical test results, relationships, correlations, and test scores from the analysis engine
+- discovery_briefs: Pre-computed narrative + confidence summaries generated by the Go engine from the relationship graph (use these to ground your hypotheses)
+- total_fields: Number of data fields available
+- total_stats_artifacts: Number of statistical artifacts with test results
+
+TASK: Identify 3 High-Priority Hypotheses using the full statistical context. Leverage the actual test scores, correlations, and statistical results to inform your hypotheses. Ground your hypotheses in the industry context provided above.
+
+CRITICAL CONSTRAINTS:
+
+1. **The Dual-Layer Hypothesis:**
+   - **Business Hypothesis:** A simple, approachable sentence describing human behavior or outcome (e.g., "High support delays kill new feature exploration").
+   - **Science Hypothesis:** A precise technical description of the data interaction (e.g., "A negative correlation exists between support latency and the pioneer adoption rate within a 7-day window").
+
+2. **The "Ghost" Test (Null Case):** Explicitly describe what the data looks like if your idea is WRONG. This is the "Referee's" best friend for rejecting false positives.
+
+3. **Business Impact Requirement (The "Why"):** For every hypothesis, you must describe the **Business Impact** through the Opportunity Analysis block:
+   - **Strategic Value:** Quantify the advantage of optimizing the driver variable
+   - **Risk of Inaction:** Quantify the cost of ignoring this structural break or inefficiency
+   - **Leverage Score:** Assess as High/Med/Low based on node centrality, effect size, and potential ROI
+
+4. **Build-Order Precision:** Do not suggest generic math. Request specific instruments like "Recency-Weighted Decay Tracker" or "Behavioral Cohort Scanner."
+
+5. **The 2-Sentence Execution Rule:** Every validation method must have a 2-sentence description. Sentence 1: Tell the Go engineer exactly how to organize or calculate the data. Sentence 2: Tell the engine what specific result proves the pattern is real.
+
+REQUIRED JSON SCHEMA:
+{
+  "industry_context": "Two-sentence semantic summary of the industry domain and primary friction points identified by the Forensic Scout.",
+  "research_directives": [
+    {
+      "id": "HYP-001",
+      "business_hypothesis": "The simple story of the impact.",
+      "science_hypothesis": "The technical pattern in the data.",
+      "null_case": "Quantitative description of a failed/random result.",
+      "opportunity_analysis": {
+        "strategic_value": "The specific advantage gained by acting on this discovery.",
+        "risk_of_inaction": "The cost of allowing this systemic inefficiency to persist.",
+        "leverage_score": "High/Med/Low based on node centrality and potential impact."
+      },
+      "validation_methods": [
+        {
+          "type": "Detector",
+          "method_name": "Specific tool name (e.g., Threshold_Impact_Monitor)",
+          "execution_plan": "Sentence 1: The Go calculation logic. Sentence 2: The pass/fail criteria."
+        },
+        {
+          "type": "Scanner",
+          "method_name": "Specific tool name",
+          "execution_plan": "Sentence 1: The Go calculation logic. Sentence 2: The pass/fail criteria."
+        },
+        {
+          "type": "Referee",
+          "method_name": "Specific tool name",
+          "execution_plan": "Sentence 1: The Go calculation logic. Sentence 2: The pass/fail criteria."
+        }
+      ],
+      "referee_gates": {
+        "confidence_target": 0.99,
+        "stability_threshold": 0.85
+      }
+    }
+  ]
+}
+
+IMPORTANT: Your response must be valid JSON matching EXACTLY this schema. Generate exactly 3 research directives in the array. Do not include any explanatory text outside the JSON structure.

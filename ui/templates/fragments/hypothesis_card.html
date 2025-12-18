@@ -1,0 +1,84 @@
+{{/* Hypothesis Row Template - Table Row Design */}}
+<tr class="hover:bg-gray-50 transition-colors duration-150 border-b border-gray-200" data-hypothesis-id="{{.ID}}">
+  <!-- Status -->
+  <td class="px-6 py-4 whitespace-nowrap">
+    {{if .Validated}}
+      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium text-gray-700 border border-gray-300">✓ Validated</span>
+    {{else if .Rejected}}
+      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium text-gray-700 border border-gray-300">✗ Rejected</span>
+    {{else}}
+      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium text-gray-700 border border-gray-300">⟳ Testing</span>
+    {{end}}
+  </td>
+
+  <!-- Hypothesis -->
+  <td class="px-6 py-4">
+    <div class="text-sm font-medium text-gray-900">{{if .BusinessHypothesis}}{{if gt (len .BusinessHypothesis) 80}}{{substr .BusinessHypothesis 0 77}}...{{else}}{{.BusinessHypothesis}}{{end}}{{else}}{{.ID}}{{end}}</div>
+    <div class="text-xs text-gray-500 mt-1">{{.ID}}</div>
+  </td>
+
+  <!-- Effect Size -->
+  <td class="px-6 py-4 whitespace-nowrap text-center">
+    <div class="text-sm font-semibold text-gray-900">{{if .EffectSize}}{{printf "%.2f" .EffectSize}}{{else}}—{{end}}</div>
+  </td>
+
+  <!-- P-Value -->
+  <td class="px-6 py-4 whitespace-nowrap text-center">
+    <div class="text-sm font-semibold text-gray-900">
+      {{if .PValue}}
+        {{if lt .PValue 0.001}}&lt;0.001{{else}}{{printf "%.3f" .PValue}}{{end}}
+      {{else}}—{{end}}
+    </div>
+  </td>
+
+  <!-- Sample Size -->
+  <td class="px-6 py-4 whitespace-nowrap text-center">
+    <div class="text-sm font-semibold text-gray-900">{{if .SampleSize}}{{kfmt .SampleSize}}{{else}}—{{end}}</div>
+  </td>
+
+  <!-- Actions -->
+  <td class="px-6 py-4 whitespace-nowrap text-center">
+    <button class="text-sm text-blue-600 hover:text-blue-800 font-medium" onclick="toggleEvidenceDrawer('{{.ID}}')">
+      Details
+    </button>
+  </td>
+</tr>
+
+<!-- Expandable Details Row -->
+<tr id="drawer-{{.ID}}" style="display: none;" class="bg-gray-50">
+  <td colspan="6" class="px-6 py-4" style="width: 100%;">
+    <div class="space-y-4" style="width: 100%; max-width: 100%;">
+      <!-- Scientific Hypothesis -->
+      <div style="width: 100%;">
+        <h4 class="text-sm font-semibold text-gray-900 mb-2">Scientific Hypothesis</h4>
+        <p class="text-gray-700 text-sm leading-relaxed">{{.ScienceHypothesis}}</p>
+      </div>
+
+      <!-- Validation Methods -->
+      {{if .ValidationMethods}}
+      <div style="width: 100%;">
+        <h4 class="text-sm font-semibold text-gray-900 mb-2">Validation Methods</h4>
+        <div class="space-y-2" style="width: 100%;">
+          {{range .ValidationMethods}}
+          <div class="bg-white border border-gray-200 rounded p-3">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">{{.Type}}</span>
+              <span class="text-sm font-medium text-gray-900">{{.MethodName}}</span>
+            </div>
+            <p class="text-gray-600 text-sm">{{.ExecutionPlan}}</p>
+          </div>
+          {{end}}
+        </div>
+      </div>
+      {{end}}
+
+      <!-- Null Case -->
+      {{if .NullCase}}
+      <div style="width: 100%;">
+        <h4 class="text-sm font-semibold text-gray-900 mb-2">Null Hypothesis</h4>
+        <p class="text-gray-600 text-sm italic">{{.NullCase}}</p>
+      </div>
+      {{end}}
+    </div>
+  </td>
+</tr>

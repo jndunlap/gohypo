@@ -1,190 +1,351 @@
 {{template "base.html" .}}
 
 {{define "content"}}
-<div class="max-w-6xl mx-auto px-2 sm:px-4 py-4 sm:py-8">
-    <!-- Header -->
-    <div class="mb-4 sm:mb-8 border-b border-gray-200 pb-3 sm:pb-4">
-        <h1 class="text-xl sm:text-2xl font-light text-black tracking-tight">GoHypo</h1>
-    </div>
+<!-- Professional Research Laboratory -->
+<div class="min-h-screen bg-white">
+    <div class="max-w-7xl mx-auto px-6 py-8">
+        <!-- Header Section -->
+        <header class="mb-8">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-6">
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-900">{{.DatasetInfo.name}}</h1>
+                        <p class="text-gray-600 mt-1">{{len .FieldStats}} variables • {{.FieldCount}} total fields</p>
+                    </div>
 
-    <!-- Run Summary Panel (always visible) -->
-    <div class="mb-4 sm:mb-8 border border-gray-200 p-3 sm:p-6 bg-white">
-        <h2 class="text-sm sm:text-base font-medium text-black mb-3 sm:mb-4">Run Summary</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 text-xs sm:text-sm">
-            <div>
-                <div class="text-xs text-gray-500 mb-1">Status</div>
-                <div>
-                    {{if eq .RunStatus "NOT_RUN"}}
-                    <span class="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700">NOT_RUN</span>
-                    {{else if eq .RunStatus "RUNNING"}}
-                    <span class="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700">RUNNING</span>
-                    {{else if eq .RunStatus "COMPLETE"}}
-                    <span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-700">COMPLETE</span>
-                    {{else if eq .RunStatus "FAILED"}}
-                    <span class="px-2 py-1 text-xs font-medium bg-red-100 text-red-700">FAILED</span>
-                    {{else}}
-                    <span class="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700">{{.RunStatus}}</span>
-                    {{end}}
+                    <!-- Data Quality Indicator -->
+                    <div class="flex items-center space-x-2">
+                        <span class="text-sm font-medium text-gray-700">Data Quality:</span>
+                        <span class="status-badge {{if gt .DatasetInfo.missingnessOverall 0.1}}status-rejected{{else if gt .DatasetInfo.missingnessOverall 0.05}}status-pending{{else}}status-validated{{end}}">
+                            {{printf "%.1f" (mul .DatasetInfo.missingnessOverall 100)}}% missing
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Primary Action -->
+                <button class="btn-primary"
+                        hx-post="/api/research/initiate"
+                        hx-target="#hypothesis-cards-container"
+                        hx-swap="innerHTML"
+                        hx-indicator="#research-spinner"
+                        onclick="initiateResearch()">
+                    <span id="research-spinner" class="spinner hidden mr-2"></span>
+                    Generate Research
+                </button>
+            </div>
+        </header>
+
+        <!-- Variable Inventory Section -->
+        <section class="mb-12">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-semibold text-gray-900">Variable Inventory</h2>
+                <span class="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                    {{len .FieldStats}} variables
+                </span>
+            </div>
+
+            <div class="grid-auto-fit">
+                {{range .FieldStats}}
+                <div class="card p-4">
+                    <div class="flex items-start justify-between mb-3">
+                        <h3 class="font-semibold text-gray-900 truncate text-sm" title="{{.Name}}">{{.Name}}</h3>
+                        <span class="status-badge {{if eq .Type "numeric"}}status-validated{{else}}status-pending{{end}} text-xs">
+                            {{if eq .Type "numeric"}}NUM{{else}}CAT{{end}}
+                        </span>
+                    </div>
+
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="metric-label">Missing</span>
+                            <span class="metric-value {{if gt .MissingRate 0.05}}text-error{{else}}text-success{{end}}">
+                                {{.MissingRatePct}}%
+                            </span>
+                        </div>
+
+                        <div class="flex justify-between items-center">
+                            <span class="metric-label">Variance</span>
+                            <span class="metric-value">{{printf "%.2f" .Variance}}</span>
+                        </div>
+
+                        <div class="flex justify-between items-center">
+                            <span class="metric-label">Unique</span>
+                            <span class="metric-value">{{.UniqueCount}}</span>
+                        </div>
+
+                        <div class="flex justify-between items-center">
+                            <span class="metric-label">Relationships</span>
+                            <span class="metric-value text-accent">{{.InRelationships}}</span>
+                        </div>
+
+                        <div class="flex justify-between items-center">
+                            <span class="metric-label">Strongest Corr</span>
+                            <span class="metric-value {{if and (gt .TotalRelsAnalyzed 0) (gt .StrongestCorr 0.0)}}text-success{{else if and (gt .TotalRelsAnalyzed 0) (lt .StrongestCorr 0.0)}}text-error{{else}}text-gray-500{{end}}">
+                                {{if gt .TotalRelsAnalyzed 0}}{{printf "%.2f" .StrongestCorr}}{{else}}—{{end}}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                {{end}}
+            </div>
+        </section>
+
+        <!-- Industry Context Section -->
+        <section class="mb-8" id="industry-context-section" style="display: none;">
+            <div class="bg-blue-50 border-l-4 border-blue-400 p-4 rounded">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <h3 class="text-sm font-medium text-blue-800">Industry Context</h3>
+                        <p class="mt-1 text-sm text-blue-700" id="industry-context-text">Loading industry context...</p>
+                    </div>
                 </div>
             </div>
-            <div>
-                <div class="text-xs text-gray-500 mb-1">Dataset</div>
-                <div class="font-mono text-black">{{if .DatasetInfo.name}}{{.DatasetInfo.name}}{{else}}Unknown{{end}}</div>
-            </div>
-            <div>
-                <div class="text-xs text-gray-500 mb-1">Variables</div>
-                <div class="font-mono text-black text-xs sm:text-sm break-words">{{.VariablesTotal}} total | {{.VariablesEligible}} eligible{{if gt .VariablesRejected 0}} | {{.VariablesRejected}} rejected{{end}}</div>
-            </div>
-            <div>
-                <div class="text-xs text-gray-500 mb-1">Pairs</div>
-                <div class="font-mono text-black text-xs sm:text-sm break-words">{{.PairsAttempted}} attempted | {{.PairsTested}} tested | {{.PairsSkipped}} skipped</div>
-            </div>
-            <div>
-                <div class="text-xs text-gray-500 mb-1">Significance Rule</div>
-                <div class="font-mono text-black">{{.SignificanceRule}}</div>
-            </div>
-            {{if .Seed}}
-            <div>
-                <div class="text-xs text-gray-500 mb-1">Seed</div>
-                <div class="font-mono text-black">{{.Seed}}</div>
-            </div>
-            {{end}}
-            {{if .Fingerprint}}
-            <div>
-                <div class="text-xs text-gray-500 mb-1">Fingerprint</div>
-                <div class="font-mono text-xs text-black">{{.Fingerprint}}</div>
-            </div>
-            {{end}}
-        </div>
-    </div>
+        </section>
 
-    <!-- NOT_RUN Empty State -->
-    {{if eq .RunStatus "NOT_RUN"}}
-    <div class="mb-8 border border-gray-300 bg-gray-50 p-8 text-center">
-        <div class="mb-4">
-            <span class="px-4 py-2 text-sm font-medium bg-gray-200 text-gray-700">NOT RUN</span>
-        </div>
-        <h2 class="text-lg font-medium text-black mb-2">Pairwise sweep has not been executed</h2>
-        <p class="text-sm text-gray-600 mb-6">Run Layer 0 Sweep to discover relationships between variables.</p>
-        <button class="px-4 py-2 bg-black text-white text-sm font-medium hover:bg-gray-800">Run Pairwise Sweep</button>
-        <div class="mt-6 pt-6 border-t border-gray-300 text-left">
-            <div class="text-xs text-gray-500 mb-2">What will be computed:</div>
-            <ul class="space-y-1 text-xs text-gray-600">
-                <li>• Profile: Variable eligibility and data quality metrics</li>
-                <li>• Pairwise: Statistical tests between all eligible variable pairs</li>
-                <li>• FDR: False discovery rate correction (if enabled)</li>
-            </ul>
-        </div>
-    </div>
-    {{end}}
-
-    <!-- Relationships Section (HTMX fragment) -->
-    {{if eq .RunStatus "COMPLETE"}}
-    <div class="mb-4 sm:mb-8 border border-gray-200 p-3 sm:p-6">
-        <h2 class="text-base sm:text-lg font-medium text-black mb-3 sm:mb-4">Relationships</h2>
-        <div id="relationships-table" hx-get="/api/fragments/relationships" hx-trigger="load" hx-swap="innerHTML">
-            <div class="text-xs sm:text-sm text-gray-500">Loading relationships...</div>
-        </div>
-    </div>
-    {{end}}
-
-    <!-- Evidence Timeline (HTMX fragment) -->
-    <div class="mb-4 sm:mb-8 border border-gray-200 p-3 sm:p-6">
-        <h2 class="text-base sm:text-lg font-medium text-black mb-3 sm:mb-4">Evidence Timeline</h2>
-        <div id="evidence-timeline" hx-get="/api/fragments/timeline" hx-trigger="load" hx-swap="innerHTML">
-            <div class="text-xs sm:text-sm text-gray-500">Loading timeline...</div>
-        </div>
-    </div>
-
-    <!-- Fields Information -->
-    {{if .FieldStats}}
-    <div class="mb-4 sm:mb-8 border border-gray-200 p-3 sm:p-6 bg-gray-50">
-        <h2 class="text-base font-medium text-black mb-3 sm:mb-4">Fields ({{len .FieldStats}})</h2>
-        <div class="overflow-x-auto -mx-3 sm:mx-0">
-            <div class="inline-block min-w-full align-middle">
-                <div class="overflow-x-auto">
-                    <table class="min-w-full text-[10px] sm:text-xs border-collapse">
-                        <thead>
-                            <tr class="border-b border-gray-300">
-                                <th class="text-left py-2 px-2 sm:px-3 font-medium text-black sticky left-0 bg-gray-50 z-10">Field</th>
-                                <th class="text-left py-2 px-2 sm:px-3 font-medium text-black">Type</th>
-                                <th class="text-right py-2 px-2 sm:px-3 font-medium text-black">Missing</th>
-                                <th class="text-right py-2 px-2 sm:px-3 font-medium text-black">Unique</th>
-                                <th class="text-right py-2 px-2 sm:px-3 font-medium text-black hidden sm:table-cell">Variance</th>
-                                <th class="text-right py-2 px-2 sm:px-3 font-medium text-black hidden md:table-cell">Cardinality</th>
-                                <th class="text-right py-2 px-2 sm:px-3 font-medium text-black">N</th>
-                                <th class="text-right py-2 px-2 sm:px-3 font-medium text-black">In Rel</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {{range .FieldStats}}
-                            <tr class="border-b border-gray-200 hover:bg-white">
-                                <td class="py-2 px-2 sm:px-3 font-mono text-black font-medium sticky left-0 bg-white z-10 whitespace-nowrap">{{.Name}}</td>
-                                <td class="py-2 px-2 sm:px-3 text-gray-600">
-                                    {{if eq .Type "numeric"}}
-                                    <span class="px-1 py-0.5 bg-blue-100 text-blue-700 text-[10px] sm:text-xs">num</span>
-                                    {{else if eq .Type "categorical"}}
-                                    <span class="px-1 py-0.5 bg-green-100 text-green-700 text-[10px] sm:text-xs">cat</span>
-                                    {{else}}
-                                    <span class="text-gray-400">—</span>
-                                    {{end}}
-                                </td>
-                                <td class="py-2 px-2 sm:px-3 font-mono text-right text-gray-600 whitespace-nowrap">
-                                    {{if .MissingRatePct}}{{.MissingRatePct}}%{{else}}—{{end}}
-                                </td>
-                                <td class="py-2 px-2 sm:px-3 font-mono text-right text-gray-600 whitespace-nowrap">
-                                    {{if .UniqueCount}}{{.UniqueCount}}{{else}}—{{end}}
-                                </td>
-                                <td class="py-2 px-2 sm:px-3 font-mono text-right text-gray-600 hidden sm:table-cell whitespace-nowrap">
-                                    {{if .Variance}}{{printf "%.3f" .Variance}}{{else}}—{{end}}
-                                </td>
-                                <td class="py-2 px-2 sm:px-3 font-mono text-right text-gray-600 hidden md:table-cell whitespace-nowrap">
-                                    {{if .Cardinality}}{{.Cardinality}}{{else}}—{{end}}
-                                </td>
-                                <td class="py-2 px-2 sm:px-3 font-mono text-right text-gray-600 whitespace-nowrap">
-                                    {{if .SampleSize}}{{.SampleSize}}{{else}}—{{end}}
-                                </td>
-                                <td class="py-2 px-2 sm:px-3 font-mono text-right text-black whitespace-nowrap">
-                                    {{.InRelationships}}
-                                </td>
-                            </tr>
-                            {{end}}
-                        </tbody>
-                    </table>
+        <!-- Research Hypotheses Section -->
+        <main class="mb-12">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-semibold text-gray-900">Research Hypotheses</h2>
+                <div class="flex items-center space-x-4 text-sm text-gray-600">
+                    <span id="hypothesis-count">0 hypotheses</span>
+                    <span id="research-status">Ready</span>
                 </div>
             </div>
-        </div>
-    </div>
-    {{else if .Fields}}
-    <div class="mb-8 border border-gray-200 p-6 bg-gray-50">
-        <h2 class="text-base font-medium text-black mb-4">Fields ({{len .Fields}})</h2>
-        <div class="flex flex-wrap gap-2">
-            {{range .Fields}}
-            <span class="text-xs px-2 py-1 bg-gray-200 text-gray-700 font-mono">{{.}}</span>
-            {{end}}
-        </div>
-    </div>
-    {{end}}
 
-    <!-- Dataset Information -->
-    {{if .DatasetInfo}}
-    <div class="mb-4 sm:mb-8 border border-gray-200 p-3 sm:p-6 bg-gray-50">
-        <h2 class="text-base font-medium text-black mb-3 sm:mb-4">Dataset Information</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 text-xs sm:text-sm">
-            {{if .DatasetInfo.snapshotID}}
-            <div>
-                <div class="text-xs text-gray-500 mb-1">Snapshot ID</div>
-                <div class="font-mono text-xs text-black">{{.DatasetInfo.snapshotID}}</div>
+            <!-- Hypothesis Cards Container -->
+            <div id="hypothesis-cards-container">
+                <!-- Cards will be populated by HTMX -->
+                <div class="text-center py-12 text-gray-500">
+                    <div class="text-2xl mb-4">🔬</div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Research Laboratory</h3>
+                    <p>Click "Generate Research" to create hypothesis cards</p>
+                </div>
             </div>
-            {{end}}
-            {{if .DatasetInfo.snapshotAt}}
-            <div>
-                <div class="text-xs text-gray-500 mb-1">Snapshot Time</div>
-                <div class="font-mono text-xs text-black">{{.DatasetInfo.snapshotAt}}</div>
+        </main>
+
+        <!-- Rejected Hypotheses Section -->
+        <section class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 mb-6">Rejected Hypotheses</h2>
+            <div id="rejected-hypotheses-container" class="grid-responsive opacity-60">
+                <!-- Rejected hypothesis cards will appear here with ghosted styling -->
+                <div class="col-span-full text-center py-8 text-gray-400">
+                    <p>No rejected hypotheses yet</p>
+                </div>
             </div>
-            {{end}}
-        </div>
+        </section>
     </div>
-    {{end}}
 </div>
+
+<!-- Research Status Indicator (Hidden, for HTMX updates) -->
+<div id="research-status" style="display: none;"></div>
+
+<script>
+// Toggle evidence drawer for hypothesis cards
+function toggleEvidenceDrawer(hypothesisId) {
+    const drawer = document.getElementById(`drawer-${hypothesisId}`);
+    const button = drawer.previousElementSibling.querySelector('.expand-toggle');
+
+    if (drawer.style.display === 'none' || drawer.style.display === '') {
+        drawer.style.display = 'block';
+        button.innerHTML = 'Review Science ▲';
+    } else {
+        drawer.style.display = 'none';
+        button.innerHTML = 'Review Science ▼';
+    }
+}
+
+// Initiate research function with enhanced loading animation
+function initiateResearch() {
+    const btn = document.querySelector('.btn-primary');
+    const spinner = document.getElementById('research-spinner');
+    const status = document.getElementById('research-status');
+    const hypothesisContainer = document.getElementById('hypothesis-cards-container');
+    const hypothesisCount = document.getElementById('hypothesis-count');
+
+    // Disable button and show loading state
+    if (btn) {
+        btn.disabled = true;
+        btn.classList.add('opacity-75', 'cursor-not-allowed');
+        const originalText = btn.innerHTML;
+        btn.setAttribute('data-original-text', originalText);
+        btn.innerHTML = '<span class="spinner mr-2"></span>Analyzing Data...';
+    }
+
+    // Show loading animation in the hypothesis container
+    if (hypothesisContainer) {
+        hypothesisContainer.innerHTML = `
+            <div class="text-center py-16">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-accent rounded-full mb-6">
+                    <div class="spinner w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-900 mb-2">Generating Research Hypotheses</h3>
+                <p class="text-gray-600 mb-4">Analyzing your dataset and formulating scientific questions...</p>
+                <div class="flex items-center justify-center space-x-2 text-sm text-gray-500">
+                    <div class="flex space-x-1">
+                        <div class="w-2 h-2 bg-accent rounded-full animate-pulse"></div>
+                        <div class="w-2 h-2 bg-accent rounded-full animate-pulse" style="animation-delay: 0.2s"></div>
+                        <div class="w-2 h-2 bg-accent rounded-full animate-pulse" style="animation-delay: 0.4s"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Update status
+    if (status) {
+        status.textContent = 'Analyzing data...';
+    }
+
+    // Update hypothesis count
+    if (hypothesisCount) {
+        hypothesisCount.textContent = 'Analyzing...';
+    }
+
+    // Start polling for status updates
+    startResearchPolling();
+}
+
+// Research polling variables
+let researchPollingInterval = null;
+
+// Start polling for research status updates
+function startResearchPolling() {
+    if (researchPollingInterval) {
+        clearInterval(researchPollingInterval);
+    }
+
+    researchPollingInterval = setInterval(async () => {
+        try {
+            const response = await fetch('/api/research/status');
+            const status = await response.json();
+
+            updateResearchStatus(status);
+        } catch (error) {
+            console.error('Error polling research status:', error);
+        }
+    }, 2000); // Poll every 2 seconds
+}
+
+// Stop polling
+function stopResearchPolling() {
+    if (researchPollingInterval) {
+        clearInterval(researchPollingInterval);
+        researchPollingInterval = null;
+    }
+}
+
+// Update research status in UI
+function updateResearchStatus(status) {
+    const statusElement = document.getElementById('research-status');
+    const hypothesisCount = document.getElementById('hypothesis-count');
+    const btn = document.querySelector('.btn-primary');
+
+    if (statusElement) {
+        switch (status.state) {
+            case 'analyzing':
+                statusElement.textContent = 'Analyzing with AI...';
+                if (btn) btn.innerHTML = '<span class="spinner mr-2"></span>Analyzing Data...';
+                break;
+            case 'validating':
+                statusElement.textContent = 'Validating hypotheses...';
+                if (btn) btn.innerHTML = '<span class="spinner mr-2"></span>Validating...';
+                break;
+            case 'complete':
+                statusElement.textContent = 'Research complete';
+                stopResearchPolling();
+                if (btn) {
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-75', 'cursor-not-allowed');
+                    btn.innerHTML = 'Generate Research';
+                }
+                // Load the completed hypotheses
+                loadCompletedHypotheses();
+                break;
+            case 'error':
+                statusElement.textContent = `Error: ${status.error || 'Unknown error'}`;
+                stopResearchPolling();
+                if (btn) {
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-75', 'cursor-not-allowed');
+                    btn.innerHTML = 'Try Again';
+                }
+                break;
+            default:
+                statusElement.textContent = 'Ready';
+        }
+    }
+
+    // Update hypothesis count
+    if (hypothesisCount && status.completed_count !== undefined) {
+        if (status.state === 'complete') {
+            hypothesisCount.textContent = `${status.completed_count} hypotheses`;
+        } else {
+            hypothesisCount.textContent = `${status.completed_count || 0} generated`;
+        }
+    }
+}
+
+// Load completed hypotheses
+async function loadCompletedHypotheses() {
+    try {
+        const response = await fetch('/api/research/ledger?limit=50', {
+            headers: {
+                'HX-Request': 'true',
+                'HX-Target': 'hypothesis-cards-container',
+                'HX-Trigger': 'research-complete'
+            }
+        });
+        const html = await response.text();
+        const container = document.getElementById('hypothesis-cards-container');
+        if (container) {
+            container.innerHTML = html;
+        }
+    } catch (error) {
+        console.error('Error loading hypotheses:', error);
+        // Show error state
+        const container = document.getElementById('hypothesis-cards-container');
+        if (container) {
+            container.innerHTML = `
+                <div class="col-span-full text-center py-12 text-red-500">
+                    <div class="text-2xl mb-4">⚠️</div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Error Loading Hypotheses</h3>
+                    <p>Please try again or check the console for details.</p>
+                </div>
+            `;
+        }
+    }
+}
+
+// Load industry context on page load
+async function loadIndustryContext() {
+    try {
+        const response = await fetch('/api/research/industry-context');
+        if (!response.ok) {
+            console.log('[Research UI] Industry context not available');
+            return;
+        }
+        const data = await response.json();
+        if (data.industry_context && data.industry_context.trim() !== '') {
+            const section = document.getElementById('industry-context-section');
+            const text = document.getElementById('industry-context-text');
+            if (section && text) {
+                text.textContent = data.industry_context;
+                section.style.display = 'block';
+            }
+        }
+    } catch (error) {
+        console.error('[Research UI] Failed to load industry context:', error);
+    }
+}
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Load industry context async on page load
+    loadIndustryContext();
+});
+</script>
 {{end}}

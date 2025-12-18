@@ -1,0 +1,42 @@
+{
+  "id": "HYP-003",
+  "business_hypothesis": "Rebilling and canceled flags create duplicated or missing recognized charges (totalcharge_and_excisetax / total_charges_n) and are a root cause of overstatement or understatement in reported invoice totals.",
+  "science_hypothesis": "Records with rebilled = true (and canceled = false) are associated with a higher rate of duplicate charge-lines per order_id and a higher variance in totalcharge_and_excisetax_n; duplication rate difference between rebilled and non-rebilled groups expected \u003e= 0.15 and mean absolute reconciliation discrepancy (per-order) Cohen's d \u003e= 0.45.",
+  "null_case": "Rebilled records do not increase duplication or reconciliation variance: duplication rate difference between rebilled and non-rebilled \u003c= 0.02 and mean reconciliation discrepancy Cohen's d \u003c= 0.10 with p \u003e 0.10.",
+  "validation_methods": [
+    {
+      "type": "Detector",
+      "method_name": "DuplicateChargeDetector",
+      "execution_plan": "Group by order_id and compute unique combinations of (order_id, revenue_id, linehaul_chg_n, other_charge_n, totalcharge_and_excisetax_n) to identify duplicate line-items; compare duplicate_rate = duplicated_lines/total_lines between rebilled=true and rebilled=false groups using permutation tests. Pass criterion: rebilled group duplicate_rate exceeds non-rebilled by \u003e= 0.15 with p \u003c= 0.01."
+    },
+    {
+      "type": "Scanner",
+      "method_name": "InvoiceSequenceScanner",
+      "execution_plan": "Reconstruct invoice event sequences per order_id by sorting by entered timestamp (or id) and mark sequences that contain 'canceled' followed by 'rebilled' or multiple invoiced_flag=true events; compute per-order reconciliation_discrepancy = abs(sum(recorded_line_totals) - first_invoice_total). Pass criterion: proportion of orders with sequences containing cancel+rebill that have reconciliation_discrepancy \u003e $0 (or \u003e10% of order total) is significantly higher (p \u003c= 0.01) than orders without such sequences."
+    },
+    {
+      "type": "Referee",
+      "method_name": "ChargeBalanceReferee",
+      "execution_plan": "Aggregate total_charges_n and totalcharge_and_excisetax per order_id separately for initial invoice and subsequent rebills, then run paired-difference tests (or Wilcoxon signed-rank if non-normal) to measure net change introduced by rebills; correct for canceled flags. Pass criterion: median or mean paired difference is non-zero with p \u003c= 0.01 and effect size \u003e= 0.45 indicating material rebill-induced change."
+    }
+  ],
+  "referee_gates": {
+    "confidence_target": 0.99,
+    "stability_threshold": 0.85
+  },
+  "validated": true,
+  "rejected": false,
+  "effect_size": -0.04720755448962877,
+  "p_value": 0.047324898496358604,
+  "sample_size": 5452,
+  "created_at": "2025-12-18T16:54:01.4177521-05:00",
+  "processing_time": 0,
+  "metadata": {
+    "session_id": "312e4f17-e752-4f85-b38a-0fb9bbcca436"
+  },
+  "validation_strategy": {
+    "detector": "",
+    "scanner": "",
+    "proxy": ""
+  }
+}

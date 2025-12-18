@@ -7,237 +7,460 @@
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <script src="https://unpkg.com/htmx.org@1.9.10/dist/ext/ws.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/css/research.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script>
+        // Blueprint System - Halftone Cross-Hatch Plugin
+        // Add this to your tailwind.config.js:
+        /*
+        const halftonePlugin = {
+          theme: {
+            extend: {
+              backgroundImage: {
+                'hatch-10': "repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(235, 235, 235, 0.1) 2px, rgba(235, 235, 235, 0.1) 4px)",
+                'hatch-20': "repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(235, 235, 235, 0.2) 2px, rgba(235, 235, 235, 0.2) 4px)",
+                'hatch-30': "repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(235, 235, 235, 0.3) 2px, rgba(235, 235, 235, 0.3) 4px)",
+                'hatch-40': "repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(235, 235, 235, 0.4) 2px, rgba(235, 235, 235, 0.4) 4px)",
+                'hatch-50': "repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(235, 235, 235, 0.5) 2px, rgba(235, 235, 235, 0.5) 4px)",
+                'hatch-60': "repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(235, 235, 235, 0.6) 2px, rgba(235, 235, 235, 0.6) 4px)",
+                'hatch-70': "repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(235, 235, 235, 0.7) 2px, rgba(235, 235, 235, 0.7) 4px)",
+                'hatch-80': "repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(235, 235, 235, 0.8) 2px, rgba(235, 235, 235, 0.8) 4px)",
+                'hatch-90': "repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(235, 235, 235, 0.9) 2px, rgba(235, 235, 235, 0.9) 4px)",
+              }
+            }
+          }
+        }
+        // module.exports = { plugins: [halftonePlugin] }
+        */
+
         tailwind.config = {
-            darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
-                        // The "Extraction" Scheme
-                        'void': {
-                            DEFAULT: '#020202',
-                            50: '#f5f5f5',
-                            100: '#e5e5e5',
-                            200: '#d4d4d4',
-                            300: '#a3a3a3',
-                            400: '#737373',
-                            500: '#525252',
-                            600: '#404040',
-                            700: '#262626',
-                            800: '#1a1a1a',
-                            900: '#0a0a0a',
-                        },
-                        'obsidian': {
-                            DEFAULT: '#0d0d0d',
-                            50: '#f8f9fa',
-                            100: '#e9ecef',
-                            200: '#dee2e6',
-                            300: '#ced4da',
-                            400: '#adb5bd',
-                            500: '#6c757d',
-                            600: '#495057',
-                            700: '#343a40',
-                            800: '#212529',
-                            900: '#0d0d0d',
-                        },
-                        'cold-steel': '#222222',
-                        'hyper-lime': {
-                            DEFAULT: '#00ff41',
-                            50: '#f0fff4',
-                            100: '#d1ffdd',
-                            200: '#a3ffbb',
-                            300: '#75ff99',
-                            400: '#47ff77',
-                            500: '#00ff41',
-                            600: '#00cc34',
-                            700: '#009927',
-                            800: '#00661a',
-                            900: '#00330d',
-                        },
-                        'crimson-ghost': {
-                            DEFAULT: '#ff003c',
-                            50: '#fef2f2',
-                            100: '#fee2e2',
-                            200: '#fecaca',
-                            300: '#fca5a5',
-                            400: '#f87171',
-                            500: '#ef4444',
-                            600: '#ff003c',
-                            700: '#b91c1c',
-                            800: '#991b1b',
-                            900: '#7f1d1d',
-                        },
-                        'electric-cobalt': {
-                            DEFAULT: '#2e5bff',
-                            50: '#eff6ff',
-                            100: '#dbeafe',
-                            200: '#bfdbfe',
-                            300: '#93c5fd',
-                            400: '#60a5fa',
-                            500: '#3b82f6',
-                            600: '#2e5bff',
-                            700: '#1d4ed8',
-                            800: '#1e40af',
-                            900: '#1e3a8a',
-                        },
-                        'ghost-white': '#f5f5f5',
-                        'faint-gray': '#111111',
-                        'ghost-gray': '#444444',
-
-                        // Semantic aliases
-                        'validated': 'var(--hyper-lime)',
-                        'vetoed': 'var(--crimson-ghost)',
-                        'system': 'var(--electric-cobalt)',
-                        'metadata': 'var(--ghost-gray)',
+                        // Professional Light Mode Palette
+                        'background': '#FFFFFF',     // Pure white background
+                        'surface': '#FAFAFA',        // Light gray surface
+                        'surface-secondary': '#F5F5F5', // Secondary surface
+                        'text-primary': '#1A1A1A',   // Near black text
+                        'text-secondary': '#6B7280', // Muted gray text
+                        'text-muted': '#9CA3AF',     // Light gray text
+                        'border': '#E5E7EB',         // Subtle borders
+                        'border-hover': '#D1D5DB',   // Hover borders
+                        'accent': '#000000',        // Black accent
+                        'success': '#059669',       // Professional green
+                        'warning': '#D97706',       // Professional amber
+                        'error': '#DC2626',         // Professional red
+                        'info': '#2563EB',          // Professional blue
                     },
                     fontFamily: {
-                        'satoshi': ['Satoshi', 'system-ui', 'sans-serif'],
-                        'inter': ['Inter', 'system-ui', 'sans-serif'],
-                        'mono': ['JetBrains Mono', 'SF Mono', 'Monaco', 'Inconsolata', 'monospace'],
+                        'sans': ['Inter', 'system-ui', 'sans-serif'],
+                        'mono': ['JetBrains Mono', 'monospace'],
+                        'display': ['Inter', 'system-ui', 'sans-serif'],
                     },
                     fontSize: {
-                        'tactical': ['0.875rem', { lineHeight: '1.25', letterSpacing: '0.08em', fontWeight: '700', textTransform: 'uppercase' }],
-                        'computed': ['0.875rem', { lineHeight: '1.5', fontFamily: 'JetBrains Mono' }],
-                        'narrative': ['1rem', { lineHeight: '1.6' }],
+                        // Professional Typography Hierarchy
+                        'h1': ['2.25rem', { lineHeight: '1.1', letterSpacing: '-0.025em', fontWeight: '700' }],
+                        'h2': ['1.875rem', { lineHeight: '1.2', letterSpacing: '-0.025em', fontWeight: '600' }],
+                        'h3': ['1.5rem', { lineHeight: '1.3', letterSpacing: '-0.025em', fontWeight: '600' }],
+                        'h4': ['1.25rem', { lineHeight: '1.4', letterSpacing: '-0.025em', fontWeight: '600' }],
+                        'body': ['1rem', { lineHeight: '1.6', fontWeight: '400' }],
+                        'body-sm': ['0.875rem', { lineHeight: '1.5', fontWeight: '400' }],
+                        'label': ['0.75rem', { lineHeight: '1.4', fontWeight: '500', letterSpacing: '0.025em' }],
+                        'caption': ['0.6875rem', { lineHeight: '1.4', fontWeight: '500' }],
                     },
                     spacing: {
                         '18': '4.5rem',
                         '88': '22rem',
                         '128': '32rem',
                     },
+                    boxShadow: {
+                        'xs': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                        'sm': '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+                        'md': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                        'lg': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                        'card': '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+                        'card-hover': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                    },
                     borderWidth: {
                         '3': '3px',
                     },
-                    animation: {
-                        'integrity-pulse': 'integrity-pulse 3s ease-in-out infinite',
-                        'logic-scroll': 'logic-scroll 20s linear infinite',
-                    },
-                    keyframes: {
-                        'integrity-pulse': {
-                            '0%, 100%': { boxShadow: '0 0 0 0 rgba(0, 255, 65, 0.4)' },
-                            '50%': { boxShadow: '0 0 0 2px rgba(0, 255, 65, 0.4)' },
-                        },
-                        'logic-scroll': {
-                            '0%': { transform: 'translateX(100%)' },
-                            '100%': { transform: 'translateX(-100%)' },
-                        },
-                    },
-                    boxShadow: {
-                        'tactical': '0 0 8px rgba(0, 255, 65, 0.1)',
-                        'vetoed': '0 0 8px rgba(255, 0, 60, 0.1)',
-                        'system': '0 0 8px rgba(46, 91, 255, 0.1)',
-                    },
+                    /* All animations removed for pure static composition */
                 }
             }
         }
     </script>
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        /* Professional Light Mode Styles */
+        :root {
+            --background: #FFFFFF;
+            --surface: #FAFAFA;
+            --surface-secondary: #F5F5F5;
+            --text-primary: #1A1A1A;
+            --text-secondary: #6B7280;
+            --text-muted: #9CA3AF;
+            --border: #E5E7EB;
+            --border-hover: #D1D5DB;
+            --accent: #000000;
+            --success: #059669;
+            --warning: #D97706;
+            --error: #DC2626;
+            --info: #2563EB;
+        }
+
+        /* Global resets for clean typography */
+        * {
+            text-rendering: optimizeLegibility;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background-color: var(--background);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        /* Professional card design */
+        .card {
+            background: var(--background);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+            transition: all 0.2s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.06);
+            border-color: var(--border-hover);
+        }
+
+        /* Grid layouts */
+        .grid-auto-fit {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .grid-responsive {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 2rem;
+        }
+
+        /* Professional button styles */
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .btn-primary:hover {
+            background: #333333;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-secondary {
+            background: var(--surface);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .btn-secondary:hover {
+            background: var(--surface-secondary);
+            border-color: var(--border-hover);
+        }
+
+        /* Status indicators */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+
+        .status-validated {
+            background: #D1FAE5;
+            color: #065F46;
+        }
+
+        .status-rejected {
+            background: #FEE2E2;
+            color: #991B1B;
+        }
+
+        .status-pending {
+            background: #FEF3C7;
+            color: #92400E;
+        }
+
+        /* Metric display */
+        .metric {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .metric-label {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+
+        .metric-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* Section headers */
+        .section-header {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border);
+        }
+
+        /* Expandable content */
+        .expandable-content {
+            border-top: 1px solid var(--border);
+            background: var(--surface);
+            transition: all 0.2s ease;
+        }
+
+        .expand-toggle {
+            background: none;
+            border: none;
+            color: var(--accent);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            padding: 0.5rem 0;
+            text-decoration: underline;
+            transition: color 0.2s ease;
+        }
+
+        .expand-toggle:hover {
+            color: #333333;
+        }
+
+        /* Form elements */
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+            background: var(--background);
+            color: var(--text-primary);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--surface);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--border-hover);
+        }
+
+        /* Loading spinner */
+        .spinner {
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid var(--border);
+            border-radius: 50%;
+            border-top-color: var(--accent);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        /* Enhanced research loading animation */
+        .research-loading {
+            position: relative;
+        }
+
+        .research-loading::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        /* Pulsing dots animation */
+        .loading-dots {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .loading-dots div {
+            width: 0.375rem;
+            height: 0.375rem;
+            background: var(--accent);
+            border-radius: 50%;
+            animation: pulse-dots 1.5s infinite;
+        }
+
+        .loading-dots div:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .loading-dots div:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes pulse-dots {
+            0%, 80%, 100% {
+                opacity: 0.3;
+                transform: scale(1);
+            }
+            40% {
+                opacity: 1;
+                transform: scale(1.2);
+            }
+        }
+
+        /* Research progress indicator */
+        .research-progress {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .research-progress::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.1), transparent);
+            animation: progress-wave 2s infinite;
+        }
+
+        @keyframes progress-wave {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Utility classes */
+        .hidden {
+            display: none;
+        }
+
+        .text-accent {
+            color: var(--accent);
+        }
+
+        .text-success {
+            color: var(--success);
+        }
+
+        .text-error {
+            color: var(--error);
+        }
+
+        .text-warning {
+            color: var(--warning);
+        }
+
+        .bg-surface {
+            background: var(--surface);
+        }
+
+        .border-surface {
+            border-color: var(--border);
+        }
+    </style>
 </head>
-<body class="forensic-container selection:bg-hyper-lime selection:text-void">
-    <!-- Fingerprint Margin (Vertical Technical Proof) -->
-    <aside class="fingerprint-margin hidden lg:flex fixed left-0 top-0 h-full w-64 z-10">
-        <div class="fingerprint-content absolute top-4 left-4 right-4">
-            <div class="text-xs font-mono text-ghost-gray mb-2">
-                {{if .Fingerprint}}FINGERPRINT: {{.Fingerprint}}{{end}}
-            </div>
-            <div class="text-xs font-mono text-ghost-gray">
-                {{if .DatasetInfo.snapshotID}}SNAPSHOT_ID: {{.DatasetInfo.snapshotID}}{{else}}SNAPSHOT_ID: NULL{{end}}
-            </div>
-        </div>
-        <div class="dossier-panel absolute bottom-4 left-4 right-4">
-            <h4 class="tactical-header text-[10px] text-ghost-gray mb-4">FORENSIC FINGERPRINT DOSSIER</h4>
-            <div class="space-y-6">
-                <div>
-                    <div class="tactical-header text-[8px] text-ghost-gray mb-1">EXECUTION FINGERPRINT</div>
-                    <div class="computed-value text-[10px] text-ghost-white break-all cursor-pointer hover:text-hyper-lime transition-colors"
-                         onclick="navigator.clipboard.writeText('gohypo-cli replay --fingerprint {{.Fingerprint}}')">
-                        {{.Fingerprint}}
-                    </div>
-                </div>
-                <div>
-                    <div class="tactical-header text-[8px] text-ghost-gray mb-1">REGISTRY HASH</div>
-                    <div class="computed-value text-[10px] text-ghost-white break-all">
-                        {{if .RegistryHash}}{{.RegistryHash}}{{else}}sha256:8f3a2b1c...{{end}}
-                    </div>
-                </div>
-                <div class="pt-4 border-t border-cold-steel">
-                    <div class="computed-value text-[9px] text-hyper-lime cursor-pointer"
-                         onclick="navigator.clipboard.writeText('gohypo-cli replay --fingerprint {{.Fingerprint}} --stage L0')">
-                        REPLAY_L0_MAPPING
-                    </div>
-                </div>
-            </div>
-        </div>
-    </aside>
+<body class="bg-white text-gray-900 font-sans selection:bg-black selection:text-white">
+    <!-- Clean, minimal background -->
 
-    <!-- Navigation -->
-    <nav class="border-b border-cold-steel bg-obsidian">
-        <div class="max-w-full mx-auto px-4 sm:px-6 lg:ml-64">
-            <div class="flex justify-between items-center h-14">
-                <div class="flex-shrink-0 flex items-center gap-3">
-                    <span class="text-xs font-mono text-ghost-gray">
-                        {{if .DatasetInfo.snapshotID}}SNAPSHOT_ID: {{.DatasetInfo.snapshotID}}{{else}}SNAPSHOT_ID: NULL{{end}}
-                    </span>
-                    <span class="text-lg font-bold tracking-widest uppercase text-ghost-white font-mono leading-none">
-                        GoHypo <span class="text-[10px] ml-2 text-ghost-gray align-middle">v0.1.0-alpha</span>
-                    </span>
-                </div>
-                <div class="hidden sm:flex items-center space-x-6">
-                    <a href="/" class="tactical-header text-sm text-ghost-white hover:text-hyper-lime transition-colors leading-none">DASHBOARD</a>
-                    <a href="/contracts" class="tactical-header text-sm text-ghost-white hover:text-hyper-lime transition-colors leading-none">CONTRACTS</a>
-                    <a href="/ledger" class="tactical-header text-sm text-ghost-white hover:text-hyper-lime transition-colors leading-none">LEDGER</a>
-                    <a href="/directives" class="tactical-header text-sm text-ghost-white hover:text-hyper-lime transition-colors leading-none">DIRECTIVES</a>
-                    <a href="/telemetry" class="tactical-header text-sm text-ghost-white hover:text-hyper-lime transition-colors leading-none">TELEMETRY</a>
-                    <a href="/vitality" class="tactical-header text-sm text-ghost-white hover:text-hyper-lime transition-colors leading-none">VITALITY</a>
-                </div>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Main Content -->
-    <main class="lg:ml-64">
+    <!-- Research Laboratory Layout -->
+    <main class="relative min-h-screen">
         {{block "content" .}}{{end}}
     </main>
+    <!-- Clean Layout - No Registration Marks Needed -->
 
-    <!-- Logic Pulse - Footer Heartbeat -->
-    <div class="logic-pulse logic-pulse--collapsed" id="logic-pulse">
-        <button class="logic-pulse-toggle" type="button" onclick="toggleLogicPulse()" aria-label="Toggle logic pulse">
-            LOGIC_PULSE
-            <span class="logic-pulse-caret" aria-hidden="true">▾</span>
-        </button>
-        <div class="logic-pulse-content" aria-live="polite">
-            <span class="text-electric-cobalt">[SYSTEM]</span> APPEND_ONLY_LEDGER_ACTIVE |
-            <span class="text-hyper-lime">[VALIDATED]</span> ARTIFACT_COMMITTED_SHA256_ABC123... |
-            <span class="text-ghost-gray">[HEARTBEAT]</span> REGISTRY_PULSE_STABLE |
-            <span class="text-electric-cobalt">[TELEMETRY]</span> DETERMINISTIC_STATE_1_0_0 |
-            <span class="text-hyper-lime">[SIGNAL]</span> RELATIONSHIP_EXTRACTED_R_0_67 |
-            <span class="text-ghost-gray">[IDLE]</span> AWAITING_DIRECTIVE_INPUT |
-        </div>
-        <div class="logic-pulse-fade" aria-hidden="true"></div>
-    </div>
 
+    <!-- Research UI Scripts -->
+    <script src="/static/js/research.js"></script>
+    
     <!-- HTMX Configuration -->
     <script>
         // Global HTMX config
         htmx.config.globalViewTransitions = true;
         htmx.config.useTemplateFragments = true;
 
-        // Loading indicators
+        // Clean loading indicators
         document.body.addEventListener('htmx:beforeRequest', function(evt) {
             const btn = evt.target.querySelector('button[type="submit"], button[aria-busy]');
             if (btn) {
                 btn.setAttribute('aria-busy', 'true');
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
-            }
-            // Add loading class to target
-            const target = document.querySelector(evt.detail.target);
-            if (target) {
-                target.classList.add('htmx-loading');
+                const originalText = btn.innerHTML;
+                btn.setAttribute('data-original-text', originalText);
+                btn.innerHTML = '<span class="spinner mr-2"></span>Loading...';
+                btn.disabled = true;
             }
         });
 
@@ -245,11 +468,11 @@
             const btn = evt.target.querySelector('button[aria-busy]');
             if (btn) {
                 btn.removeAttribute('aria-busy');
-            }
-            // Remove loading class from target
-            const target = document.querySelector(evt.detail.target);
-            if (target) {
-                target.classList.remove('htmx-loading');
+                const originalText = btn.getAttribute('data-original-text');
+                if (originalText) {
+                    btn.innerHTML = originalText;
+                }
+                btn.disabled = false;
             }
         });
 
@@ -258,26 +481,6 @@
             console.error('HTMX Error:', evt.detail);
             // Could show toast notification here
         });
-        // Logic Veil Toggle (Architectural Easter Egg: Ctrl + /)
-        window.addEventListener('keydown', function(e) {
-            if (e.ctrlKey && e.key === '/') {
-                document.body.classList.toggle('logic-veil-active');
-                if (document.body.classList.contains('logic-veil-active')) {
-                    const notify = document.createElement('div');
-                    notify.className = 'fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[300] bg-void border border-hyper-lime p-8 shadow-tactical animate-pulse';
-                    notify.innerHTML = '<div class="tactical-header text-xl text-hyper-lime">Logic Veil Activated</div><div class="computed-value text-xs text-ghost-gray mt-2 uppercase">Rendering Architectural Layers...</div>';
-                    document.body.appendChild(notify);
-                    setTimeout(() => notify.remove(), 2000);
-                }
-            }
-        });
-
-        function toggleLogicPulse() {
-            const el = document.getElementById('logic-pulse');
-            if (!el) return;
-            const collapsed = el.classList.toggle('logic-pulse--collapsed');
-            el.classList.toggle('logic-pulse--expanded', !collapsed);
-        }
     </script>
 </body>
 </html>

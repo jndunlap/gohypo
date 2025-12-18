@@ -72,13 +72,25 @@ const (
 
 // EvidenceBlock contains stage-specific statistical evidence
 type EvidenceBlock struct {
-	StageName     string                 `json:"stage_name"`            // e.g., "pairwise", "permutation"
-	SchemaVersion string                 `json:"schema_version"`        // Version for evidence format evolution
-	Method        string                 `json:"method"`                // e.g., "pearson", "spearman"
-	Parameters    map[string]interface{} `json:"parameters,omitempty"`  // Test parameters (alpha, tails, etc.)
-	RawResults    map[string]interface{} `json:"raw_results,omitempty"` // Raw statistical outputs
-	Warnings      []WarningCode          `json:"warnings,omitempty"`    // Stage-specific warnings
+	StageName     string                 `json:"stage_name"`              // e.g., "pairwise", "permutation"
+	SchemaVersion string                 `json:"schema_version"`          // Version for evidence format evolution
+	Method        string                 `json:"method"`                  // e.g., "pearson", "spearman"
+	Parameters    map[string]interface{} `json:"parameters,omitempty"`    // Test parameters (alpha, tails, etc.)
+	RawResults    map[string]interface{} `json:"raw_results,omitempty"`   // Raw statistical outputs
+	SenseResults  []SenseResult          `json:"sense_results,omitempty"` // Five statistical senses results
+	Warnings      []WarningCode          `json:"warnings,omitempty"`      // Stage-specific warnings
 	ComputedAt    core.Timestamp         `json:"computed_at"`
+}
+
+// SenseResult represents output from a statistical sense (matches adapters/stats/senses)
+type SenseResult struct {
+	SenseName   string                 `json:"sense_name"`
+	EffectSize  float64                `json:"effect_size"`
+	PValue      float64                `json:"p_value"`
+	Confidence  float64                `json:"confidence"`  // 0-1 confidence score
+	Signal      string                 `json:"signal"`      // "weak", "moderate", "strong", "very_strong"
+	Description string                 `json:"description"` // Human-readable explanation
+	Metadata    map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // ============================================================================

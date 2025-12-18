@@ -7,7 +7,9 @@ import (
 
 	"gohypo/domain/artifacts"
 	"gohypo/domain/core"
+	"gohypo/domain/dataset"
 	"gohypo/domain/stage"
+	"gohypo/domain/verdict"
 	"gohypo/ports"
 )
 
@@ -115,10 +117,16 @@ func (s *HypothesisService) ProposeHypotheses(ctx context.Context, req Auditable
 func (s *HypothesisService) ExecuteRun(ctx context.Context, req ExecuteRunRequest) (*CausalRunResult, error) {
 	startTime := time.Now()
 
-	// Load hypothesis
-	hypothesis, err := s.loadHypothesis(ctx, req.HypothesisID)
+	// Load hypothesis artifact
+	hypothesisArtifact, err := s.ledgerPort.GetArtifact(ctx, core.ArtifactID(req.HypothesisID))
 	if err != nil {
 		return nil, fmt.Errorf("failed to load hypothesis: %w", err)
+	}
+
+	// Extract hypothesis from artifact
+	hypothesis, err := s.extractHypothesisFromArtifact(hypothesisArtifact)
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract hypothesis: %w", err)
 	}
 
 	// Load matrix bundle for validation
@@ -127,18 +135,30 @@ func (s *HypothesisService) ExecuteRun(ctx context.Context, req ExecuteRunReques
 		return nil, fmt.Errorf("failed to load matrix bundle: %w", err)
 	}
 
-	// Execute referee validation
-	checklist, verdict, err := s.executeRefereeValidation(ctx, hypothesis, matrixBundle, req.RigorProfile)
+	// Execute referee validation using BatteryPort (PermutationReferee)
+	validationResult, err := s.batteryPort.ValidateHypothesis(ctx, hypothesis.ID, matrixBundle)
 	if err != nil {
 		return nil, fmt.Errorf("referee validation failed: %w", err)
 	}
 
+	// Map validation result to verdict and checklist
+	verdictStatus := s.mapValidationStatus(validationResult.Status)
+	checklist := s.createChecklistFromValidation(validationResult)
+
 	// Create causal run artifact
-	causalRun := s.createCausalRunArtifact(hypothesis, req, verdict, checklist)
+	causalRun := s.createCausalRunArtifact(hypothesis, req, verdictStatus, checklist, validationResult)
 
 	// Persist artifacts
 	if err := s.ledgerPort.StoreArtifact(ctx, string(req.RunID), causalRun); err != nil {
 		return nil, fmt.Errorf("failed to store causal run: %w", err)
+	}
+
+	// Persist falsification log if present
+	if validationResult.FalsificationLog != nil {
+		falsificationArtifact := s.createFalsificationArtifact(req, validationResult)
+		if err := s.ledgerPort.StoreArtifact(ctx, string(req.RunID), falsificationArtifact); err != nil {
+			return nil, fmt.Errorf("failed to store falsification log: %w", err)
+		}
 	}
 
 	fingerprint := s.computeRunFingerprint(req, causalRun)
@@ -148,7 +168,7 @@ func (s *HypothesisService) ExecuteRun(ctx context.Context, req ExecuteRunReques
 		RunID:       req.RunID,
 		CausalRun:   causalRun,
 		Checklist:   checklist,
-		Verdict:     verdict,
+		Verdict:     verdictStatus,
 		Fingerprint: fingerprint,
 		RuntimeMs:   runtimeMs,
 		Success:     true,
@@ -215,60 +235,100 @@ func (s *HypothesisService) computeGenerationFingerprint(req AuditableHypothesis
 	return core.NewHash([]byte(data))
 }
 
-// executeRefereeValidation runs the complete validation battery
-func (s *HypothesisService) executeRefereeValidation(ctx context.Context, hypothesis *Hypothesis, matrixBundle *MatrixBundle, rigor stage.RigorProfile) (*RunChecklist, ValidationVerdict, error) {
-	checklist := &RunChecklist{}
+// extractHypothesisFromArtifact extracts hypothesis data from an artifact
+func (s *HypothesisService) extractHypothesisFromArtifact(artifact *core.Artifact) (*Hypothesis, error) {
+	if artifact.Kind != core.ArtifactHypothesis {
+		return nil, fmt.Errorf("artifact is not a hypothesis: %s", artifact.Kind)
+	}
 
-	// Triage battery (always run)
-	triageResults, err := s.runTriageBattery(ctx, hypothesis, matrixBundle)
+	payload, ok := artifact.Payload.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("invalid hypothesis payload type")
+	}
+
+	causeKeyStr, _ := payload["cause_key"].(string)
+	effectKeyStr, _ := payload["effect_key"].(string)
+	mechanismCategory, _ := payload["mechanism_category"].(string)
+	rationale, _ := payload["rationale"].(string)
+
+	causeKey, err := core.ParseVariableKey(causeKeyStr)
 	if err != nil {
-		return nil, VerdictInadmissible, err
-	}
-	checklist.PhantomGateResult = triageResults.PhantomGate
-	checklist.ConfounderStressResult = triageResults.ConfounderStress
-
-	// Check if triage passes
-	if !triageResults.PhantomGate || !triageResults.ConfounderStress {
-		verdict := VerdictNoise
-		if !triageResults.ConfounderStress {
-			verdict = VerdictConfounded
-		}
-		return checklist, verdict, nil
+		return nil, fmt.Errorf("invalid cause_key: %w", err)
 	}
 
-	// Decision battery (if rigor requires and triage passes)
-	if rigor == stage.RigorDecision {
-		decisionResults, err := s.runDecisionBattery(ctx, hypothesis, matrixBundle)
-		if err != nil {
-			return nil, VerdictUnstable, err
-		}
-		checklist.ConditionalIndependence = decisionResults.ConditionalIndependence
-		checklist.NestedModelResult = decisionResults.NestedModelResult
-		checklist.StabilityScore = decisionResults.StabilityScore
+	effectKey, err := core.ParseVariableKey(effectKeyStr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid effect_key: %w", err)
+	}
 
-		if !decisionResults.ConditionalIndependence || decisionResults.NestedModelResult < 0.01 {
-			return checklist, VerdictConfounded, nil
-		}
-
-		if decisionResults.StabilityScore < 0.7 {
-			return checklist, VerdictUnstable, nil
+	// Extract confounder keys
+	var confounderKeys []core.VariableKey
+	if confounders, ok := payload["confounder_keys"].([]interface{}); ok {
+		for _, c := range confounders {
+			if cStr, ok := c.(string); ok {
+				if cKey, err := core.ParseVariableKey(cStr); err == nil {
+					confounderKeys = append(confounderKeys, cKey)
+				}
+			}
 		}
 	}
 
-	return checklist, VerdictSignal, nil
+	return &Hypothesis{
+		ID:                core.HypothesisID(artifact.ID),
+		CauseKey:          causeKey,
+		EffectKey:         effectKey,
+		MechanismCategory: mechanismCategory,
+		ConfounderKeys:    confounderKeys,
+		Rationale:         rationale,
+	}, nil
+}
+
+// mapValidationStatus maps verdict.VerdictStatus to ValidationVerdict
+func (s *HypothesisService) mapValidationStatus(status verdict.VerdictStatus) ValidationVerdict {
+	switch status {
+	case verdict.StatusValidated:
+		return VerdictSignal
+	case verdict.StatusRejected:
+		return VerdictNoise
+	case verdict.StatusMarginal:
+		return VerdictUnstable
+	default:
+		return VerdictInadmissible
+	}
+}
+
+// createChecklistFromValidation creates a RunChecklist from ValidationResult
+func (s *HypothesisService) createChecklistFromValidation(result *ports.ValidationResult) *RunChecklist {
+	checklist := &RunChecklist{
+		PhantomGateResult:       result.Status == verdict.StatusValidated,
+		ConfounderStressResult:  result.PValue < 0.05,
+		ConditionalIndependence: result.Status == verdict.StatusValidated,
+		NestedModelResult:       result.EffectSize,
+		StabilityScore:          result.Confidence,
+	}
+	return checklist
 }
 
 // createCausalRunArtifact creates the validation result artifact
-func (s *HypothesisService) createCausalRunArtifact(hypothesis *Hypothesis, req ExecuteRunRequest, verdict ValidationVerdict, checklist *RunChecklist) core.Artifact {
+func (s *HypothesisService) createCausalRunArtifact(hypothesis *Hypothesis, req ExecuteRunRequest, verdictStatus ValidationVerdict, checklist *RunChecklist, validationResult *ports.ValidationResult) core.Artifact {
 	return core.Artifact{
 		ID:   core.NewID(),
 		Kind: core.ArtifactRun,
 		Payload: map[string]interface{}{
 			"hypothesis_id": hypothesis.ID,
 			"run_id":        req.RunID,
-			"verdict":       verdict,
+			"verdict":       verdictStatus,
 			"rigor_profile": req.RigorProfile,
 			"dataset_spec":  req.DatasetSpec,
+			"validation": map[string]interface{}{
+				"status":           validationResult.Status,
+				"reason":           validationResult.Reason,
+				"p_value":          validationResult.PValue,
+				"confidence":       validationResult.Confidence,
+				"effect_size":      validationResult.EffectSize,
+				"null_percentile":  validationResult.NullPercentile,
+				"num_permutations": validationResult.NumPermutations,
+			},
 			"checklist": map[string]interface{}{
 				"phantom_gate":             checklist.PhantomGateResult,
 				"confounder_stress":        checklist.ConfounderStressResult,
@@ -276,6 +336,36 @@ func (s *HypothesisService) createCausalRunArtifact(hypothesis *Hypothesis, req 
 				"nested_model_result":      checklist.NestedModelResult,
 				"stability_score":          checklist.StabilityScore,
 			},
+		},
+		CreatedAt: core.Now(),
+	}
+}
+
+// createFalsificationArtifact creates an artifact for falsification logs
+func (s *HypothesisService) createFalsificationArtifact(req ExecuteRunRequest, validationResult *ports.ValidationResult) core.Artifact {
+	return core.Artifact{
+		ID:   core.NewID(),
+		Kind: core.ArtifactVariableHealth, // TODO: Add dedicated falsification artifact kind
+		Payload: map[string]interface{}{
+			"operation":            "falsification_log",
+			"hypothesis_id":        validationResult.HypothesisID,
+			"run_id":               req.RunID,
+			"reason":               validationResult.Reason,
+			"permutation_p_value":  validationResult.FalsificationLog.PermutationPValue,
+			"observed_effect_size": validationResult.FalsificationLog.ObservedEffectSize,
+			"null_distribution": map[string]interface{}{
+				"mean":          validationResult.FalsificationLog.NullDistribution.Mean,
+				"std_dev":       validationResult.FalsificationLog.NullDistribution.StdDev,
+				"min":           validationResult.FalsificationLog.NullDistribution.Min,
+				"max":           validationResult.FalsificationLog.NullDistribution.Max,
+				"percentile_95": validationResult.FalsificationLog.NullDistribution.Percentile95,
+				"percentile_99": validationResult.FalsificationLog.NullDistribution.Percentile99,
+			},
+			"sample_size": validationResult.FalsificationLog.SampleSize,
+			"test_used":   validationResult.FalsificationLog.TestUsed,
+			"variable_x":  string(validationResult.FalsificationLog.VariableX),
+			"variable_y":  string(validationResult.FalsificationLog.VariableY),
+			"rejected_at": validationResult.FalsificationLog.RejectedAt,
 		},
 		CreatedAt: core.Now(),
 	}
@@ -333,52 +423,11 @@ type RunChecklist struct {
 	StabilityScore          float64
 }
 
-// Placeholder implementations for battery tests
-func (s *HypothesisService) runTriageBattery(ctx context.Context, hypothesis *Hypothesis, matrixBundle *MatrixBundle) (*TriageResults, error) {
-	// TODO: Implement actual battery tests
-	return &TriageResults{
-		PhantomGate:      true, // Assume passes for demo
-		ConfounderStress: true, // Assume passes for demo
-	}, nil
-}
-
-func (s *HypothesisService) runDecisionBattery(ctx context.Context, hypothesis *Hypothesis, matrixBundle *MatrixBundle) (*DecisionResults, error) {
-	// TODO: Implement actual decision tests
-	return &DecisionResults{
-		ConditionalIndependence: true, // Assume passes for demo
-		NestedModelResult:       0.15, // Assume significant improvement
-		StabilityScore:          0.85, // Assume stable
-	}, nil
-}
-
-type TriageResults struct {
-	PhantomGate      bool
-	ConfounderStress bool
-}
-
-type DecisionResults struct {
-	ConditionalIndependence bool
-	NestedModelResult       float64
-	StabilityScore          float64
-}
-
-// Placeholder implementations for loading data
-func (s *HypothesisService) loadHypothesis(ctx context.Context, hypothesisID core.HypothesisID) (*Hypothesis, error) {
-	// TODO: Implement loading from ledger
-	return &Hypothesis{
-		ID:                hypothesisID,
-		CauseKey:          "inspection_count",
-		EffectKey:         "severity_score",
-		MechanismCategory: "direct_causal",
-	}, nil
-}
-
-func (s *HypothesisService) loadMatrixBundle(ctx context.Context, bundleID core.ID) (*MatrixBundle, error) {
-	// TODO: Implement loading from storage
-	return &MatrixBundle{}, nil
-}
-
-// MatrixBundle placeholder
-type MatrixBundle struct {
-	// TODO: Import from dataset package
+// loadMatrixBundle loads a matrix bundle from storage
+// For MVP, this is a placeholder that needs to be implemented based on your storage layer
+func (s *HypothesisService) loadMatrixBundle(ctx context.Context, bundleID core.ID) (*dataset.MatrixBundle, error) {
+	// TODO: Implement loading from storage based on your storage implementation
+	// This should load the MatrixBundle that was created during the stats sweep
+	// For now, return an error indicating this needs implementation
+	return nil, fmt.Errorf("loadMatrixBundle not yet implemented - needs storage layer integration")
 }

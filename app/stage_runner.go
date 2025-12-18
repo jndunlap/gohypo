@@ -299,12 +299,4 @@ func (r *StageRunner) convertToCoreArtifact(raw interface{}, stageName stage.Sta
 			CreatedAt: core.Now(),
 		}
 	}
-
-	// Should not reach here
-	return core.Artifact{
-		ID:        core.NewID(),
-		Kind:      core.ArtifactVariableHealth,
-		Payload:   raw,
-		CreatedAt: core.Now(),
-	}
 }

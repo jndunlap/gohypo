@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sort"
 
+	"gohypo/adapters/stats/senses"
 	"gohypo/domain/core"
 	"gohypo/domain/dataset"
 	"gohypo/domain/stage"
@@ -248,15 +249,23 @@ func (e *StatsEngine) runCompleteTestSuite(ctx context.Context, varX, varY core.
 	}
 }
 
-// runPrimaryTest executes the main statistical test
+// runPrimaryTest executes the main statistical test using senses
 func (e *StatsEngine) runPrimaryTest(testType string, x, y []float64) (float64, float64) {
+	ctx := context.Background()
+	varX := core.VariableKey("x")
+	varY := core.VariableKey("y")
+
 	switch testType {
 	case "pearson":
 		return e.pearsonCorrelation(x, y)
 	case "chisquare":
-		return e.chiSquareTest(x, y)
+		chiSense := senses.NewChiSquareSense()
+		result := chiSense.Analyze(ctx, x, y, varX, varY)
+		return result.EffectSize, result.PValue
 	case "ttest":
-		return e.tTest(x, y)
+		tSense := senses.NewWelchTTestSense()
+		result := tSense.Analyze(ctx, x, y, varX, varY)
+		return result.EffectSize, result.PValue
 	default:
 		return 0, 1.0
 	}

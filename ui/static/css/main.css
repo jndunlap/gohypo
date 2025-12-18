@@ -1,140 +1,139 @@
-/* GoHypo Forensic Tactical Interface - Style Guide Implementation */
+/* GoHypo Neo-Brutalist Laboratory Design System */
 
-/* ===== COLOR PALETTE: The "Extraction" Scheme ===== */
+/* ===== NEO-BRUTALIST COLOR PALETTE ===== */
 :root {
-  /* The Void - Pure black base */
-  --void: #020202;
-  --void-50: #f5f5f5;
-  --void-100: #e5e5e5;
-  --void-200: #d4d4d4;
-  --void-300: #a3a3a3;
-  --void-400: #737373;
-  --void-500: #525252;
-  --void-600: #404040;
-  --void-700: #262626;
-  --void-800: #1a1a1a;
-  --void-900: #0a0a0a;
+  /* Core 4-Color System */
+  --deep-black: #000000;     /* Borders, headers, primary actions */
+  --paper-white: #FFFFFF;    /* Active data areas, cards */
+  --ghost-gray: #D1D1D1;     /* Inactive/disabled states */
+  --grid-background: #F0F0F0; /* Canvas background */
 
-  /* Obsidian - Glassmorphic surfaces */
-  --obsidian: #0d0d0d;
-  --obsidian-50: #f8f9fa;
-  --obsidian-100: #e9ecef;
-  --obsidian-200: #dee2e6;
-  --obsidian-300: #ced4da;
-  --obsidian-400: #adb5bd;
-  --obsidian-500: #6c757d;
-  --obsidian-600: #495057;
-  --obsidian-700: #343a40;
-  --obsidian-800: #212529;
-  --obsidian-900: #0d0d0d;
-
-  /* Cold Steel - Borders and dividers */
-  --cold-steel: #222222;
-
-  /* Hyper Lime - Validated signals */
-  --hyper-lime: #00ff41;
-  --hyper-lime-50: #f0fff4;
-  --hyper-lime-100: #d1ffdd;
-  --hyper-lime-200: #a3ffbb;
-  --hyper-lime-300: #75ff99;
-  --hyper-lime-400: #47ff77;
-  --hyper-lime-500: #00ff41;
-  --hyper-lime-600: #00cc34;
-  --hyper-lime-700: #009927;
-  --hyper-lime-800: #00661a;
-  --hyper-lime-900: #00330d;
-
-  /* Electric Cobalt - System metadata */
-  --electric-cobalt: #2e5bff;
-  --electric-cobalt-50: #eff6ff;
-  --electric-cobalt-100: #dbeafe;
-  --electric-cobalt-200: #bfdbfe;
-  --electric-cobalt-300: #93c5fd;
-  --electric-cobalt-400: #60a5fa;
-  --electric-cobalt-500: #3b82f6;
-  --electric-cobalt-600: #2e5bff;
-  --electric-cobalt-700: #1d4ed8;
-  --electric-cobalt-800: #1e40af;
-  --electric-cobalt-900: #1e3a8a;
-
-  /* Crimson Ghost - Vetoed relationships */
-  --crimson-ghost: #ff003c;
-  --crimson-ghost-50: #fef2f2;
-  --crimson-ghost-100: #fee2e2;
-  --crimson-ghost-200: #fecaca;
-  --crimson-ghost-300: #fca5a5;
-  --crimson-ghost-400: #f87171;
-  --crimson-ghost-500: #ef4444;
-  --crimson-ghost-600: #ff003c;
-  --crimson-ghost-700: #b91c1c;
-  --crimson-ghost-800: #991b1b;
-  --crimson-ghost-900: #7f1d1d;
-
-  /* Ghost White - Primary text */
-  --ghost-white: #f5f5f5;
-
-  /* Faint Gray - Secondary metadata */
-  --faint-gray: #111111;
-  --ghost-gray: #444444;
+  /* Legacy support - map to new palette */
+  --void: var(--deep-black);
+  --obsidian: var(--paper-white);
+  --cold-steel: var(--deep-black);
+  --hyper-lime: var(--deep-black);
+  --electric-cobalt: var(--deep-black);
+  --crimson-ghost: var(--deep-black);
+  --ghost-white: var(--deep-black);
 }
 
-/* ===== TYPOGRAPHY: The "Scientific Monolith" ===== */
+/* ===== NEO-BRUTALIST TYPOGRAPHY SYSTEM ===== */
 
-/* Headers & Tactical Labels - Satoshi All-Caps */
-.tactical-header {
-  font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--ghost-white);
+/* Primary Headings - Sora Extra Bold */
+.neo-heading-h1 {
+  font-family: 'Sora', sans-serif;
+  font-weight: 800;
+  font-size: 48px;
+  letter-spacing: -0.5px;
+  color: var(--deep-black);
 }
 
-/* Hypothesis & Narratives - Inter */
-.narrative-text {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+.neo-heading-h2 {
+  font-family: 'Sora', sans-serif;
+  font-weight: 800;
+  font-size: 32px;
+  letter-spacing: -0.3px;
+  color: var(--deep-black);
+}
+
+.neo-heading-h3 {
+  font-family: 'Sora', sans-serif;
+  font-weight: 800;
+  font-size: 24px;
+  letter-spacing: -0.2px;
+  color: var(--deep-black);
+}
+
+/* Data Typography - IBM Plex Mono */
+.neo-body {
+  font-family: 'IBM Plex Mono', monospace;
   font-weight: 400;
+  font-size: 14px;
   line-height: 1.6;
-  color: var(--ghost-white);
+  color: var(--deep-black);
 }
 
-/* Data, Hashes & Contracts - JetBrains Mono */
+.neo-data {
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--deep-black);
+}
+
+.neo-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  color: var(--deep-black);
+}
+
+/* Legacy support */
+.tactical-header {
+  @apply neo-heading-h3;
+}
+
+.narrative-text {
+  @apply neo-body;
+}
+
 .computed-value {
-  font-family: 'JetBrains Mono', 'SF Mono', 'Monaco', 'Inconsolata', monospace;
-  font-weight: 500;
-  color: var(--hyper-lime);
-  font-size: 0.875rem;
+  @apply neo-data;
 }
 
-/* ===== STYLE & SPACING: The "Precision Grid" ===== */
+/* ===== NEO-BRUTALIST STYLE & SPACING ===== */
+
+/* Hard Offset Shadow System */
+.neo-shadow-standard {
+  box-shadow: 4px 4px 0px var(--deep-black);
+}
+
+.neo-shadow-pressed {
+  box-shadow: 0px 0px 0px var(--deep-black);
+}
+
+.neo-shadow-hover {
+  box-shadow: 6px 6px 0px var(--deep-black);
+}
+
+/* Dot Grid Background Pattern */
+.neo-bg-dot-grid {
+  background-color: var(--grid-background);
+  background-image: radial-gradient(circle, rgba(0,0,0,0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Container Rules - No border-radius, 2px minimum borders */
+.neo-container {
+  border: 2px solid var(--deep-black);
+  background: var(--paper-white);
+  box-shadow: 4px 4px 0px var(--deep-black);
+  padding: 16px;
+}
 
 /* Global Layout */
 .forensic-container {
-  background-color: var(--void);
-  color: var(--ghost-white);
+  background-color: var(--grid-background);
+  color: var(--deep-black);
   min-height: 100vh;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'IBM Plex Mono', monospace;
 }
 
-/* Discovery Dossier Card */
-.discovery-dossier {
-  background-color: var(--obsidian);
-  border: 1px solid var(--cold-steel);
-  border-radius: 0px;
-  padding: 24px;
+/* Neo-Brutalist Components */
+.neo-card {
+  border: 2px solid var(--deep-black);
+  background: var(--paper-white);
+  box-shadow: 4px 4px 0px var(--deep-black);
+  padding: 16px;
   margin-bottom: 16px;
   position: relative;
-  overflow: hidden;
 }
 
-.discovery-dossier::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, var(--hyper-lime), var(--electric-cobalt), var(--hyper-lime));
-  opacity: 0.6;
+/* Legacy support */
+.discovery-dossier {
+  @apply neo-card;
 }
 
 /* Vitality Strip - Data Health Indicator */
@@ -358,30 +357,42 @@ main {
   }
 }
 
-/* ===== INTERACTION STATES ===== */
+/* ===== NEO-BRUTALIST INTERACTION STATES ===== */
 
-/* Tactical Buttons */
-.tactical-button {
-  background-color: var(--obsidian);
-  border: 1px solid var(--cold-steel);
-  color: var(--ghost-white);
-  padding: 8px 16px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.875rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  transition: all 0.2s ease;
+/* Mechanical Button Mechanics */
+.neo-button {
+  border: 2px solid var(--deep-black);
+  background: var(--paper-white);
+  box-shadow: 4px 4px 0px var(--deep-black);
+  position: relative;
+  top: 0px;
+  left: 0px;
+  transition: all 0.05s ease;
   cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 8px 16px;
+  color: var(--deep-black);
 }
 
-.tactical-button:hover {
-  border-color: var(--hyper-lime);
-  color: var(--hyper-lime);
-  box-shadow: 0 0 8px rgba(0, 255, 65, 0.2);
+.neo-button:hover {
+  box-shadow: 6px 6px 0px var(--deep-black);
 }
 
-.tactical-button:active {
-  background-color: var(--cold-steel);
+.neo-button:active,
+.neo-button.pressed {
+  box-shadow: 0px 0px 0px var(--deep-black);
+  position: relative;
+  top: 4px;
+  left: 4px;
+}
+
+/* Legacy support */
+.tactical-button {
+  @apply neo-button;
 }
 
 /* Form Controls */

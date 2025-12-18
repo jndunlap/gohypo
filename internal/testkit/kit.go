@@ -3,6 +3,7 @@ package testkit
 import (
 	"context"
 	"fmt"
+	"log"
 	"math"
 	"math/rand"
 	"sync"
@@ -10,6 +11,7 @@ import (
 	"gohypo/adapters/datareadiness"
 	"gohypo/adapters/datareadiness/coercer"
 	"gohypo/adapters/datareadiness/synthesizer"
+	"gohypo/adapters/excel"
 	"gohypo/app"
 	"gohypo/domain/core"
 	"gohypo/domain/datareadiness/resolution"
@@ -21,18 +23,44 @@ import (
 
 // TestKit provides testing utilities and fixtures
 type TestKit struct {
-	ledger *InMemoryLedgerAdapter // Shared ledger instance
+	ledger      *InMemoryLedgerAdapter // Shared ledger instance
+	excelConfig *excel.ExcelConfig     // Excel data source configuration
 }
 
-// NewTestKit creates a new test kit instance
+// NewTestKit creates a new test kit instance with synthetic data
 func NewTestKit() (*TestKit, error) {
 	ledger := NewInMemoryLedgerAdapter()
 	return &TestKit{ledger: ledger}, nil
 }
 
+// NewTestKitWithExcel creates a new test kit instance with Excel data configuration
+func NewTestKitWithExcel(excelConfig *excel.ExcelConfig) (*TestKit, error) {
+	ledger := NewInMemoryLedgerAdapter()
+
+	// Log Excel file information
+	log.Printf("Initializing test kit with Excel file: %s", excelConfig.FilePath)
+
+	// Read Excel data to get column information
+	reader := excel.NewExcelReader(excelConfig.FilePath)
+	data, err := reader.ReadData()
+	if err != nil {
+		log.Printf("Warning: Could not read Excel file for logging: %v", err)
+	} else {
+		log.Printf("Excel file contains %d columns: %v", len(data.Headers), data.Headers)
+	}
+
+	return &TestKit{
+		ledger:      ledger,
+		excelConfig: excelConfig,
+	}, nil
+}
+
 // MatrixResolverAdapter returns a matrix resolver adapter
 func (t *TestKit) MatrixResolverAdapter() ports.MatrixResolverPort {
-	// Return a fake data implementation
+	// Return Excel adapter if configured, otherwise synthetic data
+	if t.excelConfig != nil && t.excelConfig.Enabled {
+		return excel.NewExcelMatrixResolverAdapter(*t.excelConfig)
+	}
 	return NewFakeMatrixResolverAdapter()
 }
 
@@ -51,7 +79,7 @@ func (t *TestKit) RNGAdapter() ports.RNGPort {
 // LedgerReaderAdapter returns a ledger reader adapter for UI
 func (t *TestKit) LedgerReaderAdapter() ports.LedgerReaderPort {
 	// Share the same storage as LedgerAdapter
-	return NewInMemoryLedgerAdapter()
+	return t.ledger
 }
 
 // CreateTestMatrixBundle creates a test matrix bundle with realistic fake data
@@ -138,8 +166,10 @@ func (t *TestKit) LedgerAdapter() ports.LedgerPort {
 
 // ProfilerAdapter returns a profiler adapter
 func (t *TestKit) ProfilerAdapter() ports.ProfilerPort {
-	// Return a real profiler adapter
-	return datareadiness.NewProfilerAdapter()
+	// Create coercer with default config
+	coercerInstance := coercer.NewTypeCoercer(coercer.DefaultCoercionConfig())
+	// Return a real profiler adapter with coercer
+	return datareadiness.NewProfilerAdapter(coercerInstance)
 }
 
 // ReadinessOrchestrator creates a readiness orchestrator with all dependencies
@@ -421,145 +451,7 @@ func NewInMemoryLedgerAdapter() *InMemoryLedgerAdapter {
 		artifacts:    make(map[core.ArtifactID]core.Artifact),
 		runArtifacts: make(map[core.RunID][]core.ArtifactID),
 	}
-	// Initialize with some fake data
-	adapter.initializeFakeData()
 	return adapter
-}
-
-func (s *InMemoryLedgerAdapter) initializeFakeData() {
-	// Create fake relationship artifacts
-	rel1 := core.Artifact{
-		ID:   core.NewID(),
-		Kind: core.ArtifactRelationship,
-		Payload: map[string]interface{}{
-			"variable_x":        "inspection_count",
-			"variable_y":        "severity_score",
-			"test_type":         "pearson",
-			"effect_size":       0.673,
-			"p_value":           0.0001,
-			"sample_size":       12847,
-			"warnings":          []string{},
-			"fdr_q_value":       0.003,
-			"permutation_p":     0.0002,
-			"stability_score":   0.85,
-			"phantom_benchmark": 0.02,
-		},
-		CreatedAt: core.Now(),
-	}
-
-	rel2 := core.Artifact{
-		ID:   core.NewID(),
-		Kind: core.ArtifactRelationship,
-		Payload: map[string]interface{}{
-			"variable_x":        "region",
-			"variable_y":        "severity_score",
-			"test_type":         "anova",
-			"effect_size":       0.341,
-			"p_value":           0.023,
-			"sample_size":       12847,
-			"warnings":          []string{"LOW_N"},
-			"fdr_q_value":       0.045,
-			"permutation_p":     0.025,
-			"stability_score":   0.72,
-			"phantom_benchmark": 0.03,
-		},
-		CreatedAt: core.Now(),
-	}
-
-	// Create fake hypothesis artifacts
-	hyp1 := core.Artifact{
-		ID:   core.NewID(),
-		Kind: core.ArtifactHypothesis,
-		Payload: map[string]interface{}{
-			"cause_key":          "inspection_count",
-			"effect_key":         "severity_score",
-			"mechanism_category": "direct_causal",
-			"rationale":          "Higher inspection frequency directly influences severity detection through increased surveillance and reporting",
-			"confounders":        []string{"facility_size", "regulatory_focus"},
-			"status":             "draft",
-		},
-		CreatedAt: core.Now(),
-	}
-
-	// Create fake profile artifacts for vitality map
-	profile1 := core.Artifact{
-		ID:   core.NewID(),
-		Kind: core.ArtifactVariableProfile,
-		Payload: map[string]interface{}{
-			"variable_key":  "inspection_count",
-			"missing_rate":  0.05,
-			"variance":      12.45,
-			"cardinality":   47,
-			"sample_size":   12847,
-			"zero_variance": false,
-		},
-		CreatedAt: core.Now(),
-	}
-
-	profile2 := core.Artifact{
-		ID:   core.NewID(),
-		Kind: core.ArtifactVariableProfile,
-		Payload: map[string]interface{}{
-			"variable_key":  "severity_score",
-			"missing_rate":  0.02,
-			"variance":      8.92,
-			"cardinality":   23,
-			"sample_size":   12847,
-			"zero_variance": false,
-		},
-		CreatedAt: core.Now(),
-	}
-
-	profile3 := core.Artifact{
-		ID:   core.NewID(),
-		Kind: core.ArtifactVariableProfile,
-		Payload: map[string]interface{}{
-			"variable_key":  "region",
-			"missing_rate":  0.0,
-			"variance":      0.0,
-			"cardinality":   8,
-			"sample_size":   12847,
-			"zero_variance": true,
-		},
-		CreatedAt: core.Now(),
-	}
-
-	profile4 := core.Artifact{
-		ID:   core.NewID(),
-		Kind: core.ArtifactVariableProfile,
-		Payload: map[string]interface{}{
-			"variable_key":  "facility_size",
-			"missing_rate":  0.15,
-			"variance":      156.78,
-			"cardinality":   89,
-			"sample_size":   12847,
-			"zero_variance": false,
-		},
-		CreatedAt: core.Now(),
-	}
-
-	profile5 := core.Artifact{
-		ID:   core.NewID(),
-		Kind: core.ArtifactVariableProfile,
-		Payload: map[string]interface{}{
-			"variable_key":  "regulatory_focus",
-			"missing_rate":  0.35,
-			"variance":      0.0,
-			"cardinality":   3,
-			"sample_size":   12847,
-			"zero_variance": false,
-		},
-		CreatedAt: core.Now(),
-	}
-
-	s.artifacts[core.ArtifactID(rel1.ID)] = rel1
-	s.artifacts[core.ArtifactID(rel2.ID)] = rel2
-	s.artifacts[core.ArtifactID(hyp1.ID)] = hyp1
-	s.artifacts[core.ArtifactID(profile1.ID)] = profile1
-	s.artifacts[core.ArtifactID(profile2.ID)] = profile2
-	s.artifacts[core.ArtifactID(profile3.ID)] = profile3
-	s.artifacts[core.ArtifactID(profile4.ID)] = profile4
-	s.artifacts[core.ArtifactID(profile5.ID)] = profile5
 }
 
 func (s *InMemoryLedgerAdapter) StoreArtifact(ctx context.Context, runID string, artifact core.Artifact) error {

@@ -112,4 +112,7 @@ const (
 	ArtifactVariableHealth ArtifactKind = "variable_health"
 	ArtifactHypothesis     ArtifactKind = "hypothesis"
 	ArtifactRun            ArtifactKind = "run"
+	// NEW: Greenfield Research Flow artifacts
+	ArtifactResearchDirective  ArtifactKind = "research_directive"
+	ArtifactEngineeringBacklog ArtifactKind = "engineering_backlog"
 )

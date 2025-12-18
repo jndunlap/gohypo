@@ -19,7 +19,7 @@ gohypo-cli hypothesis run_001 matrix_bundle_001 --max-hypotheses 10 --rigor stan
 # Query: SELECT * FROM artifacts WHERE kind = 'hypothesis' ORDER BY created_at DESC;
 
 # 5. View in UI
-# Navigate to http://localhost:8080/hypotheses
+# Navigate to http://localhost:8081/hypotheses
 ```
 
 ---
@@ -117,7 +117,7 @@ func (g *GeneratorAdapter) ExtractTopRelationships(
 	artifacts []core.Artifact,
 	maxCount int,
 ) ([]stats.RelationshipPayload, map[string]core.ArtifactID, error) {
-	
+
 	relationships := []relationshipWithScore{}
 	relKeyToID := make(map[string]core.ArtifactID)
 
@@ -241,7 +241,7 @@ func (g *GeneratorAdapter) BuildPrompt(
 	relationships []stats.RelationshipPayload,
 	req ports.HypothesisRequest,
 ) (string, error) {
-	
+
 	// Collect unique variables
 	varSet := make(map[core.VariableKey]bool)
 	for _, rel := range relationships {
@@ -317,7 +317,7 @@ Output ONLY a JSON array of hypothesis candidates, no other text.`,
 
 **Function:** `ParseCandidates()` and `ValidateCandidates()`
 
-```go
+````go
 // LLMCandidate is the raw LLM response structure
 type LLMCandidate struct {
 	CauseKey          string   `json:"cause_key"`
@@ -363,7 +363,7 @@ func (g *GeneratorAdapter) ValidateCandidates(
 	relKeyToID map[string]core.ArtifactID,
 	validVariables map[core.VariableKey]bool,
 ) ([]ports.HypothesisCandidate, []core.Artifact) {
-	
+
 	validated := []ports.HypothesisCandidate{}
 	auditArtifacts := []core.Artifact{}
 
@@ -472,7 +472,7 @@ func (g *GeneratorAdapter) createDroppedAudit(candidateID, reason, message strin
 		CreatedAt: core.Now(),
 	}
 }
-```
+````
 
 ---
 
@@ -484,7 +484,7 @@ func (g *GeneratorAdapter) GenerateHypotheses(
 	ctx context.Context,
 	req ports.HypothesisRequest,
 ) ([]ports.HypothesisCandidate, error) {
-	
+
 	// GUARDRAIL: Timeout
 	ctx, cancel := context.WithTimeout(ctx, g.config.Timeout)
 	defer cancel()
@@ -586,7 +586,7 @@ func setupHypothesisService(kit *testkit.TestKit) *app.HypothesisService {
 			Timeout:             30 * time.Second,
 			FallbackToHeuristic: true,
 		}
-		
+
 		fallbackGen := heuristic.NewGenerator()
 		llmGen, err := llm.NewGeneratorAdapter(config, fallbackGen)
 		if err != nil {
@@ -711,14 +711,14 @@ func (s *HypothesisService) convertHypothesesToArtifacts(
 func TestExtractTopRelationships(t *testing.T) {
 	// Golden fixture: shopping dataset relationships
 	artifacts := loadTestArtifacts("testdata/shopping_relationships.json")
-	
+
 	adapter := &GeneratorAdapter{}
 	rels, relKeyToID, err := adapter.ExtractTopRelationships(artifacts, 10)
-	
+
 	assert.NoError(t, err)
 	assert.Len(t, rels, 10)
 	assert.Greater(t, len(relKeyToID), 0)
-	
+
 	// Verify all relationships are significant
 	for _, rel := range rels {
 		assert.LessOrEqual(t, rel.PValue, 0.05)
@@ -734,9 +734,9 @@ func TestValidateCandidates_MissingCitations(t *testing.T) {
 			SupportingArtifacts: []string{}, // Missing!
 		},
 	}
-	
+
 	validated, audits := adapter.ValidateCandidates(candidates, relationships, relKeyToID, validVars)
-	
+
 	assert.Len(t, validated, 0) // Dropped
 	assert.Len(t, audits, 1)     // Audit created
 	assert.Contains(t, audits[0].Payload["dropped_reason"], "missing_citations")
@@ -750,9 +750,9 @@ func TestValidateCandidates_UnknownVariable(t *testing.T) {
 			SupportingArtifacts: []string{"relationship:pearson:..."},
 		},
 	}
-	
+
 	validated, audits := adapter.ValidateCandidates(candidates, relationships, relKeyToID, validVars)
-	
+
 	assert.Len(t, validated, 0)
 	assert.Len(t, audits, 1)
 	assert.Contains(t, audits[0].Payload["dropped_reason"], "invalid_cause_key")
@@ -793,10 +793,10 @@ func TestLLMGenerator_EndToEnd(t *testing.T) {
 	}
 
 	candidates, err := adapter.GenerateHypotheses(context.Background(), req)
-	
+
 	assert.NoError(t, err)
 	assert.Len(t, candidates, 5)
-	
+
 	// Verify all candidates have valid variables
 	for _, cand := range candidates {
 		assert.NotEmpty(t, cand.CauseKey)
@@ -813,14 +813,14 @@ func TestLLMGenerator_DeterministicReplay(t *testing.T) {
 	// Same inputs → same outputs (with deterministic LLM)
 	req1 := buildRequest("snapshot_001", "cohort_hash_001", 42)
 	req2 := buildRequest("snapshot_001", "cohort_hash_001", 42)
-	
+
 	candidates1, _ := adapter.GenerateHypotheses(ctx, req1)
 	candidates2, _ := adapter.GenerateHypotheses(ctx, req2)
-	
+
 	// Compare fingerprints
 	fp1 := computeFingerprint(candidates1)
 	fp2 := computeFingerprint(candidates2)
-	
+
 	assert.Equal(t, fp1, fp2, "Same inputs should produce same outputs")
 }
 ```
@@ -830,24 +830,29 @@ func TestLLMGenerator_DeterministicReplay(t *testing.T) {
 ## Definition of Done
 
 ✅ **LLM generation produces candidates ONLY from Layer 0 evidence**
+
 - All candidates reference `supporting_artifacts` that exist in relationship artifacts
 - No variables outside the registry are allowed
 
 ✅ **Every candidate is persisted with provenance + citations**
+
 - Artifact payload includes `generator_type`, `supporting_artifacts`
 - Generation audit artifacts record dropped candidates and reasons
 
 ✅ **UI can render hypotheses and drill into cited relationships**
+
 - Hypothesis cards show generator badge
 - "Cites N relationships" drawer links to relationship artifacts
 - No special endpoints - pure artifact queries
 
 ✅ **Validation remains programmatic; LLM never affects verdicts**
+
 - LLM only generates hypotheses
 - Referee validation (Layer 1) is unchanged
 - LLM output is validated before persistence
 
 ✅ **Fallback path works**
+
 - LLM errors → heuristic generator
 - Missing citations → candidate dropped + audit
 - Unknown variables → candidate dropped + audit
@@ -871,14 +876,14 @@ func TestLLMGenerator_DeterministicReplay(t *testing.T) {
 
 ## Guardrails Summary
 
-| Guardrail | Implementation | Failure Mode |
-|-----------|---------------|--------------|
-| **Citations mandatory** | `ValidateCandidates()` checks `SupportingArtifacts` | Candidate dropped, audit artifact created |
-| **Variables must exist** | Validate against `validVariables` map | Candidate dropped, audit artifact created |
-| **Schema validation** | `artifacts.ValidateArtifact()` before persistence | Artifact rejected, error logged |
-| **Timeout** | `context.WithTimeout()` on LLM call | Fallback to heuristic generator |
-| **Budget limits** | `MaxHypotheses` enforced | Excess candidates truncated |
-| **Deterministic keys** | `buildRelationshipKey()` matches artifact registry | Consistent citation lookup |
+| Guardrail                | Implementation                                      | Failure Mode                              |
+| ------------------------ | --------------------------------------------------- | ----------------------------------------- |
+| **Citations mandatory**  | `ValidateCandidates()` checks `SupportingArtifacts` | Candidate dropped, audit artifact created |
+| **Variables must exist** | Validate against `validVariables` map               | Candidate dropped, audit artifact created |
+| **Schema validation**    | `artifacts.ValidateArtifact()` before persistence   | Artifact rejected, error logged           |
+| **Timeout**              | `context.WithTimeout()` on LLM call                 | Fallback to heuristic generator           |
+| **Budget limits**        | `MaxHypotheses` enforced                            | Excess candidates truncated               |
+| **Deterministic keys**   | `buildRelationshipKey()` matches artifact registry  | Consistent citation lookup                |
 
 ---
 

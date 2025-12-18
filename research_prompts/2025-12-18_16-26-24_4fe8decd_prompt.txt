@@ -1,0 +1,402 @@
+You are a Lead Research Architect for the GoHypo Engine.
+
+CONTEXT: We are in "Greenfield" status. Our engine can read data, but it doesn't know how to test anything yet. You are designing the first blueprints for our research laboratory.
+
+INPUT DATA:
+{
+  "discovery_briefs": null,
+  "field_metadata": [
+    {
+      "name": "campaign_sub_metric_29",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_33",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "impressions_per_user",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_2",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_23",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_26",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_30",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_32",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_36",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_37",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "brand_search_volume",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_3",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_8",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_38",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_44",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "date",
+      "semantic_type": "",
+      "data_type": "timestamp"
+    },
+    {
+      "name": "campaign_sub_metric_12",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_31",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_41",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_22",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "conversion_rate",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_14",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_17",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_25",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_42",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "top_funnel_spend_usd",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "click_through_rate",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_16",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_19",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_20",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_24",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_28",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_34",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_1",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_5",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_6",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_35",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_39",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_40",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_43",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_46",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_4",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_7",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_10",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_18",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_45",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_9",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_11",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_13",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_15",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_21",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "campaign_sub_metric_27",
+      "semantic_type": "",
+      "data_type": "numeric"
+    }
+  ],
+  "statistical_artifacts": [
+    {
+      "id": "rel_001",
+      "kind": "ArtifactRelationship",
+      "payload": {
+        "correlation_type": "positive",
+        "effect_size": 0.65,
+        "p_value": 0.001,
+        "test_used": "pearson",
+        "variable_x": "brand_search_volume",
+        "variable_y": "campaign_sub_metric_1"
+      }
+    },
+    {
+      "id": "rel_002",
+      "kind": "ArtifactRelationship",
+      "payload": {
+        "correlation_type": "positive",
+        "effect_size": 0.45,
+        "p_value": 0.01,
+        "test_used": "spearman",
+        "variable_x": "conversion_rate",
+        "variable_y": "campaign_sub_metric_2"
+      }
+    },
+    {
+      "id": "rel_003",
+      "kind": "ArtifactRelationship",
+      "payload": {
+        "correlation_type": "positive",
+        "effect_size": 0.78,
+        "p_value": 0.0001,
+        "test_used": "pearson",
+        "variable_x": "top_funnel_spend_usd",
+        "variable_y": "impressions_per_user"
+      }
+    },
+    {
+      "id": "rel_001",
+      "kind": "ArtifactRelationship",
+      "payload": {
+        "correlation_type": "positive",
+        "effect_size": 0.65,
+        "p_value": 0.001,
+        "test_used": "pearson",
+        "variable_x": "brand_search_volume",
+        "variable_y": "campaign_sub_metric_1"
+      }
+    },
+    {
+      "id": "rel_002",
+      "kind": "ArtifactRelationship",
+      "payload": {
+        "correlation_type": "positive",
+        "effect_size": 0.45,
+        "p_value": 0.01,
+        "test_used": "spearman",
+        "variable_x": "conversion_rate",
+        "variable_y": "campaign_sub_metric_2"
+      }
+    },
+    {
+      "id": "rel_003",
+      "kind": "ArtifactRelationship",
+      "payload": {
+        "correlation_type": "positive",
+        "effect_size": 0.78,
+        "p_value": 0.0001,
+        "test_used": "pearson",
+        "variable_x": "top_funnel_spend_usd",
+        "variable_y": "impressions_per_user"
+      }
+    }
+  ],
+  "total_fields": 52,
+  "total_stats_artifacts": 6
+}
+
+This includes:
+- field_metadata: All available data fields with their types
+- statistical_artifacts: Complete statistical test results, relationships, correlations, and test scores from the analysis engine
+- discovery_briefs: Pre-computed narrative + confidence summaries generated by the Go engine from the relationship graph (use these to ground your hypotheses)
+- total_fields: Number of data fields available
+- total_stats_artifacts: Number of statistical artifacts with test results
+
+TASK: Identify 3 High-Priority Hypotheses using the full statistical context. Leverage the actual test scores, correlations, and statistical results to inform your hypotheses.
+
+CRITICAL CONSTRAINTS:
+
+1. **The Dual-Layer Hypothesis:**
+   - **Business Hypothesis:** A simple, approachable sentence describing human behavior or outcome (e.g., "High support delays kill new feature exploration").
+   - **Science Hypothesis:** A precise technical description of the data interaction (e.g., "A negative correlation exists between support latency and the pioneer adoption rate within a 7-day window").
+
+2. **The "Ghost" Test (Null Case):** Explicitly describe what the data looks like if your idea is WRONG. This is the "Referee's" best friend for rejecting false positives.
+
+3. **Build-Order Precision:** Do not suggest generic math. Request specific instruments like "Recency-Weighted Decay Tracker" or "Behavioral Cohort Scanner."
+
+4. **The 2-Sentence Execution Rule:** Every validation method must have a 2-sentence description. Sentence 1: Tell the Go engineer exactly how to organize or calculate the data. Sentence 2: Tell the engine what specific result proves the pattern is real.
+
+REQUIRED JSON SCHEMA:
+{
+  "research_directives": [
+    {
+      "id": "HYP-001",
+      "business_hypothesis": "The simple story of the impact.",
+      "science_hypothesis": "The technical pattern in the data.",
+      "null_case": "Quantitative description of a failed/random result.",
+      "validation_methods": [
+        {
+          "type": "Detector",
+          "method_name": "Specific tool name (e.g., Threshold_Impact_Monitor)",
+          "execution_plan": "Sentence 1: The calculation logic. Sentence 2: The pass/fail criteria."
+        },
+        {
+          "type": "Scanner",
+          "method_name": "Specific tool name",
+          "execution_plan": "Sentence 1: The calculation logic. Sentence 2: The pass/fail criteria."
+        },
+        {
+          "type": "Referee",
+          "method_name": "Specific tool name",
+          "execution_plan": "Sentence 1: The calculation logic. Sentence 2: The pass/fail criteria."
+        }
+      ],
+      "referee_gates": {
+        "confidence_target": 0.99,
+        "stability_threshold": 0.85
+      }
+    }
+  ]
+}
+
+IMPORTANT: Your response must be valid JSON matching EXACTLY this schema. Generate exactly 3 research directives in the array. Do not include any explanatory text outside the JSON structure.

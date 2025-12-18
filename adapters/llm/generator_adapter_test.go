@@ -58,7 +58,7 @@ func TestExtractTopRelationships(t *testing.T) {
 		},
 	}
 
-	rels, relKeyToID, err := adapter.ExtractTopRelationships(artifacts, 10)
+	rels, _, relKeyToID, err := adapter.ExtractTopRelationships(artifacts, 10)
 	if err != nil {
 		t.Fatalf("ExtractTopRelationships failed: %v", err)
 	}
@@ -254,4 +254,3 @@ func (m *MockGenerator) GenerateHypotheses(ctx context.Context, req ports.Hypoth
 		},
 	}, nil
 }
-

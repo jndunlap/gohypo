@@ -1,181 +1,83 @@
-# GoHypo
+# GoHypo: General Purpose Causal Discovery & Falsification Engine
 
-A math-first statistical discovery engine built with Hexagonal Architecture and DRY principles.
+**GoHypo** is not a dashboard; it is an autonomous **Scientific Laboratory.** It is a high-performance engine built in Go that treats data analysis as a rigorous architectural process. By pairing a **Creative AI Scientist** (LLM) with a **Deterministic Skeptic** (Go Engine), GoHypo continuously mines datasets for non-obvious truths while programmatically hunting for reasons to reject them.
 
-## Architecture Overview
+---
 
-GoHypo implements a **Layered Pipeline Architecture** for statistical hypothesis generation and validation:
+## 🔬 What is it?
 
-- **Layer 0**: Exhaustive relationship mapping (measurements, not truth)
-- **Layer 1**: LLM generates hypotheses from Layer 0 artifacts
-- **Validation**: Programmatic referee judges hypotheses through statistical rigor
-- **Compounding**: Growing knowledge base of validated insights
+GoHypo is a "math-first" engine designed to move beyond simple correlation. It operates on the principle of **Autonomous Causal Discovery.** Instead of a human analyst hunting for patterns, GoHypo ingests metadata and architects its own research laboratory to prove—or falsify—complex behavioral interactions.
 
-## Key DRY Principles
+### The "Greenfield" Philosophy
 
-1. **Single Canonical Input**: `domain/dataset/MatrixBundle` flows through all computation
-2. **Universal Variable Resolution**: 4 generic as-of modes, not custom SQL per variable
-3. **Stage Pipeline Pattern**: Rigor profiles = stage configurations
-4. **Artifact-Only Persistence**: UI queries artifacts by kind, not custom endpoints
-5. **Deterministic Replay**: Hash-based fingerprinting ensures reproducibility
+In GoHypo, the engine starts as a blank slate. It doesn't use generic, one-size-fits-all tests. Instead, it looks at your specific data and **blueprints the exact mathematical instruments** required to understand the "physics" of your variables.
 
-## Project Structure
+---
+
+## 🏗️ How it Works: The Discovery Loop
+
+GoHypo operates in a continuous, 24/7 loop that bridges the gap between human-readable intuition and machine-executable rigor.
+
+| **Stage**        | **Actor**             | **Action**                                       | **Output**                    |
+| ---------------------- | --------------------------- | ------------------------------------------------------ | ----------------------------------- |
+| **1. Ingest**    | **Go Engine**         | Resolves raw data into a canonical `MatrixBundle`.   | **Field Metadata**            |
+| **2. Architect** | **AI Scientist**      | Analyzes metadata to find high-value "Hidden Truths."  | **Research Directive (JSON)** |
+| **3. Build**     | **Go Engine**         | Dynamically assembles requested "Instruments."         | **Statistical Modules**       |
+| **4. Referee**   | **Programmatic Gate** | Runs the "Ghost Test" to attempt falsification.        | **Pass/Fail Verdict**         |
+| **5. Ledger**    | **Blueprint UI**      | Renders the validated finding as an engineering sheet. | **Validated Insight**         |
+
+---
+
+## 📋 The Research Directive (The Handshake)
+
+At the heart of GoHypo is the  **Research Directive** . This is a JSON-based "Work Order" that bridges the gap between a business feeling and a technical build. It splits every discovery into a **Business Hypothesis** (the story) and a **Science Hypothesis** (the math).
+
+### Example Directive
+
+**JSON**
 
 ```
-gohypo/
-├── cmd/                    # Application entrypoints
-│   ├── api/               # HTTP API server
-│   │   └── main.go
-│   ├── cli/               # CLI tools (sweep, battery, resolve)
-│   │   └── main.go
-│   ├── dev/               # Development tools (seed, smoke tests)
-│   │   └── main.go
-│   └── main.go            # Root command entrypoint
-├── domain/                # Pure business logic (no external deps)
-│   ├── core/             # Centralized types (ID, Time, Errors, Hash)
-│   │   ├── errors.go
-│   │   ├── hash.go
-│   │   ├── id.go
-│   │   └── time.go
-│   ├── datareadiness/    # Data readiness pipeline
-│   │   ├── ingestion/    # Data ingestion types
-│   │   │   └── types.go
-│   │   ├── profiling/    # Data profiling types
-│   │   │   └── types.go
-│   │   └── resolution/   # Data resolution orchestration
-│   │       ├── orchestrator.go
-│   │       └── readiness.go
-│   ├── dataset/          # MatrixBundle (canonical data object)
-│   │   ├── bundle.go
-│   │   └── manifest.go
-│   ├── stage/            # Pipeline execution types
-│   │   └── types.go
-│   ├── contracts/        # Variable contracts + compilation
-│   │   ├── compile.go
-│   │   └── types.go
-│   ├── hypothesis/       # Hypothesis generation types
-│   │   └── types.go
-│   ├── run/              # Run execution types
-│   │   └── types.go
-│   ├── snapshot/         # Snapshot types
-│   │   └── types.go
-│   ├── stats/            # Statistical types
-│   │   └── types.go
-│   └── verdict/          # Validation result types
-│       └── types.go
-├── app/                   # Use case orchestration
-│   ├── build_snapshot_service.go
-│   ├── hypothesis_service.go
-│   ├── matrix_resolver_service.go
-│   ├── stage_runner.go
-│   └── stats_sweep_service.go
-├── ports/                 # Interface contracts
-│   ├── battery.go        # Validation tests
-│   ├── generator.go      # Hypothesis generation
-│   ├── ledger.go         # Append-only artifact storage
-│   ├── matrix_resolver.go # Variable-to-matrix resolution
-│   ├── reader.go         # Read-only UI/API access
-│   ├── registry.go       # Variable contract management
-│   ├── rng.go            # Deterministic randomness
-│   ├── snapshot.go       # Snapshot operations
-│   └── stats.go          # Statistical computation
-├── adapters/              # External system implementations
-│   ├── battery/          # Validation test adapters
-│   │   ├── confounder_stress_adapter.go
-│   │   └── phantom_adapter.go
-│   ├── datareadiness/    # Data readiness adapters
-│   │   ├── coercer/
-│   │   │   └── coercer.go
-│   │   └── synthesizer/
-│   │       └── synthesizer.go
-│   ├── db/
-│   │   └── postgres/     # PostgreSQL adapters
-│   │       ├── ledger_adapter.go
-│   │       ├── matrix_resolver_adapter.go
-│   │       ├── migrations/  # Database schema
-│   │       │   ├── 001_initial_schema.sql
-│   │       │   ├── 002_test_data.sql
-│   │       │   ├── 003_registry_versioning.sql
-│   │       │   └── migrate.go
-│   │       ├── registry_adapter.go
-│   │       └── snapshot_adapter.go
-│   ├── llm/              # LLM hypothesis generation
-│   │   ├── generator_adapter.go
-│   │   └── heuristic/
-│   │       └── generator.go
-│   └── stats/            # Statistical computation adapters
-│       ├── engine/       # Consolidated statistical engine
-│       │   ├── engine.go
-│       │   ├── pairwise.go
-│       │   ├── permutation.go
-│       │   ├── relationship.go
-│       │   └── stability.go
-│       ├── pairwise_adapter.go
-│       ├── permutation_adapter.go
-│       └── stability_adapter.go
-├── api/                   # HTTP API layer
-│   ├── handlers.go       # Request handlers
-│   └── server.go         # HTTP server
-├── ui/                    # User interface
-│   └── app.go            # UI application
-├── internal/              # Internal packages
-│   └── testkit/          # Testing utilities
-│       ├── kit.go
-│       ├── readiness.go
-│       └── rng_adapter.go
-├── gohypo/                # Legacy/submodule structure
-│   ├── adapters/
-│   │   └── db/
-│   │       └── postgres/
-│   │           └── matrix_resolver_adapter.go
-│   ├── cmd/
-│   │   ├── cli/
-│   │   │   └── main.go
-│   │   └── dev/
-│   │       └── main.go
-│   ├── domain/
-│   │   └── dataset/
-│   │       └── manifest.go
-│   └── ports/
-│       └── reader.go
-├── go.mod                 # Go module definition
-├── go.sum                 # Go module checksums
-├── test_generator         # Test generation utility
-└── README.md              # This file
+{
+  "id": "HYP-001",
+  "business_hypothesis": "Customers get 'Coupon Fatigue'—if we send too many discounts, they stop buying full-price items entirely.",
+  "science_hypothesis": "A non-linear 'cliff' exists where full-price transaction volume drops exponentially after 4 coupon redemptions in a 30-day window.",
+  "null_case": "Full-price purchasing frequency remains stable regardless of the number of discounts redeemed.",
+  "validation_methods": [
+    {
+      "type": "Detector",
+      "method_name": "Redemption_Decay_Monitor",
+      "execution_plan": "Calculate the slope of full-price orders relative to coupon count. The test passes if the slope pivots sharply negative after the 4th redemption."
+    },
+    {
+      "type": "Scanner",
+      "method_name": "Ghost_Pattern_Shuffle",
+      "execution_plan": "Randomize coupon counts across the user base 10,000 times. The pattern is validated only if the 'cliff' disappears in 99.9% of random shuffles."
+    }
+  ]
+}
 ```
 
-## Core Data Flow
+---
 
-1. **Input**: Variable contracts + snapshot specification
-2. **Resolution**: Contracts compiled → MatrixBundle created via generic as-of resolvers
-3. **Analysis**: MatrixBundle fed to stage pipeline (stats → validation → artifacts)
-4. **Storage**: Artifacts written to append-only ledger
-5. **Replay**: Same fingerprint → identical results
+## 🛡️ The Falsification Engine (The Referee)
 
-## Development Workflow
+GoHypo’s primary mission is to **disprove itself.** Every hypothesis is accompanied by a **Null Case (The Ghost Test).** The Go-based **Referee** is a specialized gatekeeper that runs a battery of stress tests—Permutations, Bootstrapping, and Cross-Validation—specifically designed to prove that a "Discovery" is actually just random noise. If the pattern survives the Referee, it is stamped as **VALIDATED.**
 
-```bash
-# Generate seed data
-go run cmd/dev/main.go seed
+---
 
-# Run smoke tests
-go run cmd/dev/main.go smoke
+## 🎨 The Blueprint Aesthetic
 
-# CLI operations
-go run cmd/cli/main.go sweep <snapshot-id>
-go run cmd/cli/main.go battery <hypothesis-id>
+GoHypo abandons modern web "fluff" for a **Technical Vellum** UI designed for high-density information.
 
-# Start API server
-go run cmd/api/main.go
+* **Instrument-Grade Detail:** Every panel is separated by 2px solid lines with "Drafting Overhangs" at the corners.
+* **Blueprint Accents:** We use **Drafting Blue** for all active measurements, dimension lines, and "Work-in-Progress" research.
+* **Engineering Title Blocks:** Every discovery is anchored by a formal title block containing the Project Name, Data Hash, and the Scientist's ID.
 
-# Test determinism
-go run cmd/dev/main.go determinism <run-id>
-```
+---
 
-## Key Invariants
+## 🚀 Getting Started
 
-- **No variable-specific code** outside tests
-- **Everything resolves to MatrixBundle**
-- **All computation is deterministic + replayable**
-- **Domain logic never touches storage**
-- **New features = new artifacts or stages, not new ports**
+1. **Connect Data:** Point GoHypo to any SQL, CSV, or Parquet source.
+2. **Generate Metadata:** The engine automatically resolves your fields into the `MatrixBundle`.
+3. **Initiate Research:** Click the **[INITIATE_SCAN]** button to activate the AI Scientist.
+4. **Inspect Blueprints:** Review the generated Research Directives and authorize the Go Engine to build the necessary validation instruments.

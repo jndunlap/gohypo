@@ -1,0 +1,43 @@
+{
+  "id": "HYP-003",
+  "business_hypothesis": "Increasing top-funnel spend increases impressions per user.",
+  "science_hypothesis": "A strong positive linear relationship exists (Pearson r ≥ 0.75) between top_funnel_spend_usd and impressions_per_user, with a positive and stable elasticity after controlling for date and brand_search_volume.",
+  "null_case": "No causal/associative effect: Pearson r ∈ [-0.10, 0.10], regression slope ≈ 0 with p \u003e 0.05, and elasticity indistinguishable from zero.",
+  "validation_methods": [
+    {
+      "type": "Detector",
+      "method_name": "Spend_Elasticity_Estimator",
+      "execution_plan": "Estimate OLS regression impressions_per_user ~ top_funnel_spend_usd + log(top_funnel_spend_usd) + date fixed effects + brand_search_volume and compute elasticity = slope * mean(spend)/mean(impressions_per_user). Pass if the linear slope is positive with p \u003c 0.001 and estimated elasticity ≥ 0.30 with the inclusion of spend increasing adjusted R² by ≥ 0.20."
+    },
+    {
+      "type": "Scanner",
+      "method_name": "Recency-Weighted_Decay_Tracker",
+      "execution_plan": "Apply exponential weighting (half-life = 14 days) to spend and impressions and fit weighted OLS and rolling 14-day slopes to capture short-term responsiveness and stability. Pass if the weighted slope remains positive with p \u003c 0.01 and ≥ 75% of rolling 14-day windows show a positive slope."
+    },
+    {
+      "type": "Referee",
+      "method_name": "Granger_Lag_Referee",
+      "execution_plan": "Run Granger causality tests with lags 1–7 days on daily aggregated top_funnel_spend_usd and impressions_per_user while controlling for autocorrelation and include robustness checks on transformed variables. Pass if top_funnel_spend_usd Granger-causes impressions_per_user with p \u003c 0.01 for at least two contiguous lag orders and the effect is present in ≥ 80% of subsampled periods."
+    }
+  ],
+  "referee_gates": {
+    "confidence_target": 0.99,
+    "stability_threshold": 0.85
+  },
+  "validated": true,
+  "rejected": false,
+  "effect_size": 1.0800898892195945,
+  "p_value": 0.0390000048124746,
+  "sample_size": 940,
+  "created_at": "2025-12-18T16:27:07.4889817-05:00",
+  "processing_time": 0,
+  "metadata": {
+    "model": "gpt-5-mini",
+    "session_id": "4fe8decd-fb49-466c-8484-9b9ba1ba69e2"
+  },
+  "validation_strategy": {
+    "detector": "",
+    "scanner": "",
+    "proxy": ""
+  }
+}

@@ -139,4 +139,3 @@ func (c *OpenAIClient) ChatCompletion(ctx context.Context, model string, prompt 
 	}
 	return decoded.Choices[0].Message.Content, nil
 }
-
