@@ -273,6 +273,137 @@
     };
 
     /**
+     * Toggle the scientists drawer (left sidebar)
+     */
+    window.toggleDrawer = function() {
+        const drawer = document.getElementById('scientists-drawer');
+        if (!drawer) return;
+
+        // Toggle visibility with smooth animation
+        if (drawer.style.transform === 'translateX(-100%)') {
+            drawer.style.transform = 'translateX(0)';
+        } else {
+            drawer.style.transform = 'translateX(-100%)';
+        }
+    };
+
+        console.log('[Research UI] Initiating research process...');
+
+        const btn = document.getElementById('initiate-research-btn');
+        const spinner = document.getElementById('research-spinner');
+        const responseDiv = document.getElementById('research-init-response');
+
+        if (!btn) {
+            console.error('[Research UI] Could not find initiate-research-btn');
+            return;
+        }
+
+        // Disable button and show loading state
+        btn.disabled = true;
+        btn.querySelector('.btn-text').textContent = 'Starting Research...';
+        if (spinner) spinner.classList.remove('hidden');
+
+        try {
+            // Make the API call
+            const response = await fetch('/api/research/initiate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                console.log('[Research UI] Research initiated successfully:', data);
+
+                // Establish SSE connection for real-time updates
+                if (data.session_id && window.connectSSE) {
+                    console.log('[Research UI] Establishing SSE connection for session:', data.session_id);
+                    window.connectSSE(data.session_id);
+                }
+
+                // Show success message
+                if (responseDiv) {
+                    responseDiv.className = 'mt-4 p-4 bg-green-50 border border-green-200 rounded-lg';
+                    responseDiv.innerHTML = `
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <h3 class="text-sm font-medium text-green-800">Research Initiated!</h3>
+                                <div class="mt-2 text-sm text-green-700">
+                                    <p>Session ID: ${data.session_id || 'Unknown'}</p>
+                                    <p>Watch the center panel for real-time updates as hypotheses are generated and validated.</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    responseDiv.classList.remove('hidden');
+                }
+
+                // Update button to show completion
+                btn.querySelector('.btn-text').textContent = 'Research Running...';
+
+                // Start polling for updates
+                startProgressPolling();
+
+            } else {
+                throw new Error(data.error || 'Failed to initiate research');
+            }
+
+        } catch (error) {
+            console.error('[Research UI] Failed to initiate research:', error);
+
+            // Show error message
+            if (responseDiv) {
+                responseDiv.className = 'mt-4 p-4 bg-red-50 border border-red-200 rounded-lg';
+                responseDiv.innerHTML = `
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-red-800">Research Failed to Start</h3>
+                            <div class="mt-2 text-sm text-red-700">
+                                <p>${error.message}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                responseDiv.classList.remove('hidden');
+            }
+
+            // Re-enable button
+            btn.disabled = false;
+            btn.querySelector('.btn-text').textContent = 'Go Hypo';
+        } finally {
+            // Hide spinner
+            if (spinner) spinner.classList.add('hidden');
+        }
+    };
+
+    /**
+     * Execute mission brief (called from scientists drawer button)
+     */
+    window.executeMissionBrief = function() {
+        console.log('[Research UI] Executing mission brief...');
+
+        // The initiateResearch function is now handled by research_cockpit.js
+        // This function is kept for compatibility but delegates to the cockpit version
+        if (window.initiateResearch) {
+            window.initiateResearch();
+        } else {
+            console.error('[Research UI] initiateResearch function not available');
+        }
+    };
+
+    /**
      * Escape HTML to prevent XSS
      */
     function escapeHtml(text) {

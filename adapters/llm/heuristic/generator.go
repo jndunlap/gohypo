@@ -47,7 +47,6 @@ func (g *Generator) GenerateHypotheses(ctx context.Context, req ports.Hypothesis
 		}
 
 		hypothesis := g.generateHypothesisFromRelationship(rel, req.RigorProfile)
-		hypothesis.GeneratorType = "heuristic"
 		candidates = append(candidates, hypothesis)
 	}
 

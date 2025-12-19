@@ -110,3 +110,5 @@ func TestCategoricalCodeDetection(t *testing.T) {
 		t.Errorf("Expected continuous numbers to not be detected as categorical codes")
 	}
 }
+
+

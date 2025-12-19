@@ -42,7 +42,7 @@
         }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="bg-white min-h-screen">
     <!-- Header -->
     <header class="bg-gradient-to-r from-blue-600 to-purple-700 text-white shadow-lg">
         <div class="max-w-7xl mx-auto px-4 py-6">
@@ -433,7 +433,7 @@
                                 </span>
                             </div>
                             <p class="text-sm mb-2">${hyp.businessHypothesis || 'Processing...'}</p>
-                            ${hyp.confidence ? `<div class="text-xs text-gray-500">Confidence: ${(hyp.confidence * 100).toFixed(1)}%</div>` : ''}
+                            ${hyp.confidence ? '<div class="text-xs text-gray-500">Confidence: ' + (hyp.confidence * 100).toFixed(1) + '%</div>' : ''}
                         </div>
                     `).join('');
 

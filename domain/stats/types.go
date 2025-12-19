@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"gohypo/domain/core"
+	"gohypo/domain/stats/brief"
 )
 
 // ============================================================================
@@ -35,6 +36,7 @@ type CanonicalMetrics struct {
 }
 
 // DataQuality captures data characteristics that affect interpretation
+// DEPRECATED: Use domain/stats/brief.StatisticalBrief.Quality instead
 type DataQuality struct {
 	MissingRateX float64 `json:"missing_rate_x"` // Missing data rate for variable X
 	MissingRateY float64 `json:"missing_rate_y"` // Missing data rate for variable Y
@@ -44,6 +46,20 @@ type DataQuality struct {
 	VarianceY    float64 `json:"variance_y"`     // Variance of Y (if numeric)
 	CardinalityX int     `json:"cardinality_x"`  // Cardinality bucket for X
 	CardinalityY int     `json:"cardinality_y"`  // Cardinality bucket for Y
+}
+
+// NewDataQualityFromBrief creates DataQuality from StatisticalBrief for backward compatibility
+func NewDataQualityFromBrief(brief *brief.StatisticalBrief) DataQuality {
+	return DataQuality{
+		MissingRateX: brief.Quality.MissingRatio,
+		MissingRateY: brief.Quality.MissingRatio,                    // Single variable context
+		UniqueCountX: brief.SampleSize - brief.Quality.OutlierCount, // Approximation
+		UniqueCountY: brief.SampleSize - brief.Quality.OutlierCount, // Approximation
+		VarianceX:    brief.Summary.StdDev * brief.Summary.StdDev,
+		VarianceY:    brief.Summary.StdDev * brief.Summary.StdDev, // Approximation
+		CardinalityX: brief.SampleSize,
+		CardinalityY: brief.SampleSize,
+	}
 }
 
 // DirectionalHints provides Layer 1 hypothesis generation hints

@@ -1,23 +1,145 @@
 package profiling
 
 import (
-	"gohypo/domain/core"
+	"time"
+
 	"gohypo/domain/datareadiness/ingestion"
+	"gohypo/domain/stats/brief"
 )
 
 // FieldProfile contains the complete statistical profile of a field_key
+// This maintains backward compatibility while the system migrates to StatisticalBrief
 type FieldProfile struct {
 	FieldKey       string            `json:"field_key"`
 	Source         string            `json:"source"`
 	SampleSize     int               `json:"sample_size"`
 	InferredType   InferredType      `json:"inferred_type"`
-	TypeConfidence float64           `json:"type_confidence"` // 0-1 confidence in type inference
+	TypeConfidence float64           `json:"type_confidence"`
 	Cardinality    CardinalityStats  `json:"cardinality"`
 	MissingStats   MissingStats      `json:"missing_stats"`
 	TypeSpecific   TypeSpecificStats `json:"type_specific"`
 	TemporalStats  TemporalStats     `json:"temporal_stats"`
-	QualityScore   float64           `json:"quality_score"` // 0-1, higher is better
-	ComputedAt     core.Timestamp    `json:"computed_at"`
+	QualityScore   float64           `json:"quality_score"`
+	ComputedAt     time.Time         `json:"computed_at"`
+}
+
+// NewFieldProfile creates a new field profile
+func NewFieldProfile(fieldKey, source string, sampleSize int) *FieldProfile {
+	return &FieldProfile{
+		FieldKey:   fieldKey,
+		Source:     source,
+		SampleSize: sampleSize,
+		ComputedAt: time.Now(),
+	}
+}
+
+// FromStatisticalBrief converts a StatisticalBrief to FieldProfile for backward compatibility
+func FromStatisticalBrief(sb *brief.StatisticalBrief) *FieldProfile {
+	fp := &FieldProfile{
+		FieldKey:   sb.FieldKey,
+		Source:     sb.Source,
+		SampleSize: sb.SampleSize,
+		ComputedAt: sb.ComputedAt,
+	}
+
+	// Map basic stats
+	fp.MissingStats = MissingStats{
+		MissingCount: int(sb.Quality.MissingRatio * float64(sb.SampleSize)),
+		MissingRate:  sb.Quality.MissingRatio,
+	}
+
+	fp.Cardinality = CardinalityStats{
+		UniqueCount: int(float64(sb.SampleSize) * (1.0 - sb.Quality.SparsityRatio)),
+		UniqueRatio: 1.0 - sb.Quality.SparsityRatio,
+	}
+
+	if sb.Categorical != nil {
+		fp.Cardinality.Entropy = sb.Categorical.Entropy
+		fp.InferredType = TypeCategorical
+		fp.TypeConfidence = 0.9
+	} else {
+		fp.InferredType = TypeNumeric
+		fp.TypeConfidence = 0.9
+	}
+
+	// Map temporal stats
+	if sb.Temporal != nil {
+		fp.TemporalStats = TemporalStats{
+			HasTemporalUpdates: true,
+			UpdateFrequency:    1.0, // Placeholder
+			StabilityScore:     sb.Temporal.StabilityScore,
+		}
+	}
+
+	// Map type-specific stats
+	if sb.Categorical != nil && sb.Categorical.IsCategorical {
+		fp.TypeSpecific.CategoricalStats = &CategoricalStats{
+			Mode:          sb.Categorical.Mode,
+			ModeFrequency: sb.Categorical.ModeFrequency,
+			GiniIndex:     sb.Categorical.GiniIndex,
+		}
+	} else {
+		fp.TypeSpecific.NumericStats = &NumericStats{
+			Min:       sb.Summary.Min,
+			Max:       sb.Summary.Max,
+			Mean:      sb.Summary.Mean,
+			Median:    sb.Summary.Median,
+			StdDev:    sb.Summary.StdDev,
+			Skewness:  sb.Distribution.Skewness,
+			Kurtosis:  sb.Distribution.Kurtosis,
+			ZeroCount: int(sb.Quality.SparsityRatio * float64(sb.SampleSize)),
+		}
+	}
+
+	// Compute quality score
+	fp.QualityScore = fp.ComputeQualityScore()
+
+	return fp
+}
+
+// ToStatisticalBrief converts FieldProfile to StatisticalBrief
+func (fp *FieldProfile) ToStatisticalBrief() *brief.StatisticalBrief {
+	request := brief.ComputationRequest{ForIngestion: true}
+
+	sb := brief.NewBrief(fp.FieldKey, fp.Source, fp.SampleSize, request)
+
+	// Map quality stats
+	sb.Quality.MissingRatio = fp.MissingStats.MissingRate
+	sb.Quality.SparsityRatio = fp.Cardinality.UniqueRatio
+	sb.Quality.NoiseCoefficient = 0.1 // Placeholder
+
+	// Map summary stats
+	if fp.TypeSpecific.NumericStats != nil {
+		sb.Summary = brief.SummaryStats{
+			Mean:   fp.TypeSpecific.NumericStats.Mean,
+			StdDev: fp.TypeSpecific.NumericStats.StdDev,
+			Min:    fp.TypeSpecific.NumericStats.Min,
+			Max:    fp.TypeSpecific.NumericStats.Max,
+			Median: fp.TypeSpecific.NumericStats.Median,
+			Q25:    0, // Placeholder
+			Q75:    0, // Placeholder
+		}
+
+		sb.Distribution = brief.DistributionStats{
+			Skewness: fp.TypeSpecific.NumericStats.Skewness,
+			Kurtosis: fp.TypeSpecific.NumericStats.Kurtosis,
+			IsNormal: true, // Placeholder
+		}
+	}
+
+	// Map categorical stats
+	if fp.TypeSpecific.CategoricalStats != nil {
+		sb.Categorical = &brief.CategoricalStats{
+			IsCategorical: fp.InferredType == TypeCategorical,
+			Cardinality:   fp.Cardinality.UniqueCount,
+			Entropy:       fp.Cardinality.Entropy,
+			Mode:          fp.TypeSpecific.CategoricalStats.Mode,
+			ModeFrequency: fp.TypeSpecific.CategoricalStats.ModeFrequency,
+			GiniIndex:     fp.TypeSpecific.CategoricalStats.GiniIndex,
+		}
+	}
+
+	return sb
 }
 
 // InferredType represents the automatically detected data type
@@ -169,12 +291,6 @@ func (fp *FieldProfile) ComputeQualityScore() float64 {
 
 	// Penalize temporal instability
 	score *= fp.TemporalStats.StabilityScore
-
-	// Penalize poor type inference confidence
-	if fp.SampleSize > 100 {
-		// Assume some type inference confidence metric
-		score *= 0.9 // Placeholder
-	}
 
 	// Ensure score is between 0 and 1
 	if score < 0 {

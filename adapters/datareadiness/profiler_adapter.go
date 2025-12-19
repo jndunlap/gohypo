@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"math"
 	"strings"
+	"time"
 
 	"gohypo/adapters/datareadiness/coercer"
-	"gohypo/domain/core"
 	"gohypo/domain/datareadiness/ingestion"
 	"gohypo/domain/datareadiness/profiling"
 )
@@ -113,7 +113,7 @@ func (p *ProfilerAdapter) profileField(fieldName, sourceName string, events []in
 		Cardinality:    cardinalityStats,
 		MissingStats:   missingStats,
 		QualityScore:   p.computeQualityScore(missingCount, totalCount, len(values)),
-		ComputedAt:     core.Now(),
+		ComputedAt:     time.Now(),
 	}
 
 	// Add type-specific stats

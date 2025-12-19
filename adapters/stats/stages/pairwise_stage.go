@@ -1,6 +1,7 @@
 package stages
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"time"
@@ -8,14 +9,19 @@ import (
 	"gohypo/domain/core"
 	"gohypo/domain/dataset"
 	"gohypo/domain/stats"
+	"gohypo/internal/analysis/brief"
 )
 
-// PairwiseStage performs statistical tests between variable pairs
-type PairwiseStage struct{}
+// PairwiseStage performs statistical tests between variable pairs using unified brief system
+type PairwiseStage struct {
+	engine *brief.StatisticalEngine
+}
 
-// NewPairwiseStage creates a new pairwise stage
+// NewPairwiseStage creates a new pairwise stage with statistical engine
 func NewPairwiseStage() *PairwiseStage {
-	return &PairwiseStage{}
+	return &PairwiseStage{
+		engine: brief.NewStatisticalEngine(),
+	}
 }
 
 // Execute performs pairwise statistical tests on all variable pairs
@@ -172,9 +178,12 @@ type RelationshipResult struct {
 	SkipReason  stats.WarningCode      `json:"skip_reason,omitempty"`
 }
 
-// analyzeRelationship performs statistical analysis between two variables
+// analyzeRelationship performs statistical analysis between two variables using unified brief system
 func (p *PairwiseStage) analyzeRelationship(var1, var2 core.VariableKey, col1, col2 []float64, familyID core.Hash) *RelationshipResult {
-	if len(col1) != len(col2) || len(col1) == 0 {
+	// Use unified brief system for all statistical analysis
+	analysis, err := p.engine.AnalyzeRelationship(context.Background(), col1, col2, "correlation", var1, var2)
+	if err != nil {
+		// Return skipped result on analysis error
 		return &RelationshipResult{
 			Key: stats.RelationshipKey{
 				VariableX: var1,
@@ -183,127 +192,13 @@ func (p *PairwiseStage) analyzeRelationship(var1, var2 core.VariableKey, col1, c
 				FamilyID:  familyID,
 			},
 			Skipped:    true,
-			SkipReason: stats.WarningLowN,
+			SkipReason: stats.WarningLowN, // Generic skip reason
 		}
 	}
 
-	// Debug: check column lengths
-	_ = len(col1) // For debugging
-
-	// Compute basic data quality for diagnostics (missingness, variance, unique counts).
-	nTotal := len(col1)
-	missingX := 0
-	missingY := 0
-	uniqueX := make(map[float64]struct{})
-	uniqueY := make(map[float64]struct{})
-	validX := make([]float64, 0, nTotal)
-	validY := make([]float64, 0, nTotal)
-	for i := 0; i < nTotal; i++ {
-		if math.IsNaN(col1[i]) {
-			missingX++
-		} else {
-			uniqueX[col1[i]] = struct{}{}
-			validX = append(validX, col1[i])
-		}
-		if math.IsNaN(col2[i]) {
-			missingY++
-		} else {
-			uniqueY[col2[i]] = struct{}{}
-			validY = append(validY, col2[i])
-		}
-	}
-
-	dq := stats.DataQuality{
-		MissingRateX: float64(missingX) / float64(nTotal),
-		MissingRateY: float64(missingY) / float64(nTotal),
-		UniqueCountX: len(uniqueX),
-		UniqueCountY: len(uniqueY),
-		VarianceX:    p.variance(validX),
-		VarianceY:    p.variance(validY),
-		CardinalityX: len(uniqueX),
-		CardinalityY: len(uniqueY),
-	}
-
-	// Skip early if either variable is too missing (matches domain warning semantics).
-	if dq.MissingRateX > 0.30 || dq.MissingRateY > 0.30 {
-		return &RelationshipResult{
-			Key: stats.RelationshipKey{
-				VariableX: var1,
-				VariableY: var2,
-				TestType:  stats.TestPearson,
-				FamilyID:  familyID,
-			},
-			Metrics: stats.CanonicalMetrics{
-				EffectSize:       0.0,
-				PValue:           1.0,
-				SampleSize:       0,
-				TotalComparisons: 1,
-			},
-			DataQuality: dq,
-			Skipped:     true,
-			SkipReason:  stats.WarningHighMissing,
-		}
-	}
-
-	// Filter out NaN values and create paired data
-	validPairs := make([][2]float64, 0, len(col1))
-	for i := 0; i < len(col1); i++ {
-		if !math.IsNaN(col1[i]) && !math.IsNaN(col2[i]) {
-			validPairs = append(validPairs, [2]float64{col1[i], col2[i]})
-		}
-	}
-
-	if len(validPairs) < 3 {
-		return &RelationshipResult{
-			Key: stats.RelationshipKey{
-				VariableX: var1,
-				VariableY: var2,
-				TestType:  stats.TestPearson,
-			},
-			Metrics: stats.CanonicalMetrics{
-				EffectSize:       0.0,
-				PValue:           1.0,
-				SampleSize:       len(validPairs),
-				TotalComparisons: 1,
-			},
-			DataQuality: dq,
-			Skipped:     true,
-			SkipReason:  stats.WarningLowN,
-		}
-	}
-
-	// Check for zero variance
-	var1Values := make([]float64, len(validPairs))
-	var2Values := make([]float64, len(validPairs))
-	for i, pair := range validPairs {
-		var1Values[i] = pair[0]
-		var2Values[i] = pair[1]
-	}
-
-	if p.hasZeroVariance(var1Values) || p.hasZeroVariance(var2Values) {
-		return &RelationshipResult{
-			Key: stats.RelationshipKey{
-				VariableX: var1,
-				VariableY: var2,
-				TestType:  stats.TestPearson,
-				FamilyID:  familyID,
-			},
-			Metrics: stats.CanonicalMetrics{
-				EffectSize:       0.0,
-				PValue:           1.0,
-				SampleSize:       len(validPairs),
-				TotalComparisons: 1,
-			},
-			DataQuality: dq,
-			Skipped:     true,
-			SkipReason:  stats.WarningLowVariance,
-		}
-	}
-
-	// Perform Pearson correlation (simplified - assumes continuous variables)
-	corr, pValue := p.pearsonCorrelation(var1Values, var2Values)
-
-	return &RelationshipResult{
+	// Convert brief-based analysis to legacy RelationshipResult format
+	// This maintains backward compatibility while using the new unified system
+	result := &RelationshipResult{
 		Key: stats.RelationshipKey{
 			VariableX: var1,
 			VariableY: var2,
@@ -311,108 +206,16 @@ func (p *PairwiseStage) analyzeRelationship(var1, var2 core.VariableKey, col1, c
 			FamilyID:  familyID,
 		},
 		Metrics: stats.CanonicalMetrics{
-			EffectSize:       corr,
+			EffectSize:       analysis.PrimaryMetrics.EffectSize,
 			EffectUnit:       "r", // Pearson correlation coefficient
-			PValue:           pValue,
-			SampleSize:       len(validPairs),
+			PValue:           analysis.PrimaryMetrics.PValue,
+			SampleSize:       analysis.SampleSize,
 			TotalComparisons: 1,
 			FDRMethod:        "none", // No FDR correction for single test
 		},
-		DataQuality: dq,
+		DataQuality: stats.NewDataQualityFromBrief(analysis.Brief),
 		Skipped:     false,
 	}
-}
 
-// variance computes sample variance (n-1) for numeric values.
-func (p *PairwiseStage) variance(values []float64) float64 {
-	if len(values) < 2 {
-		return 0.0
-	}
-	sum := 0.0
-	for _, v := range values {
-		sum += v
-	}
-	mean := sum / float64(len(values))
-	sumSq := 0.0
-	for _, v := range values {
-		d := v - mean
-		sumSq += d * d
-	}
-	return sumSq / float64(len(values)-1)
-}
-
-// hasZeroVariance checks if a variable has essentially zero variance
-func (p *PairwiseStage) hasZeroVariance(values []float64) bool {
-	if len(values) < 2 {
-		return true
-	}
-
-	first := values[0]
-	for _, v := range values[1:] {
-		if math.Abs(v-first) > 1e-10 { // Very small threshold
-			return false
-		}
-	}
-	return true
-}
-
-// pearsonCorrelation calculates Pearson correlation coefficient and p-value
-// This is a simplified implementation - in production you'd use a proper statistical library
-func (p *PairwiseStage) pearsonCorrelation(x, y []float64) (correlation, pValue float64) {
-	if len(x) != len(y) || len(x) < 2 {
-		return 0, 1.0
-	}
-
-	n := float64(len(x))
-
-	// Calculate means
-	sumX, sumY := 0.0, 0.0
-	for i := 0; i < len(x); i++ {
-		sumX += x[i]
-		sumY += y[i]
-	}
-	meanX := sumX / n
-	meanY := sumY / n
-
-	// Calculate correlation
-	numerator := 0.0
-	sumXX := 0.0
-	sumYY := 0.0
-
-	for i := 0; i < len(x); i++ {
-		dx := x[i] - meanX
-		dy := y[i] - meanY
-		numerator += dx * dy
-		sumXX += dx * dx
-		sumYY += dy * dy
-	}
-
-	if sumXX == 0 || sumYY == 0 {
-		return 0, 1.0
-	}
-
-	correlation = numerator / math.Sqrt(sumXX*sumYY)
-
-	// Clamp to [-1, 1] due to floating point precision
-	if correlation > 1.0 {
-		correlation = 1.0
-	} else if correlation < -1.0 {
-		correlation = -1.0
-	}
-
-	// Simplified p-value calculation (t-distribution approximation)
-	// This is not statistically rigorous - use proper statistical libraries in production
-	t := math.Abs(correlation) * math.Sqrt(float64(n-2)/(1-correlation*correlation))
-	// Very rough approximation - in reality, use statistical tables or libraries
-	if t > 3.0 {
-		pValue = 0.001
-	} else if t > 2.0 {
-		pValue = 0.01
-	} else if t > 1.5 {
-		pValue = 0.05
-	} else {
-		pValue = 0.1
-	}
-
-	return correlation, pValue
+	return result
 }

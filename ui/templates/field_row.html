@@ -1,0 +1,29 @@
+{{- range .Fields -}}
+<div class="px-4 py-2 transition-colors group" style="background-color: rgba(249, 250, 251, 0); transition: background-color 0.15s ease-in-out;" onmouseover="this.style.backgroundColor='rgba(255, 255, 255, 0.8)'" onmouseout="this.style.backgroundColor='rgba(249, 250, 251, 0)'">
+    <div class="grid grid-cols-8 gap-4 items-center text-xs">
+        <div class="col-span-2 min-w-0">
+            <div class="font-medium text-gray-900 truncate group-hover:text-blue-600 transition-colors" title="{{.Name}}">{{.Name}}</div>
+        </div>
+        <div class="text-center">
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] font-medium border {{if eq .Type "categorical"}}bg-white text-gray-600 border-gray-200{{else}}bg-white text-blue-700 border-blue-100{{end}}">
+                {{if eq .Type "categorical"}}CAT{{else}}NUM{{end}}
+            </span>
+        </div>
+        <div class="text-center">
+            <span class="font-mono text-[11px] {{if gt .MissingRate 0.05}}text-red-600 font-medium{{else}}text-gray-500{{end}}">{{.MissingRatePct}}%</span>
+        </div>
+        <div class="text-center">
+            <span class="font-mono text-[11px] text-gray-600">{{if gt .Variance 0}}{{printf "%.2f" .Variance}}{{else}}0.00{{end}}</span>
+        </div>
+        <div class="text-center">
+            <span class="font-mono text-[11px] text-gray-600">{{.UniqueCount}}</span>
+        </div>
+        <div class="text-center">
+            <span class="font-mono text-[11px] text-blue-600 font-medium bg-white px-1.5 py-0.5 rounded-sm">{{.InRelationships}}</span>
+        </div>
+        <div class="text-center">
+            <span class="font-mono text-[11px] text-gray-300">—</span>
+        </div>
+    </div>
+</div>
+{{- end -}}

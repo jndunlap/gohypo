@@ -335,15 +335,3 @@ func (ga *GreenfieldAdapter) buildDynamicResearchPrompt(metadata []greenfield.Fi
 
 	return prompt
 }
-
-// storeThinkingTrace saves the LLM reasoning for debugging and analysis
-func (ga *GreenfieldAdapter) storeThinkingTrace(req ports.GreenfieldResearchRequest, thinkingTrace string) {
-	// For now, just log the trace length - in production this could be stored in a database
-	fmt.Printf("[GreenfieldAdapter] Stored thinking trace (%d chars) for session analysis\n", len(thinkingTrace))
-
-	// TODO: Implement persistent storage for thinking traces
-	// This could be useful for:
-	// 1. Debugging failed hypotheses
-	// 2. Understanding LLM decision-making
-	// 3. Training data for future improvements
-}

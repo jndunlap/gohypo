@@ -3,54 +3,13 @@
 {{define "content"}}
 <!-- Science Cockpit - High-Velocity Execution Engine -->
 <div class="h-screen bg-white flex overflow-hidden">
-    <!-- Scientist's Drawer (Left Sidebar) -->
-    {{template "fragments/scientists_drawer.html" .}}
+    <!-- Left Sidebar - Scientist's Drawer -->
+    {{template "scientists-drawer" .}}
 
-    <!-- Main Content Area -->
-    <div class="flex-1 flex flex-col overflow-hidden">
-        <!-- Logic Strip - Mission-Critical Infrastructure Header -->
-        <div class="h-[52px] bg-slate-900 border-b border-white/5 flex items-center justify-between px-4 flex-shrink-0">
-            <!-- Left Section: Gavel of Truth Brand + Logic Metadata -->
-            <div class="flex items-center space-x-4">
-                <!-- Mission-Critical Logo -->
-                <span class="text-[11px] font-bold text-blue-400 uppercase tracking-wide">GAVEL OF TRUTH</span>
+    <!-- Center Panel - Main Control Center -->
+    {{template "center-panel" .}}
 
-                <!-- Logic Strip Metadata -->
-                <span class="text-[9px] text-slate-400 uppercase tracking-wide">
-                    {{len .FieldStats}}F | {{.DatasetInfo.rowCount}}E
-                </span>
-            </div>
-
-            <!-- Right Section: Minimal Action Cluster -->
-            <div class="flex items-center space-x-1">
-                <!-- Drawer Toggle (hidden by default, shown only when industry context is available) -->
-                <button onclick="toggleDrawer()" class="p-1 rounded hover:bg-slate-700 transition-colors text-slate-400" style="display: none;" title="Scientist's Drawer">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                    </svg>
-                </button>
-
-                <!-- Stop Observing. GoHypo the Truth. -->
-                <button class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded text-[10px] font-medium transition-colors">
-                    GoHypo
-                </button>
-            </div>
-        </div>
-
-        <!-- Main Content Area - Science Cockpit (Center Stage) -->
-        <div class="flex-1 flex overflow-hidden">
-            <!-- Center Panel -->
-            {{template "fragments/center_panel.html" .}}
-
-            <!-- Right Sidebar -->
-            {{template "fragments/right_sidebar.html" .}}
-        </div>
-    </div>
+    <!-- Right Sidebar - DataSpaces Explorer -->
+    {{template "right-sidebar" .}}
 </div>
-
-<!-- Research Status Indicator (Hidden, for HTMX updates) -->
-<div id="research-status" style="display: none;"></div>
-
-<!-- Science Cockpit JavaScript -->
-<script src="/static/js/research_cockpit.js"></script>
 {{end}}

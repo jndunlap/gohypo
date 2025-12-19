@@ -49,5 +49,7 @@ require (
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.10.9
+	github.com/montanaflynn/stats v0.7.1
 	github.com/xuri/excelize/v2 v2.10.0
+	gonum.org/v1/gonum v0.16.0
 )

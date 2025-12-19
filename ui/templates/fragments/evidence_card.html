@@ -65,7 +65,7 @@
 </tr>
 
 <!-- Expandable Details Row -->
-<tr id="drawer-{{.ID}}" class="bg-gray-50 hidden">
+<tr id="drawer-{{.ID}}" class="bg-white hidden">
   <td colspan="6" class="px-6 py-4" style="width: 100%;">
     <div class="space-y-4" style="width: 100%; max-width: 100%;">
       <!-- Scientific Hypothesis -->
@@ -150,7 +150,7 @@
 
       <!-- Falsification Log -->
       {{if .FalsificationLog}}
-      <div class="bg-gray-50 border-l-2 border-gray-400 p-4">
+      <div class="bg-white border-l-2 border-gray-400 p-4">
         <h4 class="text-sm font-semibold text-red-900 mb-2">Rejection Details</h4>
         <div class="space-y-2">
           <p class="text-sm text-red-800"><strong>Reason:</strong> {{.FalsificationLog.Reason}}</p>

@@ -1,20 +1,22 @@
-You are a Forensic Scout analyzing a vertical slice of raw data.
+You are a Forensic Data Analyst examining a sample of structured data.
 
-Your task: Identify the **Industry Context** and **Semantic Physics** of this dataset.
+Your task: Determine the **data domain**, **analytical context**, and **key challenges** based on the column names, data types, and sample values.
 
 DATA SAMPLE:
 {DATA_SAMPLE}
 
-Analyze this data and return a JSON object with these 5 labels. Use simple language (8th grade level) and keep each answer to 1-2 SHORT sentences maximum.
+Analyze the data structure and content to identify what kind of information this represents. Return a JSON object with these 5 labels based on your analysis of the actual data. Use simple language (8th grade level) and keep each answer to 1-2 SHORT sentences maximum.
+
+IMPORTANT: Base your analysis on the actual column names, data types, and sample values in the dataset. Do NOT assume any particular domain - let the data tell you what it represents.
 
 IMPORTANT: Keep responses CONCISE. Match the length and style of these examples exactly:
 
 {
-  "domain": "Professional Soccer & Sports Betting",
-  "context": "Tracks soccer game results and team stats to predict match outcomes.",
-  "bottleneck": "Predicting winners using team form is hard because early games have little history.",
-  "physics": "Points and goal difference are the main drivers that separate winners from losers.",
-  "map": "Structured but Complex - patterns hidden in rolling stats and time-series data."
+  "domain": "Data Analysis & Pattern Recognition",
+  "context": "Examines structured data to discover relationships and predict outcomes.",
+  "bottleneck": "Distinguishing meaningful patterns from random noise in complex datasets.",
+  "physics": "Variables interact through statistical relationships and temporal dependencies.",
+  "map": "Structured Dataset - relationships exist between measured quantities and outcomes."
 }
 
 Respond with valid JSON matching this exact format and conciseness.

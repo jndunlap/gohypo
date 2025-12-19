@@ -38,7 +38,7 @@ function toggleDrawer() {
 // Drag and Drop Functionality for Field Inventory
 let draggedField = null;
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     console.log('[Science Cockpit] DOMContentLoaded - initializing execution components');
     console.log('[GAVEL OF TRUTH] High-Velocity Execution Engine Online');
 
@@ -46,6 +46,9 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeIndustryContext();
     initializeSSEConnection();
     initializeSSEErrorHandling();
+
+    // Check for existing hypotheses on page load
+    await checkForExistingHypotheses();
 
     // Hide the Scientist's Drawer by default - only show when causal intelligence is available
     console.log('[Research UI] Hiding drawer by default');
@@ -494,25 +497,111 @@ function retryResearch() {
 }
 
 // Initiate research function with Pulse & Ticker status
-function initiateResearch() {
+async function initiateResearch() {
     console.log('[GAVEL OF TRUTH] ⚡ Initiating research - calling backend API...');
-    
-    const btn = document.querySelector('button[title="Generate Research"]');
+
+    const btn = document.getElementById('initiate-research-btn');
     const statusIcon = document.getElementById('status-led');
     const statusLabel = document.getElementById('status-label');
     const statusDetail = document.getElementById('status-detail');
     const hypothesisContainer = document.getElementById('hypothesis-cards-container');
     const hypothesisCount = document.getElementById('hypothesis-count');
+    const responseDiv = document.getElementById('research-init-response');
 
     if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '<div class="w-3 h-3 border border-gray-400 border-t-transparent animate-spin rounded-full"></div>';
+        btn.querySelector('.btn-text').textContent = 'Starting Research...';
     }
 
     if (statusIcon && statusLabel && statusDetail) {
         statusIcon.className = 'w-2 h-2 rounded-full bg-blue-500 animate-pulse transition-all duration-300';
         statusLabel.textContent = 'GOHYPO-ING';
         statusDetail.textContent = 'Executing tri-gate gauntlet...';
+    }
+
+    try {
+        // Make the API call
+        const response = await fetch('/api/research/initiate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            console.log('[GAVEL OF TRUTH] Research initiated successfully:', data);
+
+            // Establish SSE connection for real-time updates
+            if (data.session_id && window.connectSSE) {
+                console.log('[GAVEL OF TRUTH] Establishing SSE connection for session:', data.session_id);
+                window.connectSSE(data.session_id);
+            }
+
+            // Show success message
+            if (responseDiv) {
+                responseDiv.className = 'mt-4 p-4 bg-green-50 border border-green-200 rounded-lg';
+                responseDiv.innerHTML = `
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-green-800">Research Initiated!</h3>
+                            <div class="mt-2 text-sm text-green-700">
+                                <p>Session ID: ${data.session_id || 'Unknown'}</p>
+                                <p>Watch the center panel for real-time updates as hypotheses are generated and validated.</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                responseDiv.classList.remove('hidden');
+            }
+        } else {
+            throw new Error(data.error || 'Failed to initiate research');
+        }
+
+    } catch (error) {
+        console.error('[GAVEL OF TRUTH] Failed to initiate research:', error);
+
+        // Show error message
+        if (responseDiv) {
+            responseDiv.className = 'mt-4 p-4 bg-red-50 border border-red-200 rounded-lg';
+            responseDiv.innerHTML = `
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l-1.293 1.293a1 1 0 00-1.414-1.414L8.586 10 7.293 8.707a1 1 0 000-1.414z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-red-800">Research Failed to Start</h3>
+                        <div class="mt-2 text-sm text-red-700">
+                            <p>${error.message}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            responseDiv.classList.remove('hidden');
+        }
+
+        // Re-enable button on error
+        if (btn) {
+            btn.disabled = false;
+            btn.querySelector('.btn-text').textContent = 'Go Hypo';
+        }
+
+        // Reset status on error
+        if (statusIcon && statusLabel && statusDetail) {
+            statusIcon.className = 'w-2 h-2 rounded-full bg-green-500 transition-all duration-300';
+            statusLabel.textContent = 'ENGINE';
+            statusDetail.textContent = 'READY';
+        }
+
+        return;
     }
 
     if (hypothesisContainer) {
@@ -664,18 +753,93 @@ document.addEventListener('sse_api_error', function(event) {
 });
 
 // Handle real-time hypothesis creation (immediate display with gray checkmarks)
-document.addEventListener('sse_hypothesis_created', function(event) {
+document.addEventListener('sse_hypothesis_created', async function(event) {
     const data = event.detail;
     console.log('[Science Cockpit] 📡 SSE: hypothesis_created received', data);
 
-    // Trigger UI refresh to show the new pending hypothesis
-    if (researchPollingInterval) {
-        // Force an immediate status update to refresh the UI
-        updateResearchStatus().catch(error => {
-            console.warn('[Science Cockpit] Error updating research status:', error);
+    // Immediately load and display all hypotheses (including the new pending one)
+    try {
+        await loadAllHypotheses();
+        console.log('[Science Cockpit] ✅ Hypotheses refreshed after creation');
+    } catch (error) {
+        console.error('[Science Cockpit] ❌ Failed to refresh hypotheses after creation:', error);
+        // Fallback: just update status
+        updateResearchStatus().catch(statusError => {
+            console.warn('[Science Cockpit] Error updating research status:', statusError);
         });
     }
 });
+
+// Check for existing hypotheses on page load
+async function checkForExistingHypotheses() {
+    try {
+        console.log('[Science Cockpit] 🔍 Checking for existing hypotheses...');
+        const response = await fetch('/api/research/ledger?limit=10', {
+            headers: {
+                'HX-Request': 'true',
+                'HX-Target': 'hypothesis-cards-container'
+            }
+        });
+
+        if (!response.ok) {
+            console.log('[Science Cockpit] No existing hypotheses found (API returned error)');
+            return;
+        }
+
+        const html = await response.text();
+
+        // Check if we got actual hypothesis content (not empty state)
+        if (html && html.includes('data-hypothesis-id') && !html.includes('No Research Hypotheses Yet')) {
+            console.log('[Science Cockpit] 📋 Found existing hypotheses, displaying them');
+            const container = document.getElementById('hypothesis-cards-container');
+            if (container) {
+                container.innerHTML = html;
+                // Hide the initial prompt since we have hypotheses
+                const initialPrompt = document.getElementById('initial-research-prompt');
+                if (initialPrompt) {
+                    initialPrompt.style.display = 'none';
+                }
+            }
+        } else {
+            console.log('[Science Cockpit] 📝 No existing hypotheses found, showing research prompt');
+        }
+    } catch (error) {
+        console.log('[Science Cockpit] Error checking for existing hypotheses:', error);
+        // Continue with default state (show research prompt)
+    }
+}
+
+// Load all hypotheses (pending and completed)
+async function loadAllHypotheses() {
+    try {
+        console.log('[Science Cockpit] 🔄 Loading all hypotheses...');
+        const response = await fetch('/api/research/ledger?limit=50', {
+            headers: {
+                'HX-Request': 'true',
+                'HX-Target': 'hypothesis-cards-container'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const html = await response.text();
+        const container = document.getElementById('hypothesis-cards-container');
+        if (container) {
+            container.innerHTML = html;
+            // Hide the initial prompt since we're showing hypotheses
+            const initialPrompt = document.getElementById('initial-research-prompt');
+            if (initialPrompt) {
+                initialPrompt.style.display = 'none';
+            }
+            console.log('[Science Cockpit] ✅ Hypotheses loaded and displayed');
+        }
+    } catch (error) {
+        console.error('[Science Cockpit] ❌ Error loading hypotheses:', error);
+        throw error; // Re-throw to let caller handle
+    }
+}
 
 // Handle real-time referee completion updates (gray → green/red checkmarks)
 document.addEventListener('sse_referee_completed', function(event) {

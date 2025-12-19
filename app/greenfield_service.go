@@ -38,7 +38,7 @@ func (s *GreenfieldService) ExecuteGreenfieldFlow(
 		RunID:         runID,
 		SnapshotID:    snapshotID,
 		FieldMetadata: fieldMetadata,
-		MaxDirectives: 3, // As specified in your prompt
+		Directives:    3, // As specified in your prompt - exactly 3 directives
 	}
 
 	response, err := s.greenfieldPort.GenerateResearchDirectives(ctx, req)
