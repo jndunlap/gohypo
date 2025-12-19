@@ -853,7 +853,7 @@ func (a *App) getExcelFieldNames() ([]string, error) {
 	}
 
 	// Read Excel data to get column information
-	reader := excel.NewExcelReader(excelFile)
+	reader := excel.NewDataReader(excelFile)
 	data, err := reader.ReadData()
 	if err != nil {
 		return nil, fmt.Errorf("failed to read Excel file: %w", err)

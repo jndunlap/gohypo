@@ -17,7 +17,7 @@ import (
 	"gohypo/ports"
 )
 
-//go:embed templates/* static/*
+//go:embed templates/** static/**
 var embeddedFiles embed.FS
 
 // App represents the UI application

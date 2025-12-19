@@ -7,6 +7,7 @@ import (
 	"math"
 	"math/rand"
 	"sync"
+	"time"
 
 	"gohypo/adapters/datareadiness"
 	"gohypo/adapters/datareadiness/coercer"
@@ -25,6 +26,8 @@ import (
 type TestKit struct {
 	ledger      *InMemoryLedgerAdapter // Shared ledger instance
 	excelConfig *excel.ExcelConfig     // Excel data source configuration
+	excelData   *excel.ExcelData       // Pre-loaded Excel data for fast access
+	excelLoaded bool                   // Whether Excel data has been loaded
 }
 
 // NewTestKit creates a new test kit instance with synthetic data
@@ -37,21 +40,32 @@ func NewTestKit() (*TestKit, error) {
 func NewTestKitWithExcel(excelConfig *excel.ExcelConfig) (*TestKit, error) {
 	ledger := NewInMemoryLedgerAdapter()
 
-	// Log Excel file information
+	// Log Excel file information and read immediately for fast metadata access
 	log.Printf("Initializing test kit with Excel file: %s", excelConfig.FilePath)
 
-	// Read Excel data to get column information
-	reader := excel.NewExcelReader(excelConfig.FilePath)
+	// Read Excel data immediately to cache metadata and ensure fast access
+	excelStart := time.Now()
+	reader := excel.NewDataReader(excelConfig.FilePath)
 	data, err := reader.ReadData()
 	if err != nil {
-		log.Printf("Warning: Could not read Excel file for logging: %v", err)
-	} else {
-		log.Printf("Excel file contains %d columns: %v", len(data.Headers), data.Headers)
+		log.Printf("Warning: Could not read Excel file during initialization: %v", err)
+		// Continue without Excel data - matrix resolver will handle errors gracefully
+		return &TestKit{
+			ledger:      ledger,
+			excelConfig: excelConfig,
+			excelLoaded: false,
+		}, nil
 	}
+
+	excelTime := time.Since(excelStart)
+	log.Printf("[Performance] Excel file pre-loaded in %.2fms (%d columns, %d rows)",
+		float64(excelTime.Nanoseconds())/1e6, len(data.Headers), len(data.Rows))
 
 	return &TestKit{
 		ledger:      ledger,
 		excelConfig: excelConfig,
+		excelData:   data,
+		excelLoaded: true,
 	}, nil
 }
 
@@ -59,7 +73,13 @@ func NewTestKitWithExcel(excelConfig *excel.ExcelConfig) (*TestKit, error) {
 func (t *TestKit) MatrixResolverAdapter() ports.MatrixResolverPort {
 	// Return Excel adapter if configured, otherwise synthetic data
 	if t.excelConfig != nil && t.excelConfig.Enabled {
-		return excel.NewExcelMatrixResolverAdapter(*t.excelConfig)
+		if t.excelLoaded && t.excelData != nil {
+			log.Printf("[Performance] Using pre-loaded Excel data for matrix resolver")
+			return excel.NewExcelMatrixResolverAdapterWithData(*t.excelConfig, t.excelData)
+		} else {
+			log.Printf("[Performance] Excel data not pre-loaded, will read on demand")
+			return excel.NewExcelMatrixResolverAdapter(*t.excelConfig)
+		}
 	}
 	return NewFakeMatrixResolverAdapter()
 }

@@ -77,6 +77,102 @@ GoHypo abandons modern web "fluff" for a **Technical Vellum** UI designed for hi
 
 ## 🚀 Getting Started
 
+### Prerequisites
+
+- Go 1.24+
+- PostgreSQL (or Docker)
+- OpenAI API Key
+
+### Quick Start with Docker
+
+1. **Start the Database:**
+   ```bash
+   make db-up
+   # Or: docker-compose up -d postgres
+   ```
+
+2. **Set Environment Variables:**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your OpenAI API key and database URL
+   ```
+
+3. **Run the Application:**
+   ```bash
+   make run
+   # Or: go run main.go
+   ```
+
+4. **Access the UI:**
+   - Main Application: http://localhost:8081
+   - Database Admin (optional): http://localhost:5050
+
+### Manual Setup (Without Docker)
+
+1. **Install PostgreSQL:**
+   ```bash
+   # macOS
+   brew install postgresql
+   brew services start postgresql
+
+   # Ubuntu/Debian
+   sudo apt install postgresql postgresql-contrib
+   sudo systemctl start postgresql
+   ```
+
+2. **Create Database:**
+   ```sql
+   CREATE DATABASE gohypo;
+   CREATE USER gohypo_user WITH PASSWORD 'gohypo_password';
+   GRANT ALL PRIVILEGES ON DATABASE gohypo TO gohypo_user;
+   ```
+
+3. **Set Environment:**
+   ```bash
+   export DATABASE_URL="postgres://gohypo_user:gohypo_password@localhost:5432/gohypo?sslmode=disable"
+   export OPENAI_API_KEY="your-api-key-here"
+   ```
+
+4. **Run:**
+   ```bash
+   go run main.go
+   ```
+
+### Development Commands
+
+```bash
+# Database management
+make db-up          # Start database
+make db-down        # Stop database
+make db-reset       # Reset database (WARNING: destroys data)
+make db-admin       # Start pgAdmin
+make db-logs        # View database logs
+
+# Application
+make build          # Build binary
+make run           # Run application
+make test          # Run tests
+make clean         # Clean build artifacts
+
+# Full development setup
+make dev           # Start everything
+```
+
+### Configuration
+
+GoHypo uses the following environment variables:
+
+- `DATABASE_URL`: PostgreSQL connection string
+- `OPENAI_API_KEY`: Your OpenAI API key for research generation
+- `LLM_MODEL`: OpenAI model (default: gpt-4-turbo-preview)
+- `PROMPTS_DIR`: Directory containing research prompts
+- `EXCEL_FILE`: Path to data file (CSV/Excel)
+- `PORT`: Server port (default: 8081)
+
+---
+
+## 🔬 Research Workflow
+
 1. **Connect Data:** Point GoHypo to any SQL, CSV, or Parquet source.
 2. **Generate Metadata:** The engine automatically resolves your fields into the `MatrixBundle`.
 3. **Initiate Research:** Click the **[INITIATE_SCAN]** button to activate the AI Scientist.

@@ -1,13 +1,13 @@
 {{/* Evidence Row Template - Table Row Design */}}
-<tr class="hover:bg-gray-50 transition-colors duration-150 border-b border-gray-200" data-hypothesis-id="{{.ID}}">
+<tr class="hover:bg-gray-50 border-b border-gray-200" data-hypothesis-id="{{.ID}}">
   <!-- Status -->
   <td class="px-6 py-4 whitespace-nowrap">
     {{if .Validated}}
-      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium text-gray-700 border border-gray-300">✓ Validated</span>
+      <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium text-gray-700 border border-gray-300">[VALID] Validated</span>
     {{else if .Rejected}}
-      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium text-gray-700 border border-gray-300">✗ Rejected</span>
+      <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium text-gray-700 border border-gray-300">[REJECT] Rejected</span>
     {{else}}
-      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium text-gray-700 border border-gray-300">⟳ Testing</span>
+      <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium text-gray-700 border border-gray-300">[TEST] Testing</span>
     {{end}}
   </td>
 
@@ -38,7 +38,19 @@
 
   <!-- Sample Size -->
   <td class="px-6 py-4 whitespace-nowrap text-center">
-    <div class="text-sm font-semibold text-gray-900">{{if .SampleSize}}{{kfmt .SampleSize}}{{else}}—{{end}}</div>
+    <div class="text-sm font-semibold text-gray-900">
+      {{if .SampleSize}}
+        {{kfmt .SampleSize}}
+      {{else if .ExecutionMetadata}}
+        {{if .ExecutionMetadata.sample_size}}
+          {{kfmt .ExecutionMetadata.sample_size}}
+        {{else}}
+          —
+        {{end}}
+      {{else}}
+        —
+      {{end}}
+    </div>
     {{if .ValidationConfidence}}
     <div class="text-xs text-gray-500 mt-1">{{printf "%.1f%%" (multiply .ValidationConfidence 100)}}</div>
     {{end}}
@@ -53,7 +65,7 @@
 </tr>
 
 <!-- Expandable Details Row -->
-<tr id="drawer-{{.ID}}" style="display: none;" class="bg-gray-50">
+<tr id="drawer-{{.ID}}" class="bg-gray-50 hidden">
   <td colspan="6" class="px-6 py-4" style="width: 100%;">
     <div class="space-y-4" style="width: 100%; max-width: 100%;">
       <!-- Scientific Hypothesis -->
@@ -71,7 +83,7 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4" style="width: 100%;">
           {{range $i := until $n}}
             {{with index $methods $i}}
-            <div class="bg-white border border-gray-200 rounded p-3">
+            <div class="bg-white border border-gray-200 p-3">
               <div class="flex items-start justify-between mb-2 gap-3">
                 <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">{{.Type}}</span>
                 <span class="text-sm font-medium text-gray-900 text-right">{{.MethodName}}</span>
@@ -138,7 +150,7 @@
 
       <!-- Falsification Log -->
       {{if .FalsificationLog}}
-      <div class="bg-red-50 border-l-4 border-red-400 p-4 rounded">
+      <div class="bg-gray-50 border-l-2 border-gray-400 p-4">
         <h4 class="text-sm font-semibold text-red-900 mb-2">Rejection Details</h4>
         <div class="space-y-2">
           <p class="text-sm text-red-800"><strong>Reason:</strong> {{.FalsificationLog.Reason}}</p>

@@ -1,18 +1,26 @@
 package ui
 
 import (
+	"context"
 	"embed"
 	"fmt"
 	"html/template"
 	"io/fs"
 	"log"
-	"math"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
+	"sync"
+	"time"
 
+	"gohypo/adapters/datareadiness"
+	"gohypo/adapters/datareadiness/coercer"
 	"gohypo/adapters/excel"
 	"gohypo/domain/core"
+	"gohypo/domain/datareadiness/ingestion"
+	"gohypo/domain/datareadiness/profiling"
+	"gohypo/domain/run"
 	"gohypo/domain/stats"
 	"gohypo/internal/testkit"
 	"gohypo/ports"
@@ -28,13 +36,46 @@ type Server struct {
 	templates         *template.Template
 	embeddedFiles     embed.FS
 	greenfieldService interface{} // Greenfield research service (when configured)
+
+	// Dataset info caching for async loading
+	datasetCache     map[string]interface{}
+	cacheMutex       sync.RWMutex
+	cacheLoaded      bool
+	cacheLastUpdated time.Time
+
+	// Excel data caching
+	excelDataCache      *excel.ExcelData
+	excelColumnTypes    map[string]string
+	excelCacheMutex     sync.RWMutex
+	excelCacheLoaded    bool
+	excelCacheTimestamp time.Time
+}
+
+// FieldStats represents statistics for a single field/variable
+type FieldStats struct {
+	Name              string
+	MissingRate       float64
+	MissingRatePct    string
+	UniqueCount       int
+	Variance          float64
+	Cardinality       int
+	Type              string
+	SampleSize        int
+	InRelationships   int
+	StrongestCorr     float64
+	AvgEffectSize     float64
+	SignificantRels   int
+	TotalRelsAnalyzed int
 }
 
 // NewServer creates a new web server instance
 func NewServer(embeddedFiles embed.FS) *Server {
 	return &Server{
-		router:        gin.Default(),
-		embeddedFiles: embeddedFiles,
+		router:           gin.Default(),
+		embeddedFiles:    embeddedFiles,
+		datasetCache:     make(map[string]interface{}),
+		cacheLoaded:      false,
+		cacheLastUpdated: time.Now(),
 	}
 }
 
@@ -92,6 +133,9 @@ func (s *Server) Initialize(kit *testkit.TestKit, reader ports.LedgerReaderPort,
 			}
 			return res
 		},
+		"contains": func(s, substr string) bool {
+			return strings.Contains(s, substr)
+		},
 	}
 
 	// Add string manipulation functions
@@ -141,9 +185,16 @@ func (s *Server) Initialize(kit *testkit.TestKit, reader ports.LedgerReaderPort,
 		}
 	}
 
+	// Debug: list what's actually in embeddedFiles
+	rootFiles, _ := fs.Glob(embeddedFiles, "*")
+	log.Printf("[TemplateInit] Root files in embedded FS: %v", rootFiles)
+
 	// Create a sub-filesystem rooted at ui/templates for simpler template names
 	templatesFS, err := fs.Sub(embeddedFiles, "ui/templates")
 	if err != nil {
+		log.Printf("[TemplateInit] Error creating templates filesystem: %v", err)
+		templatesFiles, _ := fs.Glob(embeddedFiles, "templates/*")
+		log.Printf("[TemplateInit] Templates in embedded FS: %v", templatesFiles)
 		return fmt.Errorf("failed to create templates filesystem: %w", err)
 	}
 
@@ -153,16 +204,22 @@ func (s *Server) Initialize(kit *testkit.TestKit, reader ports.LedgerReaderPort,
 	// Parse all template files individually to ensure proper naming
 	files1, err := fs.Glob(templatesFS, "*.html")
 	if err != nil {
+		log.Printf("[TemplateInit] Error globbing root templates: %v", err)
 		return fmt.Errorf("failed to glob root templates: %w", err)
 	}
 
 	files2, err := fs.Glob(templatesFS, "**/*.html")
 	if err != nil {
+		log.Printf("[TemplateInit] Error globbing nested templates: %v", err)
 		return fmt.Errorf("failed to glob nested templates: %w", err)
 	}
 
 	files := append(files1, files2...)
-	log.Printf("[DEBUG] Found %d template files: %v", len(files), files)
+	log.Printf("[TemplateInit] Found %d template files: %v", len(files), files)
+
+	// Debug: list all files in templatesFS
+	allFiles, _ := fs.Glob(templatesFS, "*")
+	log.Printf("[TemplateInit] All files in templatesFS: %v", allFiles)
 
 	for _, file := range files {
 		content, err := fs.ReadFile(templatesFS, file)
@@ -189,28 +246,81 @@ func (s *Server) Initialize(kit *testkit.TestKit, reader ports.LedgerReaderPort,
 	s.setupMiddleware()
 	s.setupRoutes()
 
+	// Start background dataset loader
+	s.startDatasetLoader()
+
 	return nil
 }
 
 // setupMiddleware configures Gin middleware
 func (s *Server) setupMiddleware() {
-	// Serve static files
-	s.router.StaticFS("/static", http.FS(s.embeddedFiles))
+	// Serve static files from embedded filesystem
+	// The embed directive includes "ui/static/*" so static files are at "ui/static/" root
+	staticFS, err := fs.Sub(s.embeddedFiles, "ui/static")
+	if err != nil {
+		log.Printf("[setupMiddleware] Error creating static filesystem: %v", err)
+		// Fallback: serve individual static files directly
+		s.router.GET("/static/css/research.css", func(c *gin.Context) {
+			log.Printf("[Static] Serving research.css fallback")
+			c.Header("Content-Type", "text/css")
+			content, err := s.embeddedFiles.ReadFile("ui/static/css/research.css")
+			if err != nil {
+				log.Printf("[Static] CSS file not found: %v", err)
+				c.String(404, "CSS file not found")
+				return
+			}
+			log.Printf("[Static] Served research.css (%d bytes)", len(content))
+			c.String(200, string(content))
+		})
+		s.router.GET("/static/js/research.js", func(c *gin.Context) {
+			log.Printf("[Static] Serving research.js fallback")
+			c.Header("Content-Type", "application/javascript")
+			content, err := s.embeddedFiles.ReadFile("ui/static/js/research.js")
+			if err != nil {
+				log.Printf("[Static] JS file not found: %v", err)
+				c.String(404, "JS file not found")
+				return
+			}
+			log.Printf("[Static] Served research.js (%d bytes)", len(content))
+			c.String(200, string(content))
+		})
+	} else {
+		log.Printf("[Static] Serving static files from embedded FS at /static")
+		s.router.StaticFS("/static", http.FS(staticFS))
+	}
 }
 
 // setupRoutes configures the application routes
 func (s *Server) setupRoutes() {
 	// Blueprint Dashboard - Single Page Application
 	s.router.GET("/", s.handleIndex)
+	s.router.GET("/mission-control", s.handleMissionControl)
 
 	// API endpoints for blueprint dashboard data
 	s.router.GET("/api/fields/list", s.handleFieldsList)
+
+	// HTMX endpoints for async data loading
+	s.router.GET("/api/dataset/status", s.handleDatasetStatus)
+	s.router.GET("/api/dataset/info", s.handleDatasetInfo)
+	s.router.GET("/api/fields/load-more", s.handleLoadMoreFields)
 }
 
 // Start starts the web server
 func (s *Server) Start(addr string) error {
 	log.Printf("Starting GoHypo UI on http://%s", addr)
 	return s.router.Run(addr)
+}
+
+// handleMissionControl serves the Mission Control real-time dashboard
+func (s *Server) handleMissionControl(c *gin.Context) {
+	c.Header("Content-Type", "text/html")
+	template, err := s.embeddedFiles.ReadFile("ui/templates/mission_control.html")
+	if err != nil {
+		log.Printf("[MissionControl] Template not found: %v", err)
+		c.String(500, "Template not found")
+		return
+	}
+	c.String(200, string(template))
 }
 
 // Template helpers
@@ -228,18 +338,19 @@ func (s *Server) renderPartial(c *gin.Context, templateName string, data interfa
 	s.renderTemplate(c, templateName, data)
 }
 
-// handleIndex renders the main index page with halftone matrix visualization
-func (s *Server) handleIndex(c *gin.Context) {
-	log.Printf("[handleIndex] Starting index page render")
+// loadDatasetInfo loads and processes all dataset information asynchronously
+func (s *Server) loadDatasetInfo(ctx context.Context) error {
+	loadStart := time.Now()
 
 	// Get all artifacts to extract dataset and field info
-	allArtifacts, err := s.reader.ListArtifacts(c.Request.Context(), ports.ArtifactFilters{Limit: 1000})
+	artifactStart := time.Now()
+	allArtifacts, err := s.reader.ListArtifacts(ctx, ports.ArtifactFilters{Limit: 1000})
 	if err != nil {
-		log.Printf("[handleIndex] ERROR: Failed to load artifacts: %v", err)
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to load artifacts"})
-		return
+		log.Printf("[loadDatasetInfo] ERROR: Failed to load artifacts: %v", err)
+		return err
 	}
-	log.Printf("[handleIndex] Loaded %d total artifacts", len(allArtifacts))
+	artifactTime := time.Since(artifactStart)
+	_ = artifactTime
 
 	// Extract dataset information from run artifacts and relationship artifacts
 	datasetInfo := map[string]interface{}{
@@ -256,13 +367,44 @@ func (s *Server) handleIndex(c *gin.Context) {
 
 	// Extract unique fields from relationship artifacts
 	fieldSet := make(map[string]bool)
+	profileMap := make(map[string]profiling.FieldProfile)
 
-	// First, add ALL fields from Excel file to ensure complete coverage
-	if excelFields, err := s.getExcelFieldNames(); err == nil {
-		for _, fieldName := range excelFields {
+	// First, add ALL fields from Excel file to ensure complete coverage and profile them
+	if excelData, err := s.getExcelData(); err == nil {
+		// Profile the data
+		coercerInstance := coercer.NewTypeCoercer(coercer.DefaultCoercionConfig())
+		profiler := datareadiness.NewProfilerAdapter(coercerInstance)
+
+		// Convert Excel rows to CanonicalEvents for profiling
+		events := make([]ingestion.CanonicalEvent, len(excelData.Rows))
+		for i, row := range excelData.Rows {
+			payload := make(map[string]interface{})
+			for k, v := range row {
+				payload[k] = v
+			}
+			events[i] = ingestion.CanonicalEvent{
+				RawPayload: payload,
+			}
+		}
+
+		profileConfig := profiling.DefaultProfilingConfig()
+		if result, err := profiler.ProfileSource(ctx, "dataset", events, profileConfig); err == nil {
+			for _, profile := range result.Profiles {
+				profileMap[profile.FieldKey] = profile
+			}
+		} else {
+			log.Printf("[loadDatasetInfo] Warning: Failed to profile source data: %v", err)
+		}
+
+		excelFields := excelData.Headers
+		// Show all fields for complete inventory (can be scrolled)
+		maxFields := 50
+		for i, fieldName := range excelFields {
+			if i >= maxFields {
+				break
+			}
 			fieldSet[fieldName] = true
 		}
-		log.Printf("[handleIndex] Added %d fields from Excel file", len(excelFields))
 	}
 
 	relationshipCount := 0
@@ -282,13 +424,12 @@ func (s *Server) handleIndex(c *gin.Context) {
 		// Extract run ID and dataset info
 		if artifact.Kind == core.ArtifactRun {
 			runIDs[string(artifact.ID)] = true
-			log.Printf("[handleIndex] Found run artifact: %s", artifact.ID)
 
 			// Try to extract dataset info from run manifest
+			// Handle both map[string]interface{} (legacy) and *run.RunManifestArtifact (current)
 			if payload, ok := artifact.Payload.(map[string]interface{}); ok {
 				if snapshotID, ok := payload["snapshot_id"].(string); ok && datasetInfo["snapshotID"] == "" {
 					datasetInfo["snapshotID"] = snapshotID
-					log.Printf("[handleIndex] Extracted snapshot_id: %s", snapshotID)
 
 					// Derive dataset name from snapshot_id (e.g., "test-snapshot-shopping" -> "Shopping Dataset")
 					if datasetInfo["name"] == "Unknown Dataset" {
@@ -298,11 +439,9 @@ func (s *Server) handleIndex(c *gin.Context) {
 								namePart := snapshotID[14:]
 								if namePart != "" {
 									datasetInfo["name"] = fmt.Sprintf("%s Dataset", namePart)
-									log.Printf("[handleIndex] Derived dataset name from snapshot_id: %s", datasetInfo["name"])
 								}
 							} else {
 								datasetInfo["name"] = fmt.Sprintf("Dataset %s", snapshotID[:8])
-								log.Printf("[handleIndex] Using snapshot_id prefix as dataset name: %s", datasetInfo["name"])
 							}
 						}
 					}
@@ -316,10 +455,35 @@ func (s *Server) handleIndex(c *gin.Context) {
 				// Try to extract dataset name directly
 				if name, ok := payload["dataset_name"].(string); ok && name != "" {
 					datasetInfo["name"] = name
-					log.Printf("[handleIndex] Found dataset_name in payload: %s", name)
+				}
+			} else if runManifest, ok := artifact.Payload.(*run.RunManifestArtifact); ok {
+				// Handle structured RunManifestArtifact
+				if string(runManifest.SnapshotID) != "" && datasetInfo["snapshotID"] == "" {
+					datasetInfo["snapshotID"] = string(runManifest.SnapshotID)
+
+					// Derive dataset name from snapshot_id
+					if datasetInfo["name"] == "Unknown Dataset" {
+						snapshotID := string(runManifest.SnapshotID)
+						if len(snapshotID) > 0 {
+							if len(snapshotID) > 14 && snapshotID[:14] == "test-snapshot-" {
+								namePart := snapshotID[14:]
+								if namePart != "" {
+									datasetInfo["name"] = fmt.Sprintf("%s Dataset", namePart)
+								}
+							} else {
+								datasetInfo["name"] = fmt.Sprintf("Dataset %s", snapshotID[:8])
+							}
+						}
+					}
+				}
+				if !runManifest.SnapshotAt.Time().IsZero() && datasetInfo["snapshotAt"] == "" {
+					datasetInfo["snapshotAt"] = runManifest.SnapshotAt.String()
+				}
+				if !runManifest.CutoffAt.Time().IsZero() && datasetInfo["cutoffAt"] == "" {
+					datasetInfo["cutoffAt"] = runManifest.CutoffAt.String()
 				}
 			} else {
-				log.Printf("[handleIndex] WARNING: Run artifact payload is not a map[string]interface{}, type: %T", artifact.Payload)
+				log.Printf("[loadDatasetInfo] WARNING: Run artifact payload type not recognized: %T", artifact.Payload)
 			}
 		}
 
@@ -329,11 +493,9 @@ func (s *Server) handleIndex(c *gin.Context) {
 			if relArtifact, ok := artifact.Payload.(stats.RelationshipArtifact); ok {
 				varX = string(relArtifact.Key.VariableX)
 				varY = string(relArtifact.Key.VariableY)
-				log.Printf("[handleIndex] Found RelationshipArtifact: %s <-> %s", varX, varY)
 			} else if relPayload, ok := artifact.Payload.(stats.RelationshipPayload); ok {
 				varX = string(relPayload.VariableX)
 				varY = string(relPayload.VariableY)
-				log.Printf("[handleIndex] Found RelationshipPayload: %s <-> %s", varX, varY)
 			} else if payload, ok := artifact.Payload.(map[string]interface{}); ok {
 				if vx, ok := payload["variable_x"].(string); ok {
 					varX = vx
@@ -341,11 +503,8 @@ func (s *Server) handleIndex(c *gin.Context) {
 				if vy, ok := payload["variable_y"].(string); ok {
 					varY = vy
 				}
-				if varX != "" && varY != "" {
-					log.Printf("[handleIndex] Found relationship in map payload: %s <-> %s", varX, varY)
-				}
 			} else {
-				log.Printf("[handleIndex] WARNING: Relationship artifact payload type not recognized: %T", artifact.Payload)
+				log.Printf("[loadDatasetInfo] WARNING: Relationship artifact payload type not recognized: %T", artifact.Payload)
 			}
 			if varX != "" {
 				fieldSet[varX] = true
@@ -407,7 +566,7 @@ func (s *Server) handleIndex(c *gin.Context) {
 		Kind:  &relKind,
 		Limit: 1000,
 	}
-	relArtifacts, _ := s.reader.ListArtifacts(c.Request.Context(), relFilters)
+	relArtifacts, _ := s.reader.ListArtifacts(ctx, relFilters)
 
 	for _, artifact := range relArtifacts {
 		if artifact.Kind == core.ArtifactRelationship {
@@ -429,35 +588,8 @@ func (s *Server) handleIndex(c *gin.Context) {
 		}
 	}
 
-	for _, artifact := range allArtifacts {
-		if artifact.Kind == core.ArtifactRun {
-			profileArtifactCount++
-		}
-	}
-
-	// Extract seed/fingerprint from run artifacts
-	seed := ""
-	fingerprint := ""
-	registryHash := ""
-	for _, artifact := range allArtifacts {
-		if artifact.Kind == core.ArtifactRun {
-			if payload, ok := artifact.Payload.(map[string]interface{}); ok {
-				if s, ok := payload["seed"].(float64); ok {
-					seed = fmt.Sprintf("%.0f", s)
-				}
-				if fp, ok := payload["fingerprint"].(string); ok {
-					fingerprint = fp
-				}
-				if rh, ok := payload["registry_hash"].(string); ok {
-					registryHash = rh
-				}
-			}
-		}
-	}
-
-	// Determine significance rule
-	significanceRule := "p ≤ 0.05"
 	hasQValue := fdrArtifactCount > 0
+	significanceRule := "p ≤ 0.05"
 	if hasQValue {
 		significanceRule = "q ≤ 0.05 (BH)"
 	}
@@ -538,43 +670,68 @@ func (s *Server) handleIndex(c *gin.Context) {
 	}
 
 	// Extract field-level statistics from relationship artifacts
-	type FieldStats struct {
-		Name              string
-		MissingRate       float64
-		MissingRatePct    string
-		UniqueCount       int
-		Variance          float64
-		Cardinality       int
-		Type              string
-		SampleSize        int
-		InRelationships   int
-		StrongestCorr     float64
-		AvgEffectSize     float64
-		SignificantRels   int
-		TotalRelsAnalyzed int
-	}
 	fieldStatsMap := make(map[string]*FieldStats)
 
-	// Initialize field stats
+	// Initialize field stats with basic info for fast loading
 	for _, field := range fields {
-		fieldStatsMap[field] = &FieldStats{
-			Name:              field,
-			MissingRate:       0,
-			MissingRatePct:    "—",
-			UniqueCount:       0,
-			Variance:          0,
-			Cardinality:       0,
-			Type:              "unknown",
-			SampleSize:        0,
-			InRelationships:   0,
-			StrongestCorr:     0,
-			AvgEffectSize:     0,
-			SignificantRels:   0,
-			TotalRelsAnalyzed: 0,
+		// Use profiled data if available, otherwise default
+		var stat *FieldStats
+		if profile, ok := profileMap[field]; ok {
+			variance := 0.0
+			if profile.TypeSpecific.NumericStats != nil {
+				stdDev := profile.TypeSpecific.NumericStats.StdDev
+				variance = stdDev * stdDev
+			}
+
+			// Map inferred type to simple UI type
+			uiType := "numeric" // default
+			if profile.InferredType == profiling.TypeCategorical {
+				uiType = "categorical"
+			} else if profile.InferredType == profiling.TypeBoolean {
+				uiType = "boolean"
+			} else if profile.InferredType == profiling.TypeTimestamp {
+				uiType = "timestamp"
+			} else if profile.InferredType == profiling.TypeText {
+				uiType = "string"
+			}
+
+			stat = &FieldStats{
+				Name:              field,
+				MissingRate:       profile.MissingStats.MissingRate,
+				MissingRatePct:    fmt.Sprintf("%.1f", profile.MissingStats.MissingRate*100),
+				UniqueCount:       profile.Cardinality.UniqueCount,
+				Variance:          variance,
+				Cardinality:       profile.Cardinality.UniqueCount,
+				Type:              uiType,
+				SampleSize:        profile.SampleSize,
+				InRelationships:   0,
+				StrongestCorr:     0.0,
+				AvgEffectSize:     0.0,
+				SignificantRels:   0,
+				TotalRelsAnalyzed: 0,
+			}
+		} else {
+			// Create lightweight field stats for initial load
+			stat = &FieldStats{
+				Name:              field,
+				MissingRate:       0.0, // Will be calculated later if needed
+				MissingRatePct:    "—", // Placeholder
+				UniqueCount:       0,
+				Variance:          0.0,
+				Cardinality:       0,
+				Type:              "numeric", // Default assumption
+				SampleSize:        0,
+				InRelationships:   0,
+				StrongestCorr:     0.0,
+				AvgEffectSize:     0.0,
+				SignificantRels:   0,
+				TotalRelsAnalyzed: 0,
+			}
 		}
+		fieldStatsMap[field] = stat
 	}
 
-	// Extract stats from relationship artifacts
+	// Process relationship artifacts to populate field statistics
 	for _, artifact := range relArtifacts {
 		if artifact.Kind != core.ArtifactRelationship {
 			continue
@@ -586,8 +743,28 @@ func (s *Server) handleIndex(c *gin.Context) {
 		var varianceX, varianceY float64
 		var cardinalityX, cardinalityY int
 		var sampleSize int
+		var pValue float64
 
-		if payload, ok := artifact.Payload.(map[string]interface{}); ok {
+		// Extract data from different artifact payload types
+		if relArtifact, ok := artifact.Payload.(stats.RelationshipArtifact); ok {
+			varX = string(relArtifact.Key.VariableX)
+			varY = string(relArtifact.Key.VariableY)
+			sampleSize = relArtifact.Metrics.SampleSize
+			missingRateX = relArtifact.DataQuality.MissingRateX
+			missingRateY = relArtifact.DataQuality.MissingRateY
+			uniqueCountX = relArtifact.DataQuality.UniqueCountX
+			uniqueCountY = relArtifact.DataQuality.UniqueCountY
+			varianceX = relArtifact.DataQuality.VarianceX
+			varianceY = relArtifact.DataQuality.VarianceY
+			cardinalityX = relArtifact.DataQuality.CardinalityX
+			cardinalityY = relArtifact.DataQuality.CardinalityY
+			pValue = relArtifact.Metrics.PValue
+		} else if relPayload, ok := artifact.Payload.(stats.RelationshipPayload); ok {
+			varX = string(relPayload.VariableX)
+			varY = string(relPayload.VariableY)
+			sampleSize = relPayload.SampleSize
+			pValue = relPayload.PValue
+		} else if payload, ok := artifact.Payload.(map[string]interface{}); ok {
 			if vx, ok := payload["variable_x"].(string); ok {
 				varX = vx
 			}
@@ -598,9 +775,12 @@ func (s *Server) handleIndex(c *gin.Context) {
 				sampleSize = int(ss)
 			} else if ss, ok := payload["sample_size"].(int); ok {
 				sampleSize = ss
-			} else if ss, ok := payload["sample_size"].(int64); ok {
-				sampleSize = int(ss)
 			}
+			if pv, ok := payload["p_value"].(float64); ok {
+				pValue = pv
+			}
+
+			// Extract data quality information
 			if dq, ok := payload["data_quality"].(map[string]interface{}); ok {
 				if mrx, ok := dq["missing_rate_x"].(float64); ok {
 					missingRateX = mrx
@@ -632,10 +812,331 @@ func (s *Server) handleIndex(c *gin.Context) {
 				if cy, ok := dq["cardinality_y"].(float64); ok {
 					cardinalityY = int(cy)
 				} else if cy, ok := dq["cardinality_y"].(int); ok {
-					uniqueCountY = cy
+					cardinalityY = cy
 				}
 			}
-		} else if relArtifact, ok := artifact.Payload.(stats.RelationshipArtifact); ok {
+		}
+
+		// Update field stats for both variables
+		if statsX, exists := fieldStatsMap[varX]; exists {
+			if missingRateX > 0 || sampleSize > 0 {
+				statsX.MissingRate = missingRateX
+				statsX.MissingRatePct = fmt.Sprintf("%.1f", missingRateX*100)
+			}
+			if uniqueCountX > 0 {
+				statsX.UniqueCount = uniqueCountX
+			}
+			if varianceX > 0 {
+				statsX.Variance = varianceX
+				statsX.Type = "numeric"
+			}
+			if cardinalityX > 0 {
+				statsX.Cardinality = cardinalityX
+			}
+			if sampleSize > 0 {
+				statsX.SampleSize = sampleSize
+			}
+			statsX.InRelationships++
+			statsX.TotalRelsAnalyzed++
+
+			// Track effect sizes and significance
+			if pValue < 0.05 {
+				statsX.SignificantRels++
+			}
+		}
+
+		if statsY, exists := fieldStatsMap[varY]; exists {
+			if missingRateY > 0 || sampleSize > 0 {
+				statsY.MissingRate = missingRateY
+				statsY.MissingRatePct = fmt.Sprintf("%.1f", missingRateY*100)
+			}
+			if uniqueCountY > 0 {
+				statsY.UniqueCount = uniqueCountY
+			}
+			if varianceY > 0 {
+				statsY.Variance = varianceY
+				statsY.Type = "numeric"
+			}
+			if cardinalityY > 0 {
+				statsY.Cardinality = cardinalityY
+			}
+			if sampleSize > 0 {
+				statsY.SampleSize = sampleSize
+			}
+			statsY.InRelationships++
+			statsY.TotalRelsAnalyzed++
+
+			// Track effect sizes and significance
+			if pValue < 0.05 {
+				statsY.SignificantRels++
+			}
+		}
+	}
+
+	// Calculate averages and final statistics for each field
+	for _, stat := range fieldStatsMap {
+		if stat.TotalRelsAnalyzed > 0 {
+			// Calculate average effect size if we have relationships
+			// (This would need more complex tracking, for now just set basic stats)
+			stat.AvgEffectSize = 0.0 // Placeholder - would need to track all effect sizes
+		}
+
+		// Determine strongest correlation (placeholder - would need tracking)
+		stat.StrongestCorr = 0.0
+	}
+
+	fieldStats := make([]*FieldStats, 0, len(fields))
+	totalMissingRate := 0.0
+	fieldCount := 0
+	for _, stat := range fieldStatsMap {
+		fieldStats = append(fieldStats, stat)
+		if stat.SampleSize > 0 {
+			totalMissingRate += stat.MissingRate
+			fieldCount++
+		}
+	}
+
+	// Calculate overall missingness rate
+	missingnessOverall := 0.0
+	if fieldCount > 0 {
+		missingnessOverall = totalMissingRate / float64(fieldCount)
+	}
+	datasetInfo["missingnessOverall"] = missingnessOverall
+
+	// Create field relationships placeholder
+	fieldRelationships := make([]map[string]interface{}, 0)
+
+	// Research control placeholder
+	researchControl := map[string]interface{}{
+		"canStart": true,
+		"status":   "ready",
+	}
+
+	// Cache all the computed data
+	s.cacheMutex.Lock()
+	defer s.cacheMutex.Unlock()
+
+	s.datasetCache = map[string]interface{}{
+		"DatasetInfo":        datasetInfo,
+		"RunStatus":          runStatus,
+		"RelationshipCount":  relationshipCount,
+		"SignificanceRule":   significanceRule,
+		"PairsAttempted":     pairsAttempted,
+		"PairsTested":        pairsTested,
+		"PairsSkipped":       pairsSkipped,
+		"SignificantCount":   significantCount,
+		"Seed":               int64(42), // placeholder
+		"Fingerprint":        "test-fingerprint",
+		"RegistryHash":       "test-registry-hash",
+		"StageStatuses":      stageStatuses,
+		"VariablesTotal":     len(fields),
+		"VariablesEligible":  len(fields),
+		"VariablesRejected":  0,
+		"FieldStats":         fieldStats,
+		"FieldRelationships": fieldRelationships,
+		"ResearchControl":    researchControl,
+	}
+
+	s.cacheLoaded = true
+	s.cacheLastUpdated = time.Now()
+
+	_ = time.Since(loadStart)
+	return nil
+}
+
+// startDatasetLoader starts a background goroutine to load dataset information
+func (s *Server) startDatasetLoader() {
+	go func() {
+		ctx := context.Background()
+		// Load once immediately
+		if err := s.loadDatasetInfo(ctx); err != nil {
+			log.Printf("[startDatasetLoader] Error loading dataset info: %v", err)
+		}
+		// Then reload every 5 minutes (reduced frequency since data doesn't change often)
+		for {
+			time.Sleep(5 * time.Minute)
+			if err := s.loadDatasetInfo(ctx); err != nil {
+				log.Printf("[startDatasetLoader] Error loading dataset info: %v", err)
+			}
+		}
+	}()
+}
+
+// handleIndex renders the main index page with halftone matrix visualization
+func (s *Server) handleIndex(c *gin.Context) {
+	log.Printf("[handleIndex] Starting index page render")
+
+	// Check if dataset info is loaded
+	s.cacheMutex.RLock()
+	cacheLoaded := s.cacheLoaded
+	cacheData := s.datasetCache
+	s.cacheMutex.RUnlock()
+
+	if !cacheLoaded {
+		// If cache is not loaded yet, show loading page
+		log.Printf("[handleIndex] Dataset info not loaded yet, showing loading state")
+		data := map[string]interface{}{
+			"Loading": true,
+			"DatasetInfo": map[string]interface{}{
+				"name": "Loading dataset information...",
+			},
+		}
+		s.renderTemplate(c, "index.html", data)
+		return
+	}
+
+	// Use cached data for fast rendering
+	log.Printf("[handleIndex] Using cached dataset info, rendering template")
+	s.renderTemplate(c, "index.html", cacheData)
+}
+
+// handleFieldsList returns field information for the UI
+func (s *Server) handleFieldsList(c *gin.Context) {
+	// Use cached data if available
+	s.cacheMutex.RLock()
+	cacheLoaded := s.cacheLoaded
+	var fields []string
+	if cacheLoaded && s.datasetCache != nil {
+		if varsTotal, ok := s.datasetCache["VariablesTotal"].(int); ok {
+			// For now, return a simple response
+			fields = make([]string, varsTotal)
+			for i := range fields {
+				fields[i] = fmt.Sprintf("field_%d", i+1)
+			}
+		}
+	}
+	s.cacheMutex.RUnlock()
+
+	if !cacheLoaded {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Dataset information not yet loaded"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"fields": fields,
+		"count":  len(fields),
+	})
+}
+
+// handleDatasetStatus returns the current loading status of dataset information
+func (s *Server) handleDatasetStatus(c *gin.Context) {
+	s.cacheMutex.RLock()
+	loaded := s.cacheLoaded
+	lastUpdated := s.cacheLastUpdated
+	s.cacheMutex.RUnlock()
+
+	status := "loading"
+	if loaded {
+		status = "loaded"
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":      status,
+		"lastUpdated": lastUpdated.Format("2006-01-02 15:04:05"),
+	})
+}
+
+// handleDatasetInfo returns dataset information for HTMX updates
+func (s *Server) handleDatasetInfo(c *gin.Context) {
+	s.cacheMutex.RLock()
+	cacheLoaded := s.cacheLoaded
+	cacheData := s.datasetCache
+	s.cacheMutex.RUnlock()
+
+	if !cacheLoaded {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Dataset information not yet loaded"})
+		return
+	}
+
+	c.JSON(http.StatusOK, cacheData)
+}
+
+// handleLoadMoreFields returns additional field information for progressive loading
+func (s *Server) handleLoadMoreFields(c *gin.Context) {
+	offsetStr := c.Query("offset")
+	limitStr := c.Query("limit")
+
+	offset := 0
+	limit := 10
+
+	if offsetStr != "" {
+		if o, err := strconv.Atoi(offsetStr); err == nil {
+			offset = o
+		}
+	}
+
+	if limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 50 {
+			limit = l
+		}
+	}
+
+	// Get all Excel fields
+	excelData, err := s.getExcelData()
+	if err != nil {
+		c.String(http.StatusInternalServerError, "Failed to load field names")
+		return
+	}
+	excelFields := excelData.Headers
+
+	// Calculate pagination
+	totalFields := len(excelFields)
+	start := offset
+	end := offset + limit
+	if start >= totalFields {
+		c.String(http.StatusOK, "")
+		return
+	}
+	if end > totalFields {
+		end = totalFields
+	}
+
+	// Get relationship artifacts for field statistics
+	relKind := core.ArtifactRelationship
+	relArtifacts, err := s.reader.ListArtifacts(context.Background(), ports.ArtifactFilters{
+		Kind:  &relKind,
+		Limit: 1000,
+	})
+	if err != nil {
+		relArtifacts = []core.Artifact{}
+	}
+
+	// Create a map of field stats from relationship data
+	fieldStatsMap := make(map[string]*FieldStats)
+	for i := start; i < end; i++ {
+		fieldName := excelFields[i]
+		fieldStatsMap[fieldName] = &FieldStats{
+			Name:              fieldName,
+			MissingRate:       0.0,
+			MissingRatePct:    "—",
+			UniqueCount:       0,
+			Variance:          0.0,
+			Cardinality:       0,
+			Type:              "numeric",
+			SampleSize:        0,
+			InRelationships:   0,
+			StrongestCorr:     0.0,
+			AvgEffectSize:     0.0,
+			SignificantRels:   0,
+			TotalRelsAnalyzed: 0,
+		}
+	}
+
+	// Process relationship artifacts to populate field statistics
+	for _, artifact := range relArtifacts {
+		if artifact.Kind != core.ArtifactRelationship {
+			continue
+		}
+
+		var varX, varY string
+		var missingRateX, missingRateY float64
+		var uniqueCountX, uniqueCountY int
+		var varianceX, varianceY float64
+		var cardinalityX, cardinalityY int
+		var sampleSize int
+
+		// Extract data from different artifact payload types
+		if relArtifact, ok := artifact.Payload.(stats.RelationshipArtifact); ok {
 			varX = string(relArtifact.Key.VariableX)
 			varY = string(relArtifact.Key.VariableY)
 			sampleSize = relArtifact.Metrics.SampleSize
@@ -647,15 +1148,59 @@ func (s *Server) handleIndex(c *gin.Context) {
 			varianceY = relArtifact.DataQuality.VarianceY
 			cardinalityX = relArtifact.DataQuality.CardinalityX
 			cardinalityY = relArtifact.DataQuality.CardinalityY
-		} else if relPayload, ok := artifact.Payload.(stats.RelationshipPayload); ok {
-			varX = string(relPayload.VariableX)
-			varY = string(relPayload.VariableY)
-			sampleSize = relPayload.SampleSize
+		} else if payload, ok := artifact.Payload.(map[string]interface{}); ok {
+			if vx, ok := payload["variable_x"].(string); ok {
+				varX = vx
+			}
+			if vy, ok := payload["variable_y"].(string); ok {
+				varY = vy
+			}
+			if ss, ok := payload["sample_size"].(float64); ok {
+				sampleSize = int(ss)
+			} else if ss, ok := payload["sample_size"].(int); ok {
+				sampleSize = ss
+			}
+
+			// Extract data quality information
+			if dq, ok := payload["data_quality"].(map[string]interface{}); ok {
+				if mrx, ok := dq["missing_rate_x"].(float64); ok {
+					missingRateX = mrx
+				}
+				if mry, ok := dq["missing_rate_y"].(float64); ok {
+					missingRateY = mry
+				}
+				if ucx, ok := dq["unique_count_x"].(float64); ok {
+					uniqueCountX = int(ucx)
+				} else if ucx, ok := dq["unique_count_x"].(int); ok {
+					uniqueCountX = ucx
+				}
+				if ucy, ok := dq["unique_count_y"].(float64); ok {
+					uniqueCountY = int(ucy)
+				} else if ucy, ok := dq["unique_count_y"].(int); ok {
+					uniqueCountY = ucy
+				}
+				if vx, ok := dq["variance_x"].(float64); ok {
+					varianceX = vx
+				}
+				if vy, ok := dq["variance_y"].(float64); ok {
+					varianceY = vy
+				}
+				if cx, ok := dq["cardinality_x"].(float64); ok {
+					cardinalityX = int(cx)
+				} else if cx, ok := dq["cardinality_x"].(int); ok {
+					cardinalityX = cx
+				}
+				if cy, ok := dq["cardinality_y"].(float64); ok {
+					cardinalityY = int(cy)
+				} else if cy, ok := dq["cardinality_y"].(int); ok {
+					cardinalityY = cy
+				}
+			}
 		}
 
-		// Update field stats
+		// Update field stats for both variables (only if they're in our requested range)
 		if statsX, exists := fieldStatsMap[varX]; exists {
-			if missingRateX > 0 {
+			if missingRateX > 0 || sampleSize > 0 {
 				statsX.MissingRate = missingRateX
 				statsX.MissingRatePct = fmt.Sprintf("%.1f", missingRateX*100)
 			}
@@ -674,8 +1219,9 @@ func (s *Server) handleIndex(c *gin.Context) {
 			}
 			statsX.InRelationships++
 		}
+
 		if statsY, exists := fieldStatsMap[varY]; exists {
-			if missingRateY > 0 {
+			if missingRateY > 0 || sampleSize > 0 {
 				statsY.MissingRate = missingRateY
 				statsY.MissingRatePct = fmt.Sprintf("%.1f", missingRateY*100)
 			}
@@ -696,323 +1242,90 @@ func (s *Server) handleIndex(c *gin.Context) {
 		}
 	}
 
-	// Compute relationship statistics for each field
-	effectSizesPerField := make(map[string][]float64)
-	significantRelsPerField := make(map[string]int)
+	// Generate HTML for the additional field rows
+	var htmlBuilder strings.Builder
+	for i := start; i < end; i++ {
+		fieldName := excelFields[i]
+		fieldStat := fieldStatsMap[fieldName]
 
-	for _, artifact := range relArtifacts {
-		if artifact.Kind != core.ArtifactRelationship {
-			continue
+		// Determine type display
+		typeDisplay := "NUM"
+		typeClass := "bg-blue-50 text-blue-700 border-blue-100"
+		if fieldStat.Type == "categorical" {
+			typeDisplay = "CAT"
+			typeClass = "bg-gray-50 text-gray-600 border-gray-200"
 		}
 
-		var varX, varY string
-		var effectSize float64
-		var pValue float64
-
-		if payload, ok := artifact.Payload.(map[string]interface{}); ok {
-			if vx, ok := payload["variable_x"].(string); ok {
-				varX = vx
-			}
-			if vy, ok := payload["variable_y"].(string); ok {
-				varY = vy
-			}
-			if es, ok := payload["effect_size"].(float64); ok {
-				effectSize = es
-			}
-			if pv, ok := payload["p_value"].(float64); ok {
-				pValue = pv
-			}
-		} else if relArtifact, ok := artifact.Payload.(stats.RelationshipArtifact); ok {
-			varX = string(relArtifact.Key.VariableX)
-			varY = string(relArtifact.Key.VariableY)
-			effectSize = relArtifact.Metrics.EffectSize
-			pValue = relArtifact.Metrics.PValue
-		} else if relPayload, ok := artifact.Payload.(stats.RelationshipPayload); ok {
-			varX = string(relPayload.VariableX)
-			varY = string(relPayload.VariableY)
-			effectSize = relPayload.EffectSize
-			pValue = relPayload.PValue
-		}
-
-		// Track effect sizes and significance for each field
-		if varX != "" {
-			effectSizesPerField[varX] = append(effectSizesPerField[varX], effectSize)
-			if pValue < 0.05 { // Significant at 5% level
-				significantRelsPerField[varX]++
-			}
-		}
-		if varY != "" {
-			effectSizesPerField[varY] = append(effectSizesPerField[varY], effectSize)
-			if pValue < 0.05 { // Significant at 5% level
-				significantRelsPerField[varY]++
-			}
-		}
-	}
-
-	// Compute aggregate statistics for each field
-	for field, stats := range fieldStatsMap {
-		effectSizes := effectSizesPerField[field]
-		if len(effectSizes) > 0 {
-			// Find strongest correlation (absolute value)
-			strongest := 0.0
-			sum := 0.0
-			for _, es := range effectSizes {
-				absES := math.Abs(es)
-				if absES > math.Abs(strongest) {
-					strongest = es // Keep sign for direction
+		// Generate HTML for each field row (matching the template structure)
+		htmlBuilder.WriteString(fmt.Sprintf(`
+                    <div class="px-4 py-2 hover:bg-gray-50/80 transition-colors group">
+                        <div class="grid grid-cols-8 gap-4 items-center text-xs">
+                            <div class="col-span-2 min-w-0">
+                                <div class="font-medium text-gray-900 truncate group-hover:text-blue-600 transition-colors" title="%s">%s</div>
+                            </div>
+                            <div class="text-center">
+                                <span class="inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] font-medium border %s">
+                                    %s
+                                </span>
+                            </div>
+                            <div class="text-center">
+                                <span class="font-mono text-[11px] %s">%s%%</span>
+                            </div>
+                            <div class="text-center">
+                                <span class="font-mono text-[11px] text-gray-600">%s</span>
+                            </div>
+                            <div class="text-center">
+                                <span class="font-mono text-[11px] text-gray-600">%d</span>
+                            </div>
+                            <div class="text-center">
+                                <span class="font-mono text-[11px] text-blue-600 font-medium bg-blue-50 px-1.5 py-0.5 rounded-sm">%d</span>
+                            </div>
+                            <div class="text-center">
+                                <span class="font-mono text-[11px] text-gray-300">—</span>
+                            </div>
+                        </div>
+                    </div>`,
+			fieldName, fieldName,
+			typeClass, typeDisplay,
+			func() string {
+				if fieldStat.MissingRate > 0.05 {
+					return "text-red-600 font-medium"
 				}
-				sum += absES // Use absolute for average
-			}
-			stats.StrongestCorr = strongest
-			stats.AvgEffectSize = sum / float64(len(effectSizes))
-			stats.TotalRelsAnalyzed = len(effectSizes)
-		}
-
-		if sigCount, exists := significantRelsPerField[field]; exists {
-			stats.SignificantRels = sigCount
-		}
-	}
-
-	// Convert to slice
-	fieldStats := make([]FieldStats, 0, len(fieldStatsMap))
-	for _, stats := range fieldStatsMap {
-		fieldStats = append(fieldStats, *stats)
-	}
-
-	// Build FieldRelationships array for template
-	type FieldRelationship struct {
-		FieldX       string
-		FieldY       string
-		EffectSize   float64
-		PValue       float64
-		QValue       float64
-		TestType     string
-		SampleSize   int
-		MissingRateX float64
-		MissingRateY float64
-		Significant  bool
-		StrengthDesc string
-		IsShadow     bool
-	}
-
-	var fieldRelationships []FieldRelationship
-	log.Printf("[handleIndex] Building FieldRelationships array from %d relationship artifacts", len(relArtifacts))
-
-	for _, artifact := range relArtifacts {
-		if artifact.Kind != core.ArtifactRelationship {
-			continue
-		}
-
-		var relX, relY string
-		var relEffectSize, relPValue, relQValue float64
-		var relTestType string
-		var relSampleSize int
-		var missingRateX, missingRateY float64
-
-		if payload, ok := artifact.Payload.(map[string]interface{}); ok {
-			if vx, ok := payload["variable_x"].(string); ok {
-				relX = vx
-			}
-			if vy, ok := payload["variable_y"].(string); ok {
-				relY = vy
-			}
-			if es, ok := payload["effect_size"].(float64); ok {
-				relEffectSize = es
-			}
-			if pv, ok := payload["p_value"].(float64); ok {
-				relPValue = pv
-			}
-			if qv, ok := payload["fdr_q_value"].(float64); ok {
-				relQValue = qv
-			} else if qv, ok := payload["q_value"].(float64); ok {
-				relQValue = qv
-			}
-			if tt, ok := payload["test_type"].(string); ok {
-				relTestType = tt
-			}
-			if ss, ok := payload["sample_size"].(float64); ok {
-				relSampleSize = int(ss)
-			}
-
-			// Extract data quality information
-			if dq, ok := payload["data_quality"].(map[string]interface{}); ok {
-				if mrx, ok := dq["missing_rate_x"].(float64); ok {
-					missingRateX = mrx
+				return "text-gray-500"
+			}(),
+			fieldStat.MissingRatePct,
+			func() string {
+				if fieldStat.Variance > 0 {
+					return fmt.Sprintf("%.2f", fieldStat.Variance)
 				}
-				if mry, ok := dq["missing_rate_y"].(float64); ok {
-					missingRateY = mry
-				}
-			}
-		} else if relArtifact, ok := artifact.Payload.(stats.RelationshipArtifact); ok {
-			relX = string(relArtifact.Key.VariableX)
-			relY = string(relArtifact.Key.VariableY)
-			relEffectSize = relArtifact.Metrics.EffectSize
-			relPValue = relArtifact.Metrics.PValue
-			relQValue = relArtifact.Metrics.QValue
-			relTestType = string(relArtifact.Key.TestType)
-			relSampleSize = relArtifact.Metrics.SampleSize
-			missingRateX = relArtifact.DataQuality.MissingRateX
-			missingRateY = relArtifact.DataQuality.MissingRateY
-		} else if relPayload, ok := artifact.Payload.(stats.RelationshipPayload); ok {
-			relX = string(relPayload.VariableX)
-			relY = string(relPayload.VariableY)
-			relEffectSize = relPayload.EffectSize
-			relPValue = relPayload.PValue
-			relQValue = relPayload.QValue
-			relTestType = string(relPayload.TestType)
-			relSampleSize = relPayload.SampleSize
-			// RelationshipPayload doesn't have DataQuality fields, so leave missingRateX/Y as 0
-		}
-
-		if relX != "" && relY != "" {
-			// Determine if significant
-			significant := false
-			if relQValue > 0 {
-				significant = relQValue < 0.05
-			} else {
-				significant = relPValue > 0 && relPValue < 0.05
-			}
-
-			// Determine strength description
-			strengthDesc := "weak"
-			absEffect := relEffectSize
-			if absEffect < 0 {
-				absEffect = -absEffect
-			}
-			if absEffect > 0.5 {
-				strengthDesc = "strong"
-			} else if absEffect > 0.3 {
-				strengthDesc = "moderate"
-			}
-
-			fieldRelationships = append(fieldRelationships, FieldRelationship{
-				FieldX:       relX,
-				FieldY:       relY,
-				EffectSize:   relEffectSize,
-				PValue:       relPValue,
-				QValue:       relQValue,
-				TestType:     relTestType,
-				SampleSize:   relSampleSize,
-				MissingRateX: missingRateX,
-				MissingRateY: missingRateY,
-				Significant:  significant,
-				StrengthDesc: strengthDesc,
-				IsShadow:     false,
-			})
-		}
+				return "0.00"
+			}(),
+			fieldStat.UniqueCount,
+			fieldStat.InRelationships))
 	}
 
-	log.Printf("[handleIndex] Built %d FieldRelationships for display", len(fieldRelationships))
-
-	// Ensure missingnessOverall is always a valid float64
-	if datasetInfo == nil {
-		datasetInfo = make(map[string]interface{})
-	}
-	if _, ok := datasetInfo["missingnessOverall"].(float64); !ok {
-		datasetInfo["missingnessOverall"] = 0.0
-	}
-
-	log.Printf("[handleIndex] Dataset info - name: %v, relationships: %d, fields: %d", datasetInfo["name"], relationshipCount, len(fields))
-
-	// ResearchControl data for control strip
-	researchControl := map[string]interface{}{
-		"State":           "idle",
-		"Progress":        0.0,
-		"VariableCount":   len(fields),
-		"HypothesisCount": 0,
-		"SessionID":       "",
-		"Model":           "",
-		"ErrorMessage":    "",
-	}
-
-	data := map[string]interface{}{
-		"Title":              "GoHypo",
-		"FieldCount":         len(fields),
-		"RelationshipCount":  relationshipCount,
-		"Fields":             fields,
-		"DatasetInfo":        datasetInfo,
-		"RunStatus":          runStatus,
-		"PairsAttempted":     pairsAttempted,
-		"PairsTested":        pairsTested,
-		"PairsSkipped":       pairsSkipped,
-		"PairsPassed":        significantCount,
-		"SignificanceRule":   significanceRule,
-		"Seed":               seed,
-		"Fingerprint":        fingerprint,
-		"RegistryHash":       registryHash,
-		"StageStatuses":      stageStatuses,
-		"VariablesTotal":     len(fields),
-		"VariablesEligible":  len(fields),
-		"VariablesRejected":  0,
-		"FieldStats":         fieldStats,
-		"FieldRelationships": fieldRelationships,
-		"ResearchControl":    researchControl,
-	}
-	log.Printf("[handleIndex] Rendering template with %d relationships", len(fieldRelationships))
-	s.renderTemplate(c, "index.html", data)
+	c.Header("Content-Type", "text/html")
+	c.String(http.StatusOK, htmlBuilder.String())
 }
 
-// handleFieldsList returns field information for the UI
-func (s *Server) handleFieldsList(c *gin.Context) {
-	// Get all artifacts to extract field info
-	allArtifacts, err := s.reader.ListArtifacts(c.Request.Context(), ports.ArtifactFilters{Limit: 1000})
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to load artifacts"})
-		return
-	}
-
-	// Extract unique fields from relationship artifacts
-	fieldSet := make(map[string]bool)
-	for _, artifact := range allArtifacts {
-		if artifact.Kind == core.ArtifactRelationship {
-			var varX, varY string
-			if relArtifact, ok := artifact.Payload.(stats.RelationshipArtifact); ok {
-				varX = string(relArtifact.Key.VariableX)
-				varY = string(relArtifact.Key.VariableY)
-			} else if relPayload, ok := artifact.Payload.(stats.RelationshipPayload); ok {
-				varX = string(relPayload.VariableX)
-				varY = string(relPayload.VariableY)
-			} else if payload, ok := artifact.Payload.(map[string]interface{}); ok {
-				if vx, ok := payload["variable_x"].(string); ok {
-					varX = vx
-				}
-				if vy, ok := payload["variable_y"].(string); ok {
-					varY = vy
-				}
-			}
-			if varX != "" {
-				fieldSet[varX] = true
-			}
-			if varY != "" {
-				fieldSet[varY] = true
-			}
-		}
-	}
-
-	fields := make([]string, 0, len(fieldSet))
-	for field := range fieldSet {
-		fields = append(fields, field)
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"fields": fields,
-		"count":  len(fields),
-	})
-}
-
-// getExcelFieldNames reads all field names directly from the Excel file
-func (a *Server) getExcelFieldNames() ([]string, error) {
+// getExcelData extracts data from Excel/CSV file if available
+func (s *Server) getExcelData() (*excel.ExcelData, error) {
 	excelFile := os.Getenv("EXCEL_FILE")
 	if excelFile == "" {
-		return nil, fmt.Errorf("EXCEL_FILE environment variable not set")
+		return nil, fmt.Errorf("EXCEL_FILE not set")
+	}
+
+	// Check if file exists
+	if _, err := os.Stat(excelFile); os.IsNotExist(err) {
+		return nil, fmt.Errorf("Excel file not found: %s", excelFile)
 	}
 
 	// Read Excel data to get column information
-	reader := excel.NewExcelReader(excelFile)
+	reader := excel.NewDataReader(excelFile)
 	data, err := reader.ReadData()
 	if err != nil {
 		return nil, fmt.Errorf("failed to read Excel file: %w", err)
 	}
 
-	return data.Headers, nil
+	return data, nil
 }

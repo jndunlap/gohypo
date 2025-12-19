@@ -1,0 +1,28 @@
+# Production configuration
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    networks:
+      - gohypo-prod-network
+    restart: unless-stopped
+    # Remove exposed ports for security
+
+  pgadmin:
+    # Remove pgAdmin from production
+    profiles:
+      - debug
+
+volumes:
+  postgres_prod_data:
+
+networks:
+  gohypo-prod-network:
+    driver: bridge

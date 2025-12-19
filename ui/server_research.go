@@ -15,24 +15,27 @@ import (
 	"gohypo/app"
 	"gohypo/domain/core"
 	"gohypo/domain/greenfield"
+	"gohypo/internal/api"
 	"gohypo/internal/research"
+	"gohypo/models"
 	"gohypo/ports"
 
 	"github.com/gin-gonic/gin"
 )
 
-func (s *Server) AddResearchRoutes(sessionMgr *research.SessionManager, storage *research.ResearchStorage, worker *research.ResearchWorker) {
+func (s *Server) AddResearchRoutes(sessionMgr *research.SessionManager, storage *research.ResearchStorage, worker *research.ResearchWorker, sseHub *api.SSEHub) {
 	api := s.router.Group("/api/research")
 	{
-		api.POST("/initiate", s.handleInitiateResearch(sessionMgr, worker))
+		api.POST("/initiate", s.handleInitiateResearch(sessionMgr, worker, sseHub))
 		api.GET("/status", s.handleResearchStatus(sessionMgr))
 		api.GET("/ledger", s.handleResearchLedger(storage))
 		api.GET("/download/:id", s.handleDownloadHypothesis(storage))
 		api.GET("/industry-context", s.handleIndustryContext())
+		api.GET("/sse", sseHub.HandleSSE) // SSE endpoint for real-time updates
 	}
 }
 
-func (s *Server) handleInitiateResearch(sessionMgr *research.SessionManager, worker *research.ResearchWorker) gin.HandlerFunc {
+func (s *Server) handleInitiateResearch(sessionMgr *research.SessionManager, worker *research.ResearchWorker, sseHub *api.SSEHub) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		log.Printf("[API] 🚀 INITIATING RESEARCH SESSION - REQUEST RECEIVED")
 
@@ -64,17 +67,37 @@ func (s *Server) handleInitiateResearch(sessionMgr *research.SessionManager, wor
 			return
 		}
 
-		session := sessionMgr.CreateSession(map[string]interface{}{
+		session, err := sessionMgr.CreateSession(c.Request.Context(), map[string]interface{}{
 			"field_count":           len(fieldMetadata),
 			"stats_artifacts_count": len(statsArtifacts),
 			"timestamp":             time.Now(),
 		})
+		if err != nil {
+			log.Printf("[API] ❌ Failed to create session: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Failed to create research session",
+			})
+			return
+		}
 
 		log.Printf("[API] 🆔 Created new session ID: %s", session.ID)
 
+		// Emit SSE event for session creation
+		sseHub.Broadcast(api.ResearchEvent{
+			SessionID: session.ID.String(),
+			EventType: "session_created",
+			Progress:  0.0,
+			Data: map[string]interface{}{
+				"field_count":           len(fieldMetadata),
+				"stats_artifacts_count": len(statsArtifacts),
+				"message":               "Research session initialized",
+			},
+			Timestamp: time.Now(),
+		})
+
 		go func() {
 			log.Printf("[WORKER] 🏁 Starting background research process for session %s", session.ID)
-			worker.ProcessResearch(session.ID, fieldMetadata, statsArtifacts)
+			worker.ProcessResearch(context.Background(), session.ID.String(), fieldMetadata, statsArtifacts, sseHub)
 		}()
 
 		log.Printf("[API] ✅ Research session %s successfully scheduled", session.ID)
@@ -92,11 +115,25 @@ func (s *Server) handleInitiateResearch(sessionMgr *research.SessionManager, wor
 
 func (s *Server) handleResearchStatus(sessionMgr *research.SessionManager) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		activeSessions := sessionMgr.GetActiveSessions()
+		activeSessions, err := sessionMgr.GetActiveSessions(c.Request.Context())
+		if err != nil {
+			log.Printf("[API] ❌ Failed to get active sessions: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Failed to retrieve session status",
+			})
+			return
+		}
 
 		var response gin.H
 		if len(activeSessions) == 0 {
-			allSessions := sessionMgr.ListSessions(nil)
+			allSessions, err := sessionMgr.ListSessions(c.Request.Context(), nil)
+			if err != nil {
+				log.Printf("[API] ❌ Failed to get all sessions: %v", err)
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"error": "Failed to retrieve session status",
+				})
+				return
+			}
 			if len(allSessions) > 0 {
 				session := allSessions[0]
 				status := session.GetStatus()
@@ -138,7 +175,7 @@ func (s *Server) handleResearchLedger(storage *research.ResearchStorage) gin.Han
 			limit = 10
 		}
 
-		hypotheses, err := storage.ListRecent(limit)
+		hypotheses, err := storage.ListRecent(c.Request.Context(), limit)
 		if err != nil {
 			log.Printf("[API] Failed to list hypotheses: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{
@@ -165,7 +202,7 @@ func (s *Server) handleDownloadHypothesis(storage *research.ResearchStorage) gin
 	return func(c *gin.Context) {
 		hypothesisID := c.Param("id")
 
-		hypothesis, err := storage.GetByID(hypothesisID)
+		hypothesis, err := storage.GetByID(c.Request.Context(), hypothesisID)
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{
 				"error": "Hypothesis not found",
@@ -197,6 +234,13 @@ func (s *Server) getFieldMetadata() ([]greenfield.FieldMetadata, error) {
 
 	if excelData, columnTypes, err := s.getExcelFieldMetadata(); err == nil {
 		for _, fieldName := range excelData.Headers {
+			// Skip empty or whitespace-only field names (phantom columns)
+			fieldName = strings.TrimSpace(fieldName)
+			if fieldName == "" {
+				log.Printf("[API] ⚠️ Skipping empty field name from Excel headers")
+				continue
+			}
+
 			if _, exists := fieldMap[fieldName]; !exists {
 				dataType := columnTypes[fieldName]
 				if dataType == "" {
@@ -333,9 +377,9 @@ func (s *Server) getStatisticalArtifacts() ([]map[string]interface{}, error) {
 	return statsArtifacts, nil
 }
 
-func (s *Server) renderHypothesisCards(hypotheses []*research.HypothesisResult) string {
+func (s *Server) renderHypothesisCards(hypotheses []*models.HypothesisResult) string {
 	data := struct {
-		Hypotheses []*research.HypothesisResult
+		Hypotheses []*models.HypothesisResult
 	}{
 		Hypotheses: hypotheses,
 	}
@@ -351,9 +395,12 @@ func (s *Server) renderHypothesisCards(hypotheses []*research.HypothesisResult) 
 
 func (s *Server) handleIndustryContext() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		log.Printf("[IndustryContext] API called - fetching industry intelligence")
+
 		// Get the greenfield service
 		greenfieldSvc, ok := s.greenfieldService.(*app.GreenfieldService)
 		if !ok || greenfieldSvc == nil {
+			log.Printf("[IndustryContext] Greenfield service not available")
 			c.JSON(http.StatusServiceUnavailable, gin.H{
 				"error": "Greenfield service not available",
 			})
@@ -363,6 +410,7 @@ func (s *Server) handleIndustryContext() gin.HandlerFunc {
 		// Get the port which has the adapter with Scout
 		port := greenfieldSvc.GetGreenfieldPort()
 		if port == nil {
+			log.Printf("[IndustryContext] Greenfield port not available")
 			c.JSON(http.StatusServiceUnavailable, gin.H{
 				"error": "Greenfield port not available",
 			})
@@ -372,6 +420,7 @@ func (s *Server) handleIndustryContext() gin.HandlerFunc {
 		// Access the adapter's Scout directly
 		adapter, ok := port.(*llm.GreenfieldAdapter)
 		if !ok {
+			log.Printf("[IndustryContext] Unable to access Forensic Scout adapter")
 			c.JSON(http.StatusServiceUnavailable, gin.H{
 				"error": "Unable to access Forensic Scout",
 			})
@@ -380,31 +429,52 @@ func (s *Server) handleIndustryContext() gin.HandlerFunc {
 
 		// Extract industry context using the Scout
 		ctx := context.Background()
-		industryContext, err := adapter.GetScout().ExtractIndustryContext(ctx)
+		log.Printf("[IndustryContext] Calling Forensic Scout to extract intelligence")
+		scoutResponse, err := adapter.GetScout().ExtractIndustryContext(ctx)
 		if err != nil {
-			log.Printf("[API] Failed to extract industry context: %v", err)
+			log.Printf("[IndustryContext] Failed to extract industry intelligence: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{
-				"error":   "Failed to extract industry context",
+				"error":   "Failed to extract industry intelligence",
 				"details": err.Error(),
 			})
 			return
 		}
 
+		log.Printf("[IndustryContext] Successfully extracted intelligence: Domain='%s', Context='%s'",
+			scoutResponse.Domain, scoutResponse.Context)
+
 		c.JSON(http.StatusOK, gin.H{
-			"industry_context": industryContext,
+			"domain":     scoutResponse.Domain,
+			"context":    scoutResponse.Context,
+			"bottleneck": scoutResponse.Bottleneck,
+			"physics":    scoutResponse.Physics,
+			"map":        scoutResponse.Map,
 		})
 	}
 }
 
 func (s *Server) getExcelFieldMetadata() (*excel.ExcelData, map[string]string, error) {
-	// Get Excel file path from environment
+	// Check cache first
+	s.excelCacheMutex.RLock()
+	if s.excelCacheLoaded && s.excelDataCache != nil && s.excelColumnTypes != nil {
+		// Check if cache is still fresh (5 minutes)
+		if time.Since(s.excelCacheTimestamp) < 5*time.Minute {
+			data := s.excelDataCache
+			types := s.excelColumnTypes
+			s.excelCacheMutex.RUnlock()
+			return data, types, nil
+		}
+	}
+	s.excelCacheMutex.RUnlock()
+
+	// Cache miss or expired - read from disk
 	excelFile := os.Getenv("EXCEL_FILE")
 	if excelFile == "" {
 		return nil, nil, fmt.Errorf("EXCEL_FILE environment variable not set")
 	}
 
 	// Read Excel data
-	reader := excel.NewExcelReader(excelFile)
+	reader := excel.NewDataReader(excelFile)
 	data, err := reader.ReadData()
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to read Excel data: %w", err)
@@ -420,6 +490,14 @@ func (s *Server) getExcelFieldMetadata() (*excel.ExcelData, map[string]string, e
 			columnTypes[header] = "unknown"
 		}
 	}
+
+	// Update cache
+	s.excelCacheMutex.Lock()
+	s.excelDataCache = data
+	s.excelColumnTypes = columnTypes
+	s.excelCacheLoaded = true
+	s.excelCacheTimestamp = time.Now()
+	s.excelCacheMutex.Unlock()
 
 	return data, columnTypes, nil
 }

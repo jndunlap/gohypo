@@ -48,9 +48,10 @@ func (s *GreenfieldService) ExecuteGreenfieldFlow(
 
 	// 2. Store research directives as artifacts
 	directiveArtifacts := s.convertDirectivesToArtifacts(response.Directives, runID)
+	var storeErrors []error
 	for _, artifact := range directiveArtifacts {
 		if err := s.ledgerPort.StoreArtifact(ctx, string(runID), artifact); err != nil {
-			return nil, fmt.Errorf("failed to store directive artifact: %w", err)
+			storeErrors = append(storeErrors, fmt.Errorf("failed to store directive artifact %s: %w", artifact.ID, err))
 		}
 	}
 
@@ -58,8 +59,13 @@ func (s *GreenfieldService) ExecuteGreenfieldFlow(
 	backlogArtifacts := s.convertBacklogToArtifacts(response.EngineeringBacklog, runID)
 	for _, artifact := range backlogArtifacts {
 		if err := s.ledgerPort.StoreArtifact(ctx, string(runID), artifact); err != nil {
-			return nil, fmt.Errorf("failed to store backlog artifact: %w", err)
+			storeErrors = append(storeErrors, fmt.Errorf("failed to store backlog artifact %s: %w", artifact.ID, err))
 		}
+	}
+
+	// Return combined error if any storage failed
+	if len(storeErrors) > 0 {
+		return nil, fmt.Errorf("failed to store %d artifacts: %v", len(storeErrors), storeErrors)
 	}
 
 	return &GreenfieldFlowResult{

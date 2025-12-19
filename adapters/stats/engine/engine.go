@@ -82,3 +82,5 @@ func (e *StatsEngine) profileColumn(bundle *dataset.MatrixBundle, colIndex int) 
 		"mean":             mean,
 	}
 }
+
+

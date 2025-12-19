@@ -3,7 +3,10 @@ package excel
 import (
 	"context"
 	"fmt"
+	"log"
+	"path/filepath"
 	"strconv"
+	"time"
 
 	"gohypo/adapters/datareadiness"
 	"gohypo/adapters/datareadiness/coercer"
@@ -17,8 +20,11 @@ import (
 // ExcelMatrixResolverAdapter implements MatrixResolverPort for Excel files
 type ExcelMatrixResolverAdapter struct {
 	config       ExcelConfig
-	reader       *ExcelReader
-	entityColumn string // Auto-detected entity column
+	reader       *DataReader
+	entityColumn string     // Auto-detected entity column
+	columnCount  int        // Cached column count for logging
+	cachedData   *ExcelData // Cached raw Excel data
+	dataCached   bool       // Whether data is cached
 	coercer      *coercer.TypeCoercer
 	profiler     *datareadiness.ProfilerAdapter
 	synthesizer  *synthesizer.ContractSynthesizer
@@ -29,7 +35,21 @@ func NewExcelMatrixResolverAdapter(config ExcelConfig) *ExcelMatrixResolverAdapt
 	coercerInstance := coercer.NewTypeCoercer(config.CoercionConfig)
 	return &ExcelMatrixResolverAdapter{
 		config:      config,
-		reader:      NewExcelReader(config.FilePath),
+		reader:      NewDataReader(config.FilePath),
+		coercer:     coercerInstance,
+		profiler:    datareadiness.NewProfilerAdapter(coercerInstance),
+		synthesizer: synthesizer.NewContractSynthesizer(config.SynthesisConfig),
+	}
+}
+
+// NewExcelMatrixResolverAdapterWithData creates a new Excel-based matrix resolver with pre-loaded data
+func NewExcelMatrixResolverAdapterWithData(config ExcelConfig, preloadedData *ExcelData) *ExcelMatrixResolverAdapter {
+	coercerInstance := coercer.NewTypeCoercer(config.CoercionConfig)
+	return &ExcelMatrixResolverAdapter{
+		config:      config,
+		reader:      NewDataReader(config.FilePath),
+		cachedData:  preloadedData,
+		dataCached:  preloadedData != nil,
 		coercer:     coercerInstance,
 		profiler:    datareadiness.NewProfilerAdapter(coercerInstance),
 		synthesizer: synthesizer.NewContractSynthesizer(config.SynthesisConfig),
@@ -38,10 +58,42 @@ func NewExcelMatrixResolverAdapter(config ExcelConfig) *ExcelMatrixResolverAdapt
 
 // ResolveMatrix reads Excel data and processes through data readiness pipeline
 func (a *ExcelMatrixResolverAdapter) ResolveMatrix(ctx context.Context, req ports.MatrixResolutionRequest) (*dataset.MatrixBundle, error) {
-	// Step 1: Read raw Excel data from Sheet1
-	rawData, err := a.reader.ReadData()
-	if err != nil {
-		return nil, fmt.Errorf("failed to read Excel data: %w", err)
+	resolveStart := time.Now()
+	log.Printf("[ExcelMatrixResolver] Starting matrix resolution for %d variables, %d entities",
+		len(req.VarKeys), len(req.EntityIDs))
+
+	// Step 1: Read raw Excel data from Sheet1 (use cache if available)
+	var rawData *ExcelData
+	var err error
+	dataReadStart := time.Now()
+
+	if a.dataCached {
+		rawData = a.cachedData
+		if a.columnCount == 0 {
+			a.columnCount = len(rawData.Headers)
+			log.Printf("[ExcelMatrixResolver] Using pre-loaded Excel data (%d columns)", a.columnCount)
+		} else {
+			log.Printf("[ExcelMatrixResolver] Using cached Excel data (%d columns)", a.columnCount)
+		}
+	} else {
+		rawData, err = a.reader.ReadData()
+		if err != nil {
+			return nil, fmt.Errorf("failed to read Excel data: %w", err)
+		}
+		// Cache the data for future use
+		a.cachedData = rawData
+		a.dataCached = true
+
+		// Log column count once (first time only)
+		a.columnCount = len(rawData.Headers)
+		log.Printf("Excel file contains %d columns: %v", a.columnCount, rawData.Headers)
+	}
+
+	dataReadTime := time.Since(dataReadStart)
+	if !a.dataCached {
+		log.Printf("[ExcelMatrixResolver] Excel data read in %.2fms", float64(dataReadTime.Nanoseconds())/1e6)
+	} else {
+		log.Printf("[ExcelMatrixResolver] Cache hit - data ready in %.2fms", float64(dataReadTime.Nanoseconds())/1e6)
 	}
 
 	// Step 2: Auto-detect entity column
@@ -73,7 +125,16 @@ func (a *ExcelMatrixResolverAdapter) ResolveMatrix(ctx context.Context, req port
 	availableDrafts := a.filterRequestedVariables(contractDrafts, req.VarKeys)
 
 	// Step 7: Create MatrixBundle using standardized contracts
-	return a.buildMatrixBundle(rawData, availableDrafts, req)
+	bundle, err := a.buildMatrixBundle(rawData, availableDrafts, req)
+	if err != nil {
+		return nil, err
+	}
+
+	totalTime := time.Since(resolveStart)
+	log.Printf("[ExcelMatrixResolver] Matrix resolution completed in %.2fms (%d variables, %d entities)",
+		float64(totalTime.Nanoseconds())/1e6, len(req.VarKeys), len(req.EntityIDs))
+
+	return bundle, nil
 }
 
 // convertToCanonicalEvents creates events for profiling using standardized coercer
@@ -119,16 +180,16 @@ func (a *ExcelMatrixResolverAdapter) buildMatrixBundle(
 	drafts []synthesizer.ContractDraft,
 	req ports.MatrixResolutionRequest,
 ) (*dataset.MatrixBundle, error) {
-
-	bundle := dataset.NewMatrixBundle(req.SnapshotID, req.ViewID, "", core.NewCutoffAt(core.Now().Time()), core.Lag(0))
-
 	// Build entity index and filter entities
 	entityIndex := make(map[string]int)
 	var entityIDs []core.ID
 
 	for _, row := range rawData.Rows {
 		entityID := row[a.entityColumn]
-		if entityID == "" || entityIndex[entityID] > 0 {
+		if entityID == "" {
+			continue
+		}
+		if _, seen := entityIndex[entityID]; seen {
 			continue
 		}
 
@@ -142,6 +203,29 @@ func (a *ExcelMatrixResolverAdapter) buildMatrixBundle(
 		return nil, fmt.Errorf("no valid entities found after filtering")
 	}
 
+	// Build entity-to-row lookup map for efficient access
+	entityRowMap := make(map[string]RawRowData)
+	for _, row := range rawData.Rows {
+		entityID := row[a.entityColumn]
+		if entityID != "" {
+			entityRowMap[entityID] = row
+		}
+	}
+
+	// Compute a deterministic cohort hash so run manifests validate.
+	// Keep the filters stable and portable (no absolute paths).
+	ids := make([]string, 0, len(entityIDs))
+	for _, id := range entityIDs {
+		ids = append(ids, string(id))
+	}
+	cohortHash := core.ComputeCohortHash(ids, map[string]interface{}{
+		"source":        "excel",
+		"file":          filepath.Base(a.config.FilePath),
+		"entity_column": a.entityColumn,
+	})
+
+	bundle := dataset.NewMatrixBundle(req.SnapshotID, req.ViewID, cohortHash, core.NewCutoffAt(core.Now().Time()), core.Lag(0))
+
 	bundle.Matrix.EntityIDs = entityIDs
 	bundle.Matrix.Data = make([][]float64, len(entityIDs))
 	for i := range bundle.Matrix.Data {
@@ -153,16 +237,9 @@ func (a *ExcelMatrixResolverAdapter) buildMatrixBundle(
 		contract := draft.ToVariableContract()
 
 		for rowIdx, entityID := range entityIDs {
-			// Find the raw data for this entity
-			var entityData RawRowData
-			for _, row := range rawData.Rows {
-				if row[a.entityColumn] == string(entityID) {
-					entityData = row
-					break
-				}
-			}
-
-			if entityData == nil {
+			// Find the raw data for this entity using the lookup map
+			entityData, exists := entityRowMap[string(entityID)]
+			if !exists {
 				continue
 			}
 
@@ -217,12 +294,24 @@ func (a *ExcelMatrixResolverAdapter) contractValueToFloat64(value ingestion.Valu
 		}
 	case dataset.TypeCategorical:
 		if value.Type == ingestion.ValueTypeString && value.StringVal != nil {
-			// Hash string for categorical encoding
+			// Use the categorical encoding from the contract if available
+			if contract.CategoricalEncoding != nil {
+				if encodedValue, exists := contract.CategoricalEncoding[*value.StringVal]; exists {
+					return encodedValue
+				}
+				// Check for unknown value encoding
+				if unknownValue, exists := contract.CategoricalEncoding["__unknown__"]; exists {
+					return unknownValue
+				}
+			}
+
+			// Fallback: for categorical variables without encoding, use simple hash
+			// This handles cases where encoding wasn't synthesized
 			hash := 0
 			for _, r := range *value.StringVal {
 				hash = hash*31 + int(r)
 			}
-			return float64(hash % 1000)
+			return float64(hash % 100)
 		}
 	case dataset.TypeNumeric:
 		if value.Type == ingestion.ValueTypeNumeric && value.NumericVal != nil {

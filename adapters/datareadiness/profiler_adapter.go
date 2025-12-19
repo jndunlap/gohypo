@@ -296,27 +296,44 @@ func (p *ProfilerAdapter) computeNumericStats(values []interface{}) *profiling.N
 	var sum, min, max float64
 	zeroCount := 0
 	negativeCount := 0
+	validCount := 0.0
 
 	min = math.Inf(1)
 	max = math.Inf(-1)
 
 	for _, value := range values {
 		var num float64
+		var isValid bool
+
 		switch v := value.(type) {
 		case int:
 			num = float64(v)
+			isValid = true
 		case int32:
 			num = float64(v)
+			isValid = true
 		case int64:
 			num = float64(v)
+			isValid = true
 		case float32:
 			num = float64(v)
+			isValid = true
 		case float64:
 			num = v
-		default:
+			isValid = true
+		case string:
+			coerced := p.coercer.CoerceValue(v)
+			if coerced.Type == ingestion.ValueTypeNumeric && coerced.NumericVal != nil {
+				num = *coerced.NumericVal
+				isValid = true
+			}
+		}
+
+		if !isValid {
 			continue
 		}
 
+		validCount++
 		sum += num
 		if num < min {
 			min = num
@@ -332,13 +349,62 @@ func (p *ProfilerAdapter) computeNumericStats(values []interface{}) *profiling.N
 		}
 	}
 
-	count := float64(len(values))
-	mean := sum / count
+	if validCount == 0 {
+		return nil
+	}
+
+	mean := sum / validCount
+
+	// Calculate Variance and StdDev
+	var sumSqDiff float64
+	for _, value := range values {
+		var num float64
+		var isValid bool
+
+		switch v := value.(type) {
+		case int:
+			num = float64(v)
+			isValid = true
+		case int32:
+			num = float64(v)
+			isValid = true
+		case int64:
+			num = float64(v)
+			isValid = true
+		case float32:
+			num = float64(v)
+			isValid = true
+		case float64:
+			num = v
+			isValid = true
+		case string:
+			coerced := p.coercer.CoerceValue(v)
+			if coerced.Type == ingestion.ValueTypeNumeric && coerced.NumericVal != nil {
+				num = *coerced.NumericVal
+				isValid = true
+			}
+		}
+
+		if !isValid {
+			continue
+		}
+
+		diff := num - mean
+		sumSqDiff += diff * diff
+	}
+
+	variance := 0.0
+	stdDev := 0.0
+	if validCount > 1 {
+		variance = sumSqDiff / (validCount - 1) // Sample variance
+		stdDev = math.Sqrt(variance)
+	}
 
 	return &profiling.NumericStats{
 		Min:           min,
 		Max:           max,
 		Mean:          mean,
+		StdDev:        stdDev,
 		ZeroCount:     zeroCount,
 		NegativeCount: negativeCount,
 	}

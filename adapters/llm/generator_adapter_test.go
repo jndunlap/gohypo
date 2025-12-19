@@ -254,3 +254,5 @@ func (m *MockGenerator) GenerateHypotheses(ctx context.Context, req ports.Hypoth
 		},
 	}, nil
 }
+
+

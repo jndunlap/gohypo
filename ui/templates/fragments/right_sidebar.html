@@ -1,0 +1,71 @@
+<!-- Right Sidebar - Ingredient Inventory (High-Density Field List) -->
+<div class="w-72 flex flex-col bg-slate-50 border-l border-slate-200">
+    <!-- Ingredient Sidebar Header -->
+    <div class="flex-shrink-0 h-[40px] min-h-[40px]  border-b border-slate-200 bg-white flex items-center">
+        <div class="flex items-center justify-between w-full">
+            <div class="px-2">
+                <h3 class="text-[11px] font-bold text-slate-900 uppercase tracking-wide">Ingredients</h3>
+                <p class="text-[9px] text-slate-500 font-medium mt-0.5">Causal Variable Arsenal</p>
+            </div>
+            <div class="text-[9px] text-slate-500 font-medium bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded">
+                {{len .FieldStats}} fields
+            </div>
+        </div>
+    </div>
+
+    <!-- High-Density Field List -->
+    <div class="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
+        <div id="field-inventory-list" class="p-0 space-y-0">
+            {{range .FieldStats}}
+            <div class="field-item group py-1 px-2 bg-white border-b border-slate-200 cursor-pointer hover:bg-slate-50 hover:border-slate-300 hover:shadow-sm transition-all duration-200 relative"
+                 data-field-name="{{.Name}}"
+                 data-field-type="{{.Type}}"
+                 draggable="true">
+                <div class="flex items-center justify-between">
+                    <div class="font-medium text-slate-900 text-[11px] truncate flex-1 pr-2" title="{{.Name}}">{{.Name}}</div>
+                    <span class="inline-flex items-center px-1 py-0.5 rounded text-[9px] font-medium border flex-shrink-0 {{if eq .Type "numeric"}}bg-gray-50 text-gray-700 border-gray-100{{else}}bg-gray-50 text-gray-600 border-gray-200{{end}}">
+                        {{if eq .Type "numeric"}}NUM{{else}}CAT{{end}}
+                    </span>
+                </div>
+
+                <!-- Detailed stats (only visible on hover) -->
+                <div class="opacity-0 group-hover:opacity-100 transition-opacity duration-200 mt-2 pt-2 border-t border-gray-100">
+                    <div class="grid grid-cols-2 gap-1 text-[9px] text-gray-500">
+                        <div>Missing: <span class="font-mono {{if gt .MissingRate 0.05}}text-red-600{{else}}text-gray-600{{end}}">{{.MissingRatePct}}%</span></div>
+                        <div>Unique: <span class="font-mono text-gray-600">{{.UniqueCount}}</span></div>
+                        <div>Relations: <span class="font-mono text-gray-600 font-medium">{{.InRelationships}}</span></div>
+                        <div>Correlation: <span class="font-mono {{if gt .TotalRelsAnalyzed 0}}{{if gt .StrongestCorr 0.0}}text-green-600{{else}}text-red-600{{end}}{{else}}text-gray-300{{end}}">
+                            {{if gt .TotalRelsAnalyzed 0}}{{printf "%.2f" .StrongestCorr}}{{else}}—{{end}}
+                        </span></div>
+                    </div>
+                </div>
+
+                <!-- Hidden stats for JavaScript access -->
+                <div class="hidden field-stats"
+                     data-variance="{{.Variance}}"
+                     data-correlation="{{if gt .TotalRelsAnalyzed 0}}{{.StrongestCorr}}{{else}}0{{end}}"
+                     data-relationships="{{.InRelationships}}">
+                </div>
+            </div>
+            {{end}}
+        </div>
+
+        <!-- Load More Button -->
+        <div id="load-more-container" class="px-4 py-3 border-t border-gray-100 bg-gray-50" {{if not (gt (len $.FieldStats) 20)}}style="display: none;"{{end}}>
+            <div class="flex justify-center">
+                <button
+                    id="load-more-btn"
+                    class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded shadow-sm hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-300 transition-all"
+                    hx-get="/api/fields/load-more?offset={{len .FieldStats}}&limit=10"
+                    hx-target="#field-inventory-list"
+                    hx-swap="beforeend"
+                    hx-indicator="#load-more-spinner"
+                    hx-on:htmx:after-request="handleLoadMoreResponse(event)">
+                    <span id="load-more-spinner" class="spinner hidden mr-2 w-3 h-3"></span>
+                    Load More Fields
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+

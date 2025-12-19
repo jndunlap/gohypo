@@ -19,6 +19,8 @@ type GreenfieldResearchRequest struct {
 	StatisticalArtifacts []map[string]interface{}   `json:"statistical_artifacts,omitempty"` // Full statistical artifacts for context
 	DiscoveryBriefs      interface{}                `json:"discovery_briefs,omitempty"`      // Discovery briefs for grounding
 	MaxDirectives        int                        `json:"max_directives"`
+	// Optional thinking callback for real-time progress updates
+	OnThinking func(string) `json:"-"` // Not serialized
 }
 
 // GreenfieldResearchResponse - The engineering blueprint

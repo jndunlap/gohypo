@@ -1,298 +1,115 @@
 package research
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
-	"io/fs"
-	"os"
-	"path/filepath"
-	"sort"
-	"strings"
 	"time"
+
+	"gohypo/models"
+	"gohypo/ports"
+
+	"github.com/google/uuid"
 )
 
 // ResearchStorage handles persistence of research hypotheses
 type ResearchStorage struct {
-	BaseDir            string
-	simulatedArtifacts []map[string]interface{}
+	hypothesisRepo ports.HypothesisRepository
+	userRepo       ports.UserRepository
 }
 
-// NewResearchStorage creates a new research storage instance
-func NewResearchStorage(baseDir string) *ResearchStorage {
+// NewResearchStorage creates a new research storage instance with database repositories
+func NewResearchStorage(hypothesisRepo ports.HypothesisRepository, userRepo ports.UserRepository) *ResearchStorage {
 	return &ResearchStorage{
-		BaseDir: baseDir,
+		hypothesisRepo: hypothesisRepo,
+		userRepo:       userRepo,
 	}
 }
 
-// EnsureBaseDir creates the base directory if it doesn't exist
-func (rs *ResearchStorage) EnsureBaseDir() error {
-	return os.MkdirAll(rs.BaseDir, 0755)
-}
-
-// SaveHypothesis saves a hypothesis result to disk
-func (rs *ResearchStorage) SaveHypothesis(result *HypothesisResult) error {
-	if err := rs.EnsureBaseDir(); err != nil {
-		return fmt.Errorf("failed to create base directory: %w", err)
-	}
-
-	filename := fmt.Sprintf("%s_%s.json", result.CreatedAt.Format("2006-01-02_15-04-05"), result.ID)
-	filepath := filepath.Join(rs.BaseDir, filename)
-
-	data, err := json.MarshalIndent(result, "", "  ")
+// SaveHypothesis saves a hypothesis result for the default user
+func (rs *ResearchStorage) SaveHypothesis(ctx context.Context, result *models.HypothesisResult) error {
+	user, err := rs.userRepo.GetOrCreateDefaultUser(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to marshal hypothesis: %w", err)
+		return fmt.Errorf("failed to get default user: %w", err)
 	}
 
-	if err := os.WriteFile(filepath, data, 0644); err != nil {
-		return fmt.Errorf("failed to write hypothesis file: %w", err)
+	sessionUUID, err := uuid.Parse(result.SessionID)
+	if err != nil {
+		return fmt.Errorf("invalid session ID: %w", err)
 	}
 
-	return nil
+	return rs.hypothesisRepo.SaveHypothesis(ctx, user.ID, sessionUUID, result)
 }
 
-// GetByID retrieves a hypothesis by its ID
-func (rs *ResearchStorage) GetByID(id string) (*HypothesisResult, error) {
-	files, err := rs.listHypothesisFiles()
+// GetByID retrieves a hypothesis by its ID for the default user
+func (rs *ResearchStorage) GetByID(ctx context.Context, id string) (*models.HypothesisResult, error) {
+	user, err := rs.userRepo.GetOrCreateDefaultUser(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get default user: %w", err)
 	}
 
-	for _, file := range files {
-		result, err := rs.loadHypothesisFile(file)
-		if err != nil {
-			continue // Skip corrupted files
-		}
+	return rs.hypothesisRepo.GetHypothesis(ctx, user.ID, id)
+}
 
-		if result.ID == id {
-			return result, nil
-		}
-	}
-
-	return nil, fmt.Errorf("hypothesis not found: %s", id)
+// GetDefaultUser returns the default user
+func (rs *ResearchStorage) GetDefaultUser(ctx context.Context) (*models.User, error) {
+	return rs.userRepo.GetOrCreateDefaultUser(ctx)
 }
 
 // ListRecent returns the most recent hypotheses, limited by count
-func (rs *ResearchStorage) ListRecent(limit int) ([]*HypothesisResult, error) {
-	files, err := rs.listHypothesisFiles()
+func (rs *ResearchStorage) ListRecent(ctx context.Context, limit int) ([]*models.HypothesisResult, error) {
+	user, err := rs.userRepo.GetOrCreateDefaultUser(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get default user: %w", err)
 	}
 
-	// Sort files by modification time (newest first)
-	sort.Slice(files, func(i, j int) bool {
-		infoI, errI := os.Stat(files[i])
-		infoJ, errJ := os.Stat(files[j])
-
-		if errI != nil || errJ != nil {
-			return false
-		}
-
-		return infoI.ModTime().After(infoJ.ModTime())
-	})
-
-	var results []*HypothesisResult
-	for i, file := range files {
-		if i >= limit {
-			break
-		}
-
-		result, err := rs.loadHypothesisFile(file)
-		if err != nil {
-			continue // Skip corrupted files
-		}
-
-		results = append(results, result)
-	}
-
-	return results, nil
+	return rs.hypothesisRepo.ListUserHypotheses(ctx, user.ID, limit)
 }
 
 // ListByValidationState returns hypotheses filtered by validation state
-func (rs *ResearchStorage) ListByValidationState(validated bool, limit int) ([]*HypothesisResult, error) {
-	files, err := rs.listHypothesisFiles()
+func (rs *ResearchStorage) ListByValidationState(ctx context.Context, validated bool, limit int) ([]*models.HypothesisResult, error) {
+	user, err := rs.userRepo.GetOrCreateDefaultUser(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get default user: %w", err)
 	}
 
-	// Sort files by modification time (newest first)
-	sort.Slice(files, func(i, j int) bool {
-		infoI, errI := os.Stat(files[i])
-		infoJ, errJ := os.Stat(files[j])
-
-		if errI != nil || errJ != nil {
-			return false
-		}
-
-		return infoI.ModTime().After(infoJ.ModTime())
-	})
-
-	var results []*HypothesisResult
-	for _, file := range files {
-		result, err := rs.loadHypothesisFile(file)
-		if err != nil {
-			continue // Skip corrupted files
-		}
-
-		if result.Validated == validated {
-			results = append(results, result)
-			if len(results) >= limit {
-				break
-			}
-		}
-	}
-
-	return results, nil
+	return rs.hypothesisRepo.ListByValidationState(ctx, user.ID, validated, limit)
 }
 
-// ListAll returns all hypotheses sorted by creation time (newest first)
-func (rs *ResearchStorage) ListAll() ([]*HypothesisResult, error) {
-	files, err := rs.listHypothesisFiles()
+// ListAll returns all hypotheses for the default user sorted by creation time (newest first)
+func (rs *ResearchStorage) ListAll(ctx context.Context) ([]*models.HypothesisResult, error) {
+	user, err := rs.userRepo.GetOrCreateDefaultUser(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get default user: %w", err)
 	}
 
-	// Sort files by modification time (newest first)
-	sort.Slice(files, func(i, j int) bool {
-		infoI, errI := os.Stat(files[i])
-		infoJ, errJ := os.Stat(files[j])
-
-		if errI != nil || errJ != nil {
-			return false
-		}
-
-		return infoI.ModTime().After(infoJ.ModTime())
-	})
-
-	var results []*HypothesisResult
-	for _, file := range files {
-		result, err := rs.loadHypothesisFile(file)
-		if err != nil {
-			continue // Skip corrupted files
-		}
-
-		results = append(results, result)
-	}
-
-	return results, nil
+	return rs.hypothesisRepo.ListUserHypotheses(ctx, user.ID, 0) // 0 = no limit
 }
 
-// GetStats returns statistics about stored hypotheses
-func (rs *ResearchStorage) GetStats() (map[string]interface{}, error) {
-	files, err := rs.listHypothesisFiles()
+// GetStats returns statistics about stored hypotheses for the default user
+func (rs *ResearchStorage) GetStats(ctx context.Context) (map[string]interface{}, error) {
+	user, err := rs.userRepo.GetOrCreateDefaultUser(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get default user: %w", err)
 	}
 
-	totalCount := 0
-	validatedCount := 0
-	rejectedCount := 0
-	var earliest, latest *time.Time
-
-	for _, file := range files {
-		result, err := rs.loadHypothesisFile(file)
-		if err != nil {
-			continue // Skip corrupted files
-		}
-
-		totalCount++
-
-		if result.Validated {
-			validatedCount++
-		} else {
-			rejectedCount++
-		}
-
-		if earliest == nil || result.CreatedAt.Before(*earliest) {
-			earliest = &result.CreatedAt
-		}
-
-		if latest == nil || result.CreatedAt.After(*latest) {
-			latest = &result.CreatedAt
-		}
+	stats, err := rs.hypothesisRepo.GetUserStats(ctx, user.ID)
+	if err != nil {
+		return nil, err
 	}
 
 	return map[string]interface{}{
-		"total_hypotheses":    totalCount,
-		"validated_count":     validatedCount,
-		"rejected_count":      rejectedCount,
-		"validation_rate":     float64(validatedCount) / float64(totalCount) * 100,
-		"earliest_hypothesis": earliest,
-		"latest_hypothesis":   latest,
+		"total_hypotheses":    stats.TotalHypotheses,
+		"validated_count":     stats.ValidatedCount,
+		"rejected_count":      stats.RejectedCount,
+		"validation_rate":     stats.ValidationRate,
+		"earliest_hypothesis": stats.EarliestHypothesis,
+		"latest_hypothesis":   stats.LatestHypothesis,
 	}, nil
 }
 
-// listHypothesisFiles returns all hypothesis JSON files
-func (rs *ResearchStorage) listHypothesisFiles() ([]string, error) {
-	var files []string
-
-	err := filepath.WalkDir(rs.BaseDir, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if !d.IsDir() && strings.HasSuffix(path, ".json") {
-			files = append(files, path)
-		}
-
-		return nil
-	})
-
-	return files, err
-}
-
-// loadHypothesisFile loads a single hypothesis from a JSON file
-func (rs *ResearchStorage) loadHypothesisFile(filepath string) (*HypothesisResult, error) {
-	data, err := os.ReadFile(filepath)
-	if err != nil {
-		return nil, err
-	}
-
-	var result HypothesisResult
-	if err := json.Unmarshal(data, &result); err != nil {
-		return nil, err
-	}
-
-	return &result, nil
-}
-
 // CleanupOldFiles removes hypothesis files older than the specified duration
+// Note: Database cleanup can be handled separately if needed
 func (rs *ResearchStorage) CleanupOldFiles(maxAge time.Duration) (int, error) {
-	files, err := rs.listHypothesisFiles()
-	if err != nil {
-		return 0, err
-	}
-
-	cutoff := time.Now().Add(-maxAge)
-	removed := 0
-
-	for _, file := range files {
-		info, err := os.Stat(file)
-		if err != nil {
-			continue
-		}
-
-		if info.ModTime().Before(cutoff) {
-			if err := os.Remove(file); err == nil {
-				removed++
-			}
-		}
-	}
-
-	return removed, nil
-}
-
-// StoreSimulatedArtifact stores a simulated statistical artifact for testing
-func (rs *ResearchStorage) StoreSimulatedArtifact(sessionID string, artifact map[string]interface{}) error {
-	rs.simulatedArtifacts = append(rs.simulatedArtifacts, artifact)
-	return nil
-}
-
-// GetSimulatedArtifacts returns all simulated statistical artifacts
-func (rs *ResearchStorage) GetSimulatedArtifacts() []map[string]interface{} {
-	return rs.simulatedArtifacts
-}
-
-// ClearSimulatedArtifacts clears all simulated artifacts
-func (rs *ResearchStorage) ClearSimulatedArtifacts() {
-	rs.simulatedArtifacts = nil
+	// Database-backed storage doesn't need file cleanup
+	return 0, nil
 }

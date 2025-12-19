@@ -118,3 +118,5 @@ All tests pass ✅
 5. **Add integration tests** with golden fixtures
 6. **Wire via config flag** (`GENERATOR_MODE=llm|heuristic`)
 
+
+

@@ -2,6 +2,7 @@ package synthesizer
 
 import (
 	"fmt"
+	"strings"
 
 	"gohypo/domain/core"
 	"gohypo/domain/datareadiness/profiling"
@@ -93,6 +94,11 @@ func (s *ContractSynthesizer) synthesizeContract(profile profiling.FieldProfile)
 	// Synthesize statistical type
 	draft.StatisticalType = s.synthesizeStatisticalType(profile)
 	draft.Reasoning.StatisticalType = s.explainStatisticalType(profile, draft.StatisticalType)
+
+	// Synthesize categorical encoding for categorical variables
+	if draft.StatisticalType == "categorical" {
+		draft.CategoricalEncoding = s.synthesizeCategoricalEncoding(profile)
+	}
 
 	// Set window days if applicable
 	draft.WindowDays = s.synthesizeWindowDays(profile, draft.AsOfMode)
@@ -314,17 +320,201 @@ func (s *ContractSynthesizer) explainScalarGuarantee(profile profiling.FieldProf
 
 // ContractDraft represents a synthesized contract with reasoning
 type ContractDraft struct {
-	VariableKey      string                 `json:"variable_key"`
-	Source           string                 `json:"source"`
-	AsOfMode         string                 `json:"as_of_mode"`
-	StatisticalType  string                 `json:"statistical_type"`
-	ImputationPolicy string                 `json:"imputation_policy"`
-	WindowDays       *int                   `json:"window_days,omitempty"`
-	LagDays          int                    `json:"lag_days"`
-	ScalarGuarantee  bool                   `json:"scalar_guarantee"`
-	Confidence       float64                `json:"confidence"`
-	Profile          profiling.FieldProfile `json:"profile"`
-	Reasoning        ContractReasoning      `json:"reasoning"`
+	VariableKey         string                 `json:"variable_key"`
+	Source              string                 `json:"source"`
+	AsOfMode            string                 `json:"as_of_mode"`
+	StatisticalType     string                 `json:"statistical_type"`
+	ImputationPolicy    string                 `json:"imputation_policy"`
+	WindowDays          *int                   `json:"window_days,omitempty"`
+	LagDays             int                    `json:"lag_days"`
+	ScalarGuarantee     bool                   `json:"scalar_guarantee"`
+	Confidence          float64                `json:"confidence"`
+	CategoricalEncoding map[string]float64     `json:"categorical_encoding,omitempty"` // For categorical variables: value -> numeric encoding
+	Profile             profiling.FieldProfile `json:"profile"`
+	Reasoning           ContractReasoning      `json:"reasoning"`
+}
+
+// synthesizeCategoricalEncoding creates an ordinal encoding for categorical variables
+func (s *ContractSynthesizer) synthesizeCategoricalEncoding(profile profiling.FieldProfile) map[string]float64 {
+	encoding := make(map[string]float64)
+
+	// Use the top values from cardinality analysis to determine encoding
+	topValues := profile.Cardinality.TopValues
+
+	// Check for special patterns and use semantic encodings
+	if semanticEncoding := s.detectSemanticEncoding(profile.FieldKey, topValues); semanticEncoding != nil {
+		encoding = semanticEncoding
+	} else if len(topValues) <= 10 {
+		// Small cardinality - use frequency-based ordering (most common = 0, then 1, 2, etc.)
+		for i, valueCount := range topValues {
+			encoding[valueCount.Value] = float64(i)
+		}
+	} else {
+		// High cardinality - use hash-based encoding with smaller range
+		for _, valueCount := range topValues {
+			// Simple hash with smaller range for high cardinality
+			hash := 0
+			for _, r := range valueCount.Value {
+				hash = hash*31 + int(r)
+			}
+			encoding[valueCount.Value] = float64(hash % 50) // Smaller range than before
+		}
+	}
+
+	// Add any remaining values not in top values as unknowns
+	if len(topValues) < profile.Cardinality.UniqueCount {
+		maxKnown := 0.0
+		for _, v := range encoding {
+			if v > maxKnown {
+				maxKnown = v
+			}
+		}
+		encoding["__unknown__"] = maxKnown + 1.0
+	}
+
+	return encoding
+}
+
+// detectSemanticEncoding detects special categorical patterns and returns semantic encodings
+func (s *ContractSynthesizer) detectSemanticEncoding(fieldKey string, topValues []profiling.ValueCount) map[string]float64 {
+	// Extract values
+	values := make([]string, len(topValues))
+	for i, vc := range topValues {
+		values[i] = vc.Value
+	}
+
+	// Check for football match result pattern (H, D, A)
+	if s.isFootballResultPattern(fieldKey, values) {
+		return map[string]float64{
+			"H": 1.0,  // Home win
+			"D": 0.0,  // Draw
+			"A": -1.0, // Away win
+		}
+	}
+
+	// Check for binary yes/no patterns
+	if s.isBinaryPattern(values) {
+		return s.createBinaryEncoding(values)
+	}
+
+	// Check for ordered categorical patterns (Low, Medium, High, etc.)
+	if orderedEncoding := s.detectOrderedPattern(values); orderedEncoding != nil {
+		return orderedEncoding
+	}
+
+	return nil // No semantic pattern detected
+}
+
+// isFootballResultPattern detects football match result variables
+func (s *ContractSynthesizer) isFootballResultPattern(fieldKey string, values []string) bool {
+	// Check field name patterns
+	fieldLower := strings.ToLower(fieldKey)
+	if strings.Contains(fieldLower, "result") ||
+		strings.Contains(fieldLower, "ftr") ||
+		strings.Contains(fieldLower, "outcome") {
+		// Check if values match football pattern
+		hasH, hasD, hasA := false, false, false
+		for _, v := range values {
+			switch v {
+			case "H":
+				hasH = true
+			case "D":
+				hasD = true
+			case "A":
+				hasA = true
+			}
+		}
+		return hasH && hasD && hasA
+	}
+	return false
+}
+
+// isBinaryPattern detects binary yes/no patterns
+func (s *ContractSynthesizer) isBinaryPattern(values []string) bool {
+	if len(values) != 2 {
+		return false
+	}
+
+	// Check for common binary pairs
+	binaryPairs := [][]string{
+		{"Y", "N"}, {"YES", "NO"}, {"TRUE", "FALSE"}, {"T", "F"},
+		{"1", "0"}, {"ON", "OFF"}, {"ENABLED", "DISABLED"},
+	}
+
+	for _, pair := range binaryPairs {
+		if (values[0] == pair[0] && values[1] == pair[1]) ||
+			(values[0] == pair[1] && values[1] == pair[0]) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// createBinaryEncoding creates encoding for binary variables
+func (s *ContractSynthesizer) createBinaryEncoding(values []string) map[string]float64 {
+	encoding := make(map[string]float64)
+
+	// Assign 1.0 to "positive" values, 0.0 to "negative" values
+	for _, value := range values {
+		valUpper := strings.ToUpper(value)
+		switch valUpper {
+		case "Y", "YES", "TRUE", "T", "1", "ON", "ENABLED":
+			encoding[value] = 1.0
+		default:
+			encoding[value] = 0.0
+		}
+	}
+
+	return encoding
+}
+
+// detectOrderedPattern detects ordinal patterns like Low/Medium/High
+func (s *ContractSynthesizer) detectOrderedPattern(values []string) map[string]float64 {
+	orderedSets := [][]string{
+		{"LOW", "MEDIUM", "HIGH"},
+		{"SMALL", "MEDIUM", "LARGE"},
+		{"BAD", "GOOD", "EXCELLENT"},
+		{"POOR", "FAIR", "GOOD"},
+	}
+
+	// Convert to uppercase for comparison
+	upperValues := make([]string, len(values))
+	valueMap := make(map[string]string)
+	for i, v := range values {
+		upperValues[i] = strings.ToUpper(v)
+		valueMap[upperValues[i]] = v
+	}
+
+	for _, orderedSet := range orderedSets {
+		if s.containsAll(upperValues, orderedSet) {
+			encoding := make(map[string]float64)
+			for i, upperVal := range orderedSet {
+				if originalVal, exists := valueMap[upperVal]; exists {
+					encoding[originalVal] = float64(i)
+				}
+			}
+			return encoding
+		}
+	}
+
+	return nil
+}
+
+// containsAll checks if slice contains all elements of subset
+func (s *ContractSynthesizer) containsAll(slice, subset []string) bool {
+	set := make(map[string]bool)
+	for _, item := range slice {
+		set[item] = true
+	}
+
+	for _, item := range subset {
+		if !set[item] {
+			return false
+		}
+	}
+
+	return true
 }
 
 // ContractReasoning explains the synthesis decisions
@@ -338,11 +528,12 @@ type ContractReasoning struct {
 // ToVariableContract converts the draft to a domain contract
 func (d *ContractDraft) ToVariableContract() *dataset.VariableContract {
 	return &dataset.VariableContract{
-		VarKey:           core.VariableKey(d.VariableKey),
-		AsOfMode:         dataset.AsOfMode(d.AsOfMode),
-		StatisticalType:  dataset.StatisticalType(d.StatisticalType),
-		WindowDays:       d.WindowDays,
-		ImputationPolicy: dataset.ImputationPolicy(d.ImputationPolicy),
-		ScalarGuarantee:  d.ScalarGuarantee,
+		VarKey:              core.VariableKey(d.VariableKey),
+		AsOfMode:            dataset.AsOfMode(d.AsOfMode),
+		StatisticalType:     dataset.StatisticalType(d.StatisticalType),
+		WindowDays:          d.WindowDays,
+		ImputationPolicy:    dataset.ImputationPolicy(d.ImputationPolicy),
+		ScalarGuarantee:     d.ScalarGuarantee,
+		CategoricalEncoding: d.CategoricalEncoding,
 	}
 }

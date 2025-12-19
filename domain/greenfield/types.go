@@ -13,6 +13,8 @@ func (id ResearchDirectiveID) String() string { return core.ID(id).String() }
 type ResearchDirective struct {
 	ID                 ResearchDirectiveID `json:"id"`
 	Claim              string              `json:"claim"`
+	CauseKey           core.VariableKey    `json:"cause_key"`
+	EffectKey          core.VariableKey    `json:"effect_key"`
 	LogicType          string              `json:"logic_type"`
 	ValidationStrategy ValidationStrategy  `json:"validation_strategy"`
 	RefereeGates       RefereeGates        `json:"referee_gates"`

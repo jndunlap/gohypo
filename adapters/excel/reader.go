@@ -1,12 +1,16 @@
 package excel
 
 import (
+	"encoding/csv"
 	"fmt"
+	"log"
 	"math"
 	"math/rand"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"gohypo/adapters/datareadiness/coercer"
 	"gohypo/domain/datareadiness/ingestion"
@@ -14,44 +18,107 @@ import (
 	"github.com/xuri/excelize/v2"
 )
 
-// ExcelReader handles reading Excel files
-type ExcelReader struct {
+// DataReader handles reading Excel and CSV files
+type DataReader struct {
 	filePath string
+	fileType string // "xlsx" or "csv"
 }
 
-// NewExcelReader creates a new Excel reader
-func NewExcelReader(filePath string) *ExcelReader {
-	return &ExcelReader{filePath: filePath}
+// ExcelReader is an alias for DataReader for backward compatibility
+type ExcelReader = DataReader
+
+// NewDataReader creates a new data reader that handles both Excel and CSV files
+func NewDataReader(filePath string) *DataReader {
+	ext := strings.ToLower(filepath.Ext(filePath))
+	fileType := "xlsx"
+	if ext == ".csv" {
+		fileType = "csv"
+	}
+	return &DataReader{filePath: filePath, fileType: fileType}
 }
 
-// ReadData reads Excel data from Sheet1 into structured format
-func (r *ExcelReader) ReadData() (*ExcelData, error) {
+// NewExcelReader creates a new Excel reader (deprecated, use NewDataReader)
+func NewExcelReader(filePath string) *DataReader {
+	return NewDataReader(filePath)
+}
+
+// ReadData reads data from Excel or CSV files into structured format
+func (r *DataReader) ReadData() (*ExcelData, error) {
+	log.Printf("[DataReader] Starting to read %s file: %s", r.fileType, r.filePath)
+
 	// Check if file exists
 	if _, err := os.Stat(r.filePath); os.IsNotExist(err) {
-		return nil, fmt.Errorf("Excel file not found: %s", r.filePath)
+		return nil, fmt.Errorf("%s file not found: %s", strings.ToUpper(r.fileType), r.filePath)
 	}
 
+	switch r.fileType {
+	case "csv":
+		return r.readCSVData()
+	case "xlsx":
+		return r.readExcelData()
+	default:
+		return nil, fmt.Errorf("unsupported file type: %s", r.fileType)
+	}
+}
+
+// readExcelData reads Excel data from Sheet1 into structured format
+func (r *DataReader) readExcelData() (*ExcelData, error) {
+	startTime := time.Now()
 	f, err := excelize.OpenFile(r.filePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open Excel file: %w", err)
 	}
 	defer f.Close()
+	fileOpenTime := time.Since(startTime)
+	log.Printf("[DataReader] Excel file opened in %.2fms", float64(fileOpenTime.Nanoseconds())/1e6)
 
 	// Always use Sheet1
+	readStart := time.Now()
 	rows, err := f.GetRows("Sheet1")
 	if err != nil {
 		return nil, fmt.Errorf("failed to read Sheet1: %w", err)
 	}
+	readTime := time.Since(readStart)
+	log.Printf("[DataReader] Sheet1 read in %.2fms (%d rows)", float64(readTime.Nanoseconds())/1e6, len(rows))
 
 	if len(rows) < 2 {
 		return nil, fmt.Errorf("Excel file must have at least a header row and one data row")
 	}
 
+	return r.processRows(rows)
+}
+
+// readCSVData reads CSV data into structured format
+func (r *DataReader) readCSVData() (*ExcelData, error) {
+	file, err := os.Open(r.filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open CSV file: %w", err)
+	}
+	defer file.Close()
+
+	reader := csv.NewReader(file)
+	readStart := time.Now()
+	rows, err := reader.ReadAll()
+	if err != nil {
+		return nil, fmt.Errorf("failed to read CSV file: %w", err)
+	}
+	readTime := time.Since(readStart)
+	log.Printf("[DataReader] CSV file read in %.2fms (%d rows)", float64(readTime.Nanoseconds())/1e6, len(rows))
+
+	if len(rows) < 2 {
+		return nil, fmt.Errorf("CSV file must have at least a header row and one data row")
+	}
+
+	return r.processRows(rows)
+}
+
+// processRows converts raw string rows into ExcelData format
+func (r *DataReader) processRows(rows [][]string) (*ExcelData, error) {
 	// Extract headers from first row
 	headerRow := rows[0]
 	headers := make([]string, len(headerRow))
 	for i, header := range headerRow {
-		headers[i] = header
+		headers[i] = strings.TrimSpace(header)
 	}
 
 	// Extract data rows
@@ -62,12 +129,15 @@ func (r *ExcelReader) ReadData() (*ExcelData, error) {
 
 		for j, cell := range row {
 			if j < len(headers) {
-				rowData[headers[j]] = cell
+				rowData[headers[j]] = strings.TrimSpace(cell)
 			}
 		}
 
 		dataRows = append(dataRows, rowData)
 	}
+
+	log.Printf("[DataReader] %s file processed (%d columns, %d rows)",
+		strings.ToUpper(r.fileType), len(headers), len(dataRows))
 
 	return &ExcelData{
 		Headers: headers,
@@ -76,7 +146,7 @@ func (r *ExcelReader) ReadData() (*ExcelData, error) {
 }
 
 // DetectEntityColumn automatically detects the entity column
-func (r *ExcelReader) DetectEntityColumn(data *ExcelData) (string, error) {
+func (r *DataReader) DetectEntityColumn(data *ExcelData) (string, error) {
 	if len(data.Rows) == 0 {
 		return "", fmt.Errorf("no data rows found")
 	}
@@ -117,7 +187,7 @@ func (r *ExcelReader) DetectEntityColumn(data *ExcelData) (string, error) {
 }
 
 // isValidEntityColumn checks if a column is suitable as an entity column
-func (r *ExcelReader) isValidEntityColumn(data *ExcelData, columnName string) bool {
+func (r *DataReader) isValidEntityColumn(data *ExcelData, columnName string) bool {
 	values := make(map[string]bool)
 	emptyCount := 0
 
@@ -141,14 +211,19 @@ func (r *ExcelReader) isValidEntityColumn(data *ExcelData, columnName string) bo
 	return emptyRatio < 0.5 && uniqueRatio > 0.5 // Less than 50% empty, more than 50% unique
 }
 
-// InferColumnTypes analyzes Excel data to infer data types for each column
+// InferColumnTypes analyzes data to infer data types for each column
 // Uses Excel's native cell types when available and improves type detection
-func (r *ExcelReader) InferColumnTypes(data *ExcelData) (map[string]string, error) {
+func (r *DataReader) InferColumnTypes(data *ExcelData) (map[string]string, error) {
 	if len(data.Rows) == 0 {
 		return nil, fmt.Errorf("no data rows to analyze")
 	}
 
-	// Re-open file to access native cell types (more accurate than string parsing)
+	// For CSV files, use string-based inference only
+	if r.fileType == "csv" {
+		return r.inferColumnTypesFromStrings(data)
+	}
+
+	// For Excel files, try to use native cell types
 	f, err := excelize.OpenFile(r.filePath)
 	if err != nil {
 		// Fallback to string-based inference if file can't be reopened
@@ -235,7 +310,7 @@ func (r *ExcelReader) InferColumnTypes(data *ExcelData) (map[string]string, erro
 }
 
 // inferTypeWithExcelHints determines the best type using both coercer analysis and Excel native types
-func (r *ExcelReader) inferTypeWithExcelHints(
+func (r *DataReader) inferTypeWithExcelHints(
 	header string,
 	analysis coercer.TypeAnalysis,
 	excelTypes []excelize.CellType,
@@ -326,7 +401,7 @@ func (r *ExcelReader) inferTypeWithExcelHints(
 }
 
 // inferColumnTypesFromStrings fallback method using only string values
-func (r *ExcelReader) inferColumnTypesFromStrings(data *ExcelData) (map[string]string, error) {
+func (r *DataReader) inferColumnTypesFromStrings(data *ExcelData) (map[string]string, error) {
 	coercer := coercer.NewTypeCoercer(coercer.DefaultCoercionConfig())
 	columnTypes := make(map[string]string)
 
@@ -384,7 +459,7 @@ func (r *ExcelReader) inferColumnTypesFromStrings(data *ExcelData) (map[string]s
 }
 
 // getStratifiedSample returns evenly distributed row indices across the dataset
-func (r *ExcelReader) getStratifiedSample(totalRows, sampleSize int) []int {
+func (r *DataReader) getStratifiedSample(totalRows, sampleSize int) []int {
 	if sampleSize >= totalRows {
 		indices := make([]int, totalRows)
 		for i := range indices {
@@ -432,7 +507,7 @@ func (r *ExcelReader) getStratifiedSample(totalRows, sampleSize int) []int {
 }
 
 // columnIndexToLetter converts 0-based column index to Excel column letter (A, B, ..., Z, AA, AB, ...)
-func (r *ExcelReader) columnIndexToLetter(colIdx int) string {
+func (r *DataReader) columnIndexToLetter(colIdx int) string {
 	result := ""
 	colIdx++ // Excel is 1-indexed internally
 	for colIdx > 0 {

@@ -1,0 +1,15 @@
+# Development overrides
+
+services:
+  postgres:
+    environment:
+      POSTGRES_DB: gohypo_dev
+      POSTGRES_USER: gohypo_dev
+      POSTGRES_PASSWORD: dev_password
+    ports:
+      - "5433:5432"  # Use different port to avoid conflicts
+
+  pgadmin:
+    environment:
+      PGADMIN_DEFAULT_EMAIL: dev@gohypo.local
+      PGADMIN_DEFAULT_PASSWORD: dev123

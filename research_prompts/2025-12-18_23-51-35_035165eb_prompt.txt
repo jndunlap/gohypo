@@ -1,0 +1,3425 @@
+CRITICAL INSTRUCTION: You MUST select EXACTLY 3 referees for EACH hypothesis. Any hypothesis with fewer or more than 3 referees will be REJECTED by the validation system.
+
+---
+
+You are the Lead Research Architect for the GoHypo Engine. Generate 3 hypotheses in valid JSON format.
+
+Industry context will be injected by the adapter.
+
+INPUT DATA:
+{
+  "discovery_briefs": null,
+  "field_metadata": [
+    {
+      "name": "HTGC",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "HTP",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "ATP",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "HM4",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "HM5",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "AM5",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "HTFormPtsStr",
+      "semantic_type": "",
+      "data_type": "string"
+    },
+    {
+      "name": "HTWinStreak3",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "AwayTeam",
+      "semantic_type": "",
+      "data_type": "string"
+    },
+    {
+      "name": "ATFormPtsStr",
+      "semantic_type": "",
+      "data_type": "string"
+    },
+    {
+      "name": "HTWinStreak5",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "DiffPts",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "DiffFormPts",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "FTAG",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "HM1",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "ATWinStreak3",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "Date",
+      "semantic_type": "",
+      "data_type": "string"
+    },
+    {
+      "name": "HTFormPts",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "ATLossStreak5",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "HTGD",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "HTGS",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "ATGS",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "HM2",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "HM3",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "AM3",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "AM4",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "ATFormPts",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "HomeTeam",
+      "semantic_type": "",
+      "data_type": "string"
+    },
+    {
+      "name": "ATGC",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "AM2",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "FTHG",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "FTR",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "AM1",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "HTLossStreak3",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "ATWinStreak5",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "ATLossStreak3",
+      "semantic_type": "",
+      "data_type": "categorical"
+    },
+    {
+      "name": "ATGD",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "MW",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "HTLossStreak5",
+      "semantic_type": "",
+      "data_type": "categorical"
+    }
+  ],
+  "statistical_artifacts": [
+    {
+      "created_at": "2025-12-18T23:51:19.544824-05:00",
+      "id": "019b34f2-b378-7c92-bd46-54bbee99bf29",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.544821-05:00",
+        "effect_size": -0.021054991747896823,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.05,
+        "q_value": 0.08052631578947368,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HTP",
+        "variable_y": "ATGD"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545098-05:00",
+      "id": "019b34f2-b379-717a-b12f-3e51ab698f5f",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545096-05:00",
+        "effect_size": 0.03056417714566423,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.01,
+        "q_value": 0.017586206896551725,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HTP",
+        "variable_y": "AM2"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545101-05:00",
+      "id": "019b34f2-b379-718a-950d-9f4d326dc893",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.5451-05:00",
+        "effect_size": 0.0038051367203414395,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.11417910447761194,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HTP",
+        "variable_y": "AM4"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545102-05:00",
+      "id": "019b34f2-b379-718e-9f35-75ee14674787",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545101-05:00",
+        "effect_size": 0.025293647776696102,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.01,
+        "q_value": 0.018,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HTP",
+        "variable_y": "AM5"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.54511-05:00",
+      "id": "019b34f2-b379-71ad-9fd1-953191fe42df",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545109-05:00",
+        "effect_size": -0.01408341283179598,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.13421052631578947,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HTP",
+        "variable_y": "Date"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545111-05:00",
+      "id": "019b34f2-b379-71b1-86c4-6d9393b85b4b",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.54511-05:00",
+        "effect_size": 0.6408770103457759,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.153,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HTP",
+        "variable_y": "DiffPts"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545114-05:00",
+      "id": "019b34f2-b379-71bd-8b28-12eb65d1be7c",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545113-05:00",
+        "effect_size": 0.2662934350192806,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.0765,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HTP",
+        "variable_y": "HM3"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545118-05:00",
+      "id": "019b34f2-b379-71cc-ac40-41d0df2e8869",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545117-05:00",
+        "effect_size": -0.20223432849604503,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.051,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HTP",
+        "variable_y": "FTR"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545119-05:00",
+      "id": "019b34f2-b379-71d0-9360-df5e9cae259a",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545118-05:00",
+        "effect_size": 0.19447559359697483,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.03825,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HTP",
+        "variable_y": "ATP"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545123-05:00",
+      "id": "019b34f2-b379-71e0-ac1f-642a4b15fd07",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545122-05:00",
+        "effect_size": 0.01867670993650168,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.05,
+        "q_value": 0.075,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HTP",
+        "variable_y": "AM3"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545129-05:00",
+      "id": "019b34f2-b379-71f7-a473-73c561c65635",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545127-05:00",
+        "effect_size": 0.23233660982255883,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.0306,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HTP",
+        "variable_y": "HM5"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545133-05:00",
+      "id": "019b34f2-b379-7203-b34d-8a400724800b",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545131-05:00",
+        "effect_size": 0.2747210569068854,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.0255,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HTP",
+        "variable_y": "HM1"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545134-05:00",
+      "id": "019b34f2-b379-720b-8832-c862d8eb504f",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545133-05:00",
+        "effect_size": 0.2570226794118455,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.021857142857142856,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HTP",
+        "variable_y": "HM4"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545141-05:00",
+      "id": "019b34f2-b379-7226-a1c4-0a6c073264d7",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.54514-05:00",
+        "effect_size": 0.27495768653445046,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.019125,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HTP",
+        "variable_y": "HM2"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545146-05:00",
+      "id": "019b34f2-b379-7236-b1ca-fd0ddab429b0",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545145-05:00",
+        "effect_size": 0.8243557147896726,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.017,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HTP",
+        "variable_y": "HTGD"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545149-05:00",
+      "id": "019b34f2-b379-7246-9eed-c65c8c4691fa",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545147-05:00",
+        "effect_size": 0.4947983759701809,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.0153,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HTP",
+        "variable_y": "DiffFormPts"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.54515-05:00",
+      "id": "019b34f2-b379-7249-bed9-0c2bff789ec1",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545149-05:00",
+        "effect_size": 0.010346470425573564,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.1125,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HTP",
+        "variable_y": "AM1"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545153-05:00",
+      "id": "019b34f2-b379-7255-8a34-06163ce84744",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545152-05:00",
+        "effect_size": 0.254988269373135,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.01390909090909091,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "ATGD",
+        "variable_y": "AM2"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545156-05:00",
+      "id": "019b34f2-b379-725d-bd45-c1b3e86fc505",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545155-05:00",
+        "effect_size": 0.22172196354391643,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.01275,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "ATGD",
+        "variable_y": "AM4"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545158-05:00",
+      "id": "019b34f2-b379-7269-9782-8da66a0af176",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545156-05:00",
+        "effect_size": 0.22219409104687637,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.01176923076923077,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "ATGD",
+        "variable_y": "AM5"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545165-05:00",
+      "id": "019b34f2-b379-7284-90f9-0c05f79e826c",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545164-05:00",
+        "effect_size": -0.00031355442688327034,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.1047945205479452,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "ATGD",
+        "variable_y": "Date"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545167-05:00",
+      "id": "019b34f2-b379-7288-92be-b4f2ae700a74",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545165-05:00",
+        "effect_size": -0.6598394878066591,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.010928571428571428,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "ATGD",
+        "variable_y": "DiffPts"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545169-05:00",
+      "id": "019b34f2-b379-7294-89fc-dc8cf3e6b274",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545168-05:00",
+        "effect_size": -0.0015761054856706092,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.13076923076923078,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "ATGD",
+        "variable_y": "HM3"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545172-05:00",
+      "id": "019b34f2-b379-729f-a57f-57cf411716ee",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545171-05:00",
+        "effect_size": 0.21595690125749825,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.010199999999999999,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "ATGD",
+        "variable_y": "FTR"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545173-05:00",
+      "id": "019b34f2-b379-72a3-a6b7-57582da7c9cf",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545172-05:00",
+        "effect_size": 0.821816455186733,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.0095625,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "ATGD",
+        "variable_y": "ATP"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545176-05:00",
+      "id": "019b34f2-b379-72af-bc06-d0296c999b75",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545175-05:00",
+        "effect_size": 0.2397570309696796,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.009,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "ATGD",
+        "variable_y": "AM3"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.54518-05:00",
+      "id": "019b34f2-b379-72bf-b869-037399556aa1",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545179-05:00",
+        "effect_size": -0.00591178744921268,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.1,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "ATGD",
+        "variable_y": "HM5"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545183-05:00",
+      "id": "019b34f2-b379-72ca-8c22-460d4dd360cc",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545182-05:00",
+        "effect_size": -0.004935219183810561,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.14711538461538462,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "ATGD",
+        "variable_y": "HM1"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545185-05:00",
+      "id": "019b34f2-b379-72d2-9349-52547e94f27c",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545184-05:00",
+        "effect_size": 0.011850598429644537,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.1457142857142857,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "ATGD",
+        "variable_y": "HM4"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545192-05:00",
+      "id": "019b34f2-b379-72ee-8401-f9315e4f86ec",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545191-05:00",
+        "effect_size": 0.01391120625130828,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.14036697247706423,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "ATGD",
+        "variable_y": "HM2"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545196-05:00",
+      "id": "019b34f2-b379-72fd-9d1b-6310cf376cb9",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545195-05:00",
+        "effect_size": -0.017574886678088108,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.13539823008849558,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "ATGD",
+        "variable_y": "HTGD"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545199-05:00",
+      "id": "019b34f2-b379-7309-945c-b26e0ce93511",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545198-05:00",
+        "effect_size": -0.4793205006156265,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.0085,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "ATGD",
+        "variable_y": "DiffFormPts"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545201-05:00",
+      "id": "019b34f2-b379-730d-9bed-4668ebc68872",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.5452-05:00",
+        "effect_size": 0.2688059094140745,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.008052631578947369,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "ATGD",
+        "variable_y": "AM1"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545254-05:00",
+      "id": "019b34f2-b379-73e0-b744-4a510ea0aa6d",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545253-05:00",
+        "effect_size": 0.03513507227496554,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.01,
+        "q_value": 0.018214285714285714,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM2",
+        "variable_y": "AM4"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545255-05:00",
+      "id": "019b34f2-b379-73e4-9aca-d44aa86808de",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545254-05:00",
+        "effect_size": 0.023697976012585248,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.05,
+        "q_value": 0.08406593406593407,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM2",
+        "variable_y": "AM5"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545262-05:00",
+      "id": "019b34f2-b379-73ff-8433-4738efd1b409",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545261-05:00",
+        "effect_size": -0.002449423825380656,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.11167883211678832,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM2",
+        "variable_y": "Date"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545264-05:00",
+      "id": "019b34f2-b379-7407-bba9-8977ceb75dae",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545262-05:00",
+        "effect_size": -0.1909352616866181,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.00765,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM2",
+        "variable_y": "DiffPts"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545266-05:00",
+      "id": "019b34f2-b379-740f-a8d5-910ed12d2177",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545265-05:00",
+        "effect_size": 0.01747897636552009,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.10337837837837838,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM2",
+        "variable_y": "HM3"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.54527-05:00",
+      "id": "019b34f2-b379-741e-be09-377a98e60dc7",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545269-05:00",
+        "effect_size": 0.04368169228892804,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.007285714285714286,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM2",
+        "variable_y": "FTR"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545271-05:00",
+      "id": "019b34f2-b379-7422-b5c9-10933754edc2",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.54527-05:00",
+        "effect_size": 0.2749538549892383,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.006954545454545455,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM2",
+        "variable_y": "ATP"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545274-05:00",
+      "id": "019b34f2-b379-742e-b525-e6e0cbc0ffc1",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545273-05:00",
+        "effect_size": 0.03929588602515985,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.0066521739130434784,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM2",
+        "variable_y": "AM3"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545278-05:00",
+      "id": "019b34f2-b379-743d-b4f0-a387822fcac1",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545277-05:00",
+        "effect_size": 0.010202233909271812,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.14433962264150943,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM2",
+        "variable_y": "HM5"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545282-05:00",
+      "id": "019b34f2-b379-744d-b252-08247450d2ce",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545281-05:00",
+        "effect_size": 0.0026401211556162864,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.14299065420560747,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM2",
+        "variable_y": "HM1"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545283-05:00",
+      "id": "019b34f2-b379-7451-b508-75f51583e217",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545282-05:00",
+        "effect_size": 0.02338377023185187,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.05,
+        "q_value": 0.07968750000000001,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM2",
+        "variable_y": "HM4"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545295-05:00",
+      "id": "019b34f2-b379-7480-b178-8206fb44fe4f",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545294-05:00",
+        "effect_size": -0.011995098505504075,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.1390909090909091,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM2",
+        "variable_y": "HM2"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545299-05:00",
+      "id": "019b34f2-b379-748f-9bff-a2be7c79d22f",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545298-05:00",
+        "effect_size": 0.015151619534047788,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.13783783783783785,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM2",
+        "variable_y": "HTGD"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545304-05:00",
+      "id": "019b34f2-b379-74a3-81ea-c8981141282f",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545303-05:00",
+        "effect_size": -0.1963086239234248,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.006375,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM2",
+        "variable_y": "DiffFormPts"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545305-05:00",
+      "id": "019b34f2-b379-74a7-b838-45c72e6336fd",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545304-05:00",
+        "effect_size": 0.03532694397264308,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.01,
+        "q_value": 0.01987012987012987,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM2",
+        "variable_y": "AM1"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545351-05:00",
+      "id": "019b34f2-b379-755b-a36a-934c8c79e99f",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.54535-05:00",
+        "effect_size": 0.02517826551153878,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.01,
+        "q_value": 0.018433734939759038,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM4",
+        "variable_y": "AM5"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.54536-05:00",
+      "id": "019b34f2-b379-757e-bf6e-817c1236473a",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545359-05:00",
+        "effect_size": -0.0176132983449199,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.11503759398496241,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM4",
+        "variable_y": "Date"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545361-05:00",
+      "id": "019b34f2-b379-7582-9111-01c7283e915d",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.54536-05:00",
+        "effect_size": -0.1809784775494141,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.00612,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM4",
+        "variable_y": "DiffPts"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545365-05:00",
+      "id": "019b34f2-b379-7591-9f08-40a75df397a1",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545364-05:00",
+        "effect_size": -0.016896872898137183,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.11333333333333334,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM4",
+        "variable_y": "HM3"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545368-05:00",
+      "id": "019b34f2-b379-759d-a5ae-bc04cf05a783",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545367-05:00",
+        "effect_size": 0.05006659355096842,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.005884615384615385,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM4",
+        "variable_y": "FTR"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545369-05:00",
+      "id": "019b34f2-b379-75a1-a483-3414270b38a1",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545368-05:00",
+        "effect_size": 0.23511334163797534,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.005666666666666666,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM4",
+        "variable_y": "ATP"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545372-05:00",
+      "id": "019b34f2-b379-75ad-8184-f128519e18c7",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545371-05:00",
+        "effect_size": 0.011319943616179964,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.11007194244604317,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM4",
+        "variable_y": "AM3"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545376-05:00",
+      "id": "019b34f2-b379-75bc-82e1-d6c74c90e754",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545375-05:00",
+        "effect_size": 0.00326724613259686,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.10928571428571429,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM4",
+        "variable_y": "HM5"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545379-05:00",
+      "id": "019b34f2-b379-75c8-ac1f-54a224c37045",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545378-05:00",
+        "effect_size": -0.0038550149228330404,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.10851063829787234,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM4",
+        "variable_y": "HM1"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.54538-05:00",
+      "id": "019b34f2-b379-75cc-860a-1930bd69798d",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545379-05:00",
+        "effect_size": -0.007810917307844727,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.10774647887323945,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM4",
+        "variable_y": "HM4"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545388-05:00",
+      "id": "019b34f2-b379-75eb-ba63-e5a2ae7f82d5",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545387-05:00",
+        "effect_size": -0.004205200467225495,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.10625000000000001,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM4",
+        "variable_y": "HM2"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545392-05:00",
+      "id": "019b34f2-b379-75fb-a03a-a6da194c7bb7",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545391-05:00",
+        "effect_size": -0.0144301257291568,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.10551724137931034,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM4",
+        "variable_y": "HTGD"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545395-05:00",
+      "id": "019b34f2-b379-7606-b8a6-6962d958e0b3",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545394-05:00",
+        "effect_size": -0.1787977234786163,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.005464285714285714,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM4",
+        "variable_y": "DiffFormPts"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545396-05:00",
+      "id": "019b34f2-b379-760a-a091-9fcffcd2d504",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545395-05:00",
+        "effect_size": 0.026230426119216305,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.01,
+        "q_value": 0.019125,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM4",
+        "variable_y": "AM1"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545404-05:00",
+      "id": "019b34f2-b379-762a-91c6-ba08b3b1c7d2",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545402-05:00",
+        "effect_size": -0.006441785485358858,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.10132450331125828,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM5",
+        "variable_y": "Date"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545406-05:00",
+      "id": "019b34f2-b379-762e-b151-4f576d5d3ebd",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545405-05:00",
+        "effect_size": -0.16860880431748498,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.005275862068965517,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM5",
+        "variable_y": "DiffPts"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545408-05:00",
+      "id": "019b34f2-b379-7639-bc1a-6883c4601122",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545407-05:00",
+        "effect_size": -0.00617197206588855,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.14854368932038836,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM5",
+        "variable_y": "HM3"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545411-05:00",
+      "id": "019b34f2-b379-7645-84b2-5aae38579c05",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.54541-05:00",
+        "effect_size": 0.04199122122175637,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.0050999999999999995,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM5",
+        "variable_y": "FTR"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545419-05:00",
+      "id": "019b34f2-b379-7664-888d-64f589333d17",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545418-05:00",
+        "effect_size": 0.24108360016605576,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.0049354838709677416,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM5",
+        "variable_y": "ATP"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545422-05:00",
+      "id": "019b34f2-b379-7670-ac09-8fb54c0ef60e",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545421-05:00",
+        "effect_size": 0.046587560075965075,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.00478125,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM5",
+        "variable_y": "AM3"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545427-05:00",
+      "id": "019b34f2-b379-7680-8ef9-390c8963f453",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545425-05:00",
+        "effect_size": 0.021583736398220244,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.05,
+        "q_value": 0.0788659793814433,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM5",
+        "variable_y": "HM5"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545429-05:00",
+      "id": "019b34f2-b379-768b-a483-37edf37ad2a1",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545428-05:00",
+        "effect_size": 0.02222475141930876,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.05,
+        "q_value": 0.0765,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM5",
+        "variable_y": "HM1"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.54543-05:00",
+      "id": "019b34f2-b379-768f-a3c2-adc2554daa82",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545429-05:00",
+        "effect_size": 0.027704172045858535,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.01,
+        "q_value": 0.017386363636363637,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM5",
+        "variable_y": "HM4"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545437-05:00",
+      "id": "019b34f2-b379-76ab-a3b3-d67d646faa9c",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545436-05:00",
+        "effect_size": 0.022093062254174223,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.05,
+        "q_value": 0.085,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM5",
+        "variable_y": "HM2"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545441-05:00",
+      "id": "019b34f2-b379-76ba-a50c-aed06ce3ec64",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.54544-05:00",
+        "effect_size": -0.0012087659808656726,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.13660714285714287,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM5",
+        "variable_y": "HTGD"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545444-05:00",
+      "id": "019b34f2-b379-76c6-a2e1-c29384f01267",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545443-05:00",
+        "effect_size": -0.1541433725916517,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.004636363636363636,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM5",
+        "variable_y": "DiffFormPts"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545446-05:00",
+      "id": "019b34f2-b379-76ca-82aa-616135efa77b",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545444-05:00",
+        "effect_size": 0.024109366711613022,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.05,
+        "q_value": 0.08225806451612903,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM5",
+        "variable_y": "AM1"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545606-05:00",
+      "id": "019b34f2-b379-793b-9fd8-51323de84ab0",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545604-05:00",
+        "effect_size": -0.004047115773253813,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.13304347826086957,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "Date",
+        "variable_y": "DiffPts"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545609-05:00",
+      "id": "019b34f2-b379-794a-b0c9-e62fc70b5fb7",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545608-05:00",
+        "effect_size": -0.016966134521201194,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.13189655172413794,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "Date",
+        "variable_y": "HM3"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545612-05:00",
+      "id": "019b34f2-b379-7952-bdaf-1970ef15a90d",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.54561-05:00",
+        "effect_size": 0.019919234619554707,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.05,
+        "q_value": 0.08138297872340426,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "Date",
+        "variable_y": "FTR"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545613-05:00",
+      "id": "019b34f2-b379-795a-90af-0ec8daac8f82",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545612-05:00",
+        "effect_size": -0.00910064077729319,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.12966101694915255,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "Date",
+        "variable_y": "ATP"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545616-05:00",
+      "id": "019b34f2-b379-7962-b274-26c4ad476287",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545615-05:00",
+        "effect_size": 0.005823799040085994,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.12644628099173555,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "Date",
+        "variable_y": "AM3"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.54562-05:00",
+      "id": "019b34f2-b379-7975-af0e-8c68da9995a4",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545619-05:00",
+        "effect_size": -0.001558031677099182,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.12540983606557377,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "Date",
+        "variable_y": "HM5"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545622-05:00",
+      "id": "019b34f2-b379-797d-a6bf-7dfdd5afff39",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545621-05:00",
+        "effect_size": -0.0017608751382044532,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.12338709677419356,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "Date",
+        "variable_y": "HM1"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545624-05:00",
+      "id": "019b34f2-b379-7985-9dff-f2b7494b9208",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545623-05:00",
+        "effect_size": -0.008375126640599887,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.12240000000000001,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "Date",
+        "variable_y": "HM4"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545631-05:00",
+      "id": "019b34f2-b379-79a0-bc54-305370065b90",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.54563-05:00",
+        "effect_size": 0.008080393061148817,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.11953125,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "Date",
+        "variable_y": "HM2"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545636-05:00",
+      "id": "019b34f2-b379-79b4-8001-fab6fcd1ed93",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545635-05:00",
+        "effect_size": -0.008662243747466453,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.1186046511627907,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "Date",
+        "variable_y": "HTGD"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.54564-05:00",
+      "id": "019b34f2-b379-79c4-9a7f-dda1786d8068",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545639-05:00",
+        "effect_size": -0.002681252758660835,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.116793893129771,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "Date",
+        "variable_y": "DiffFormPts"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545642-05:00",
+      "id": "019b34f2-b379-79c7-9ecc-93dd555d8886",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545641-05:00",
+        "effect_size": -0.03348737081245175,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.01,
+        "q_value": 0.019615384615384614,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "Date",
+        "variable_y": "AM1"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545644-05:00",
+      "id": "019b34f2-b379-79d3-8927-7ad6fe801cc7",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545643-05:00",
+        "effect_size": 0.2011321847906396,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.0045,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "DiffPts",
+        "variable_y": "HM3"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545647-05:00",
+      "id": "019b34f2-b379-79df-8f75-a426749b65e6",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545646-05:00",
+        "effect_size": -0.30176541753658936,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.004371428571428571,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "DiffPts",
+        "variable_y": "FTR"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545649-05:00",
+      "id": "019b34f2-b379-79e3-968e-a6ca4b9ba417",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545647-05:00",
+        "effect_size": -0.628352293047252,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.00425,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "DiffPts",
+        "variable_y": "ATP"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545651-05:00",
+      "id": "019b34f2-b379-79ee-b7f9-d4ef9669d90c",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.54565-05:00",
+        "effect_size": -0.18756253468820305,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.004135135135135135,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "DiffPts",
+        "variable_y": "AM3"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545656-05:00",
+      "id": "019b34f2-b379-79fe-811c-b6e55634202d",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545654-05:00",
+        "effect_size": 0.17598539754551853,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.004026315789473684,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "DiffPts",
+        "variable_y": "HM5"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545669-05:00",
+      "id": "019b34f2-b379-7a31-9edd-56efdd03a5d1",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545667-05:00",
+        "effect_size": 0.22030073951927764,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.003923076923076923,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "DiffPts",
+        "variable_y": "HM1"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.54567-05:00",
+      "id": "019b34f2-b379-7a39-ad1e-931375913d29",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545669-05:00",
+        "effect_size": 0.18047449179110103,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.003825,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "DiffPts",
+        "variable_y": "HM4"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545678-05:00",
+      "id": "019b34f2-b379-7a58-894f-19f1cb693b38",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545677-05:00",
+        "effect_size": 0.19822532597159667,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.0037317073170731706,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "DiffPts",
+        "variable_y": "HM2"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545683-05:00",
+      "id": "019b34f2-b379-7a68-af2f-5299a835f2e8",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545681-05:00",
+        "effect_size": 0.6574367857949808,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.003642857142857143,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "DiffPts",
+        "variable_y": "HTGD"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545685-05:00",
+      "id": "019b34f2-b379-7a73-a02d-e28d9c22160e",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545684-05:00",
+        "effect_size": 0.7547125705806249,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.0035581395348837207,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "DiffPts",
+        "variable_y": "DiffFormPts"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545687-05:00",
+      "id": "019b34f2-b379-7a7b-bb45-3b05bbf690de",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545686-05:00",
+        "effect_size": -0.22314662473090505,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.0034772727272727273,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "DiffPts",
+        "variable_y": "AM1"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545731-05:00",
+      "id": "019b34f2-b379-7b27-b2be-e1493de16bf5",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.54573-05:00",
+        "effect_size": -0.05270023392845247,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.0034,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HM3",
+        "variable_y": "FTR"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545732-05:00",
+      "id": "019b34f2-b379-7b2b-962c-13fe0b2ec998",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545731-05:00",
+        "effect_size": 0.012851436912772744,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.10268456375838926,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HM3",
+        "variable_y": "ATP"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545735-05:00",
+      "id": "019b34f2-b379-7b33-8789-d3d7dfd41e0e",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545734-05:00",
+        "effect_size": 0.02010749252401474,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.05,
+        "q_value": 0.07574257425742574,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HM3",
+        "variable_y": "AM3"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545739-05:00",
+      "id": "019b34f2-b379-7b42-bb0e-ef0d4cfd27f7",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545738-05:00",
+        "effect_size": 0.030280222025618517,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.01,
+        "q_value": 0.017790697674418605,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HM3",
+        "variable_y": "HM5"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545741-05:00",
+      "id": "019b34f2-b379-7b4e-aa2a-11ace537522f",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.54574-05:00",
+        "effect_size": 0.04188426149621669,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.0033260869565217392,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HM3",
+        "variable_y": "HM1"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545743-05:00",
+      "id": "019b34f2-b379-7b52-8694-bb5b1594097c",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545742-05:00",
+        "effect_size": 0.03987210374413111,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.0032553191489361703,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HM3",
+        "variable_y": "HM4"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545749-05:00",
+      "id": "019b34f2-b379-7b6d-be96-9120ec731323",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545748-05:00",
+        "effect_size": 0.018749099880879774,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.05,
+        "q_value": 0.08315217391304348,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HM3",
+        "variable_y": "HM2"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545753-05:00",
+      "id": "019b34f2-b379-7b7d-ba48-4f0056437c95",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545752-05:00",
+        "effect_size": 0.2488319214683677,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.0031875,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HM3",
+        "variable_y": "HTGD"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545757-05:00",
+      "id": "019b34f2-b379-7b8d-b8e3-32124144a3c9",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545755-05:00",
+        "effect_size": 0.19024589759791558,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.003122448979591837,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HM3",
+        "variable_y": "DiffFormPts"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545758-05:00",
+      "id": "019b34f2-b379-7b90-8d4e-0fabbac979ab",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545757-05:00",
+        "effect_size": -0.0030388695729010023,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.14166666666666666,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HM3",
+        "variable_y": "AM1"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545791-05:00",
+      "id": "019b34f2-b379-7c11-a081-8882ecd8c829",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.54579-05:00",
+        "effect_size": 0.18065674122377803,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.00306,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "FTR",
+        "variable_y": "ATP"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.5458-05:00",
+      "id": "019b34f2-b379-7c35-aea7-dcc357c02118",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545799-05:00",
+        "effect_size": 0.05728287828482633,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.003,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "FTR",
+        "variable_y": "AM3"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545804-05:00",
+      "id": "019b34f2-b379-7c44-bd9d-ddf2c3dd17bc",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545803-05:00",
+        "effect_size": -0.0658317312741962,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.0029423076923076924,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "FTR",
+        "variable_y": "HM5"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545807-05:00",
+      "id": "019b34f2-b379-7c50-959a-42ec0fe9008e",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545806-05:00",
+        "effect_size": -0.14654163005038073,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.0028867924528301887,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "FTR",
+        "variable_y": "HM1"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545808-05:00",
+      "id": "019b34f2-b379-7c54-9450-0d229773a006",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545807-05:00",
+        "effect_size": -0.03661766584091002,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.002833333333333333,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "FTR",
+        "variable_y": "HM4"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545878-05:00",
+      "id": "019b34f2-b379-7c6f-b8c2-c4399cbb2f6b",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545814-05:00",
+        "effect_size": -0.041282018536622334,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.0027818181818181817,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "FTR",
+        "variable_y": "HM2"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545889-05:00",
+      "id": "019b34f2-b379-7d90-9940-ea7879f47ecf",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545888-05:00",
+        "effect_size": -0.22720885636805396,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.002732142857142857,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "FTR",
+        "variable_y": "HTGD"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545942-05:00",
+      "id": "019b34f2-b379-7e5f-8701-e090063ba718",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.54594-05:00",
+        "effect_size": -0.1965559174706906,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.0026842105263157894,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "FTR",
+        "variable_y": "DiffFormPts"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545944-05:00",
+      "id": "019b34f2-b379-7e67-ab44-c8cb793696af",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545943-05:00",
+        "effect_size": 0.09522309722188321,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.0026379310344827587,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "FTR",
+        "variable_y": "AM1"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545964-05:00",
+      "id": "019b34f2-b379-7eb1-945e-a20bb4e0af7f",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545962-05:00",
+        "effect_size": 0.2585973874787531,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.0025932203389830506,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "ATP",
+        "variable_y": "AM3"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545969-05:00",
+      "id": "019b34f2-b379-7ec5-8e27-194d22670f7e",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545967-05:00",
+        "effect_size": 0.010572609082953474,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.1285714285714286,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "ATP",
+        "variable_y": "HM5"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545972-05:00",
+      "id": "019b34f2-b379-7ed4-9ea8-5207108620f1",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545971-05:00",
+        "effect_size": -0.003101911777454554,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.1275,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "ATP",
+        "variable_y": "HM1"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545973-05:00",
+      "id": "019b34f2-b379-7ed8-8983-17f4995b34a0",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545972-05:00",
+        "effect_size": 0.029853200014552172,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.01,
+        "q_value": 0.01888888888888889,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "ATP",
+        "variable_y": "HM4"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545981-05:00",
+      "id": "019b34f2-b379-7ef4-b7cb-dd643d9ec0f9",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.54598-05:00",
+        "effect_size": 0.02534620830750057,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.01,
+        "q_value": 0.018658536585365853,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "ATP",
+        "variable_y": "HM2"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545985-05:00",
+      "id": "019b34f2-b379-7f07-9969-e8d0ab940f15",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545984-05:00",
+        "effect_size": -0.00468242549279075,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.12439024390243902,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "ATP",
+        "variable_y": "HTGD"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.545988-05:00",
+      "id": "019b34f2-b379-7f13-a226-1249407f923e",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545987-05:00",
+        "effect_size": -0.46295593605792257,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.0025499999999999997,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "ATP",
+        "variable_y": "DiffFormPts"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.54599-05:00",
+      "id": "019b34f2-b379-7f17-bd2a-0eaf9a43f96a",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.545989-05:00",
+        "effect_size": 0.29562545947120467,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.0025081967213114753,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "ATP",
+        "variable_y": "AM1"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.546024-05:00",
+      "id": "019b34f2-b37a-705d-8d73-e928dcb2be4f",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.546023-05:00",
+        "effect_size": 0.002271714470293604,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.12142857142857143,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM3",
+        "variable_y": "HM5"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.546027-05:00",
+      "id": "019b34f2-b37a-7069-8669-da3d1cb7e545",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.546026-05:00",
+        "effect_size": -0.008809500089527305,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.1204724409448819,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM3",
+        "variable_y": "HM1"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.546029-05:00",
+      "id": "019b34f2-b37a-7071-a094-33957dbfe17b",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.546028-05:00",
+        "effect_size": 0.02133121466598386,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.05,
+        "q_value": 0.07806122448979592,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM3",
+        "variable_y": "HM4"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.546064-05:00",
+      "id": "019b34f2-b37a-70fa-930a-f4defb4c7fa3",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.546057-05:00",
+        "effect_size": 0.02164673126159889,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.05,
+        "q_value": 0.07727272727272727,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM3",
+        "variable_y": "HM2"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.54607-05:00",
+      "id": "019b34f2-b37a-7111-ad43-ea195eaf4bbf",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.546069-05:00",
+        "effect_size": 0.002214503063131106,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.1176923076923077,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM3",
+        "variable_y": "HTGD"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.546152-05:00",
+      "id": "019b34f2-b37a-711d-89f7-eff916dadfc4",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.546072-05:00",
+        "effect_size": -0.18429210175510038,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.0024677419354838708,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM3",
+        "variable_y": "DiffFormPts"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.546179-05:00",
+      "id": "019b34f2-b37a-72b7-862d-32319984f125",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.546153-05:00",
+        "effect_size": 0.014671261433970137,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.11590909090909092,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "AM3",
+        "variable_y": "AM1"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.546339-05:00",
+      "id": "019b34f2-b37a-7528-88ea-90e8a072ad43",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.546337-05:00",
+        "effect_size": 0.04886504843443166,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.0024285714285714284,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HM5",
+        "variable_y": "HM1"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.54634-05:00",
+      "id": "019b34f2-b37a-7530-adc2-0ffc78500e16",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.546339-05:00",
+        "effect_size": 0.03750499336023128,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.002390625,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HM5",
+        "variable_y": "HM4"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.546347-05:00",
+      "id": "019b34f2-b37a-754b-b717-4d81792abbfa",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.546346-05:00",
+        "effect_size": 0.023537996201003834,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.05,
+        "q_value": 0.08595505617977528,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HM5",
+        "variable_y": "HM2"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.546352-05:00",
+      "id": "019b34f2-b37a-755f-b805-5624127446d7",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.546351-05:00",
+        "effect_size": 0.21825910494969114,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.002353846153846154,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HM5",
+        "variable_y": "HTGD"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.546355-05:00",
+      "id": "019b34f2-b37a-756a-bff6-6551701ed530",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.546354-05:00",
+        "effect_size": 0.1734313108923802,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.002318181818181818,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HM5",
+        "variable_y": "DiffFormPts"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.546357-05:00",
+      "id": "019b34f2-b37a-756e-a63c-57f01509db47",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.546355-05:00",
+        "effect_size": -0.0023243615945003557,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.1108695652173913,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HM5",
+        "variable_y": "AM1"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.546422-05:00",
+      "id": "019b34f2-b37a-766c-9e43-31f63837aab1",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.546421-05:00",
+        "effect_size": 0.03782841372937153,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.0022835820895522386,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HM1",
+        "variable_y": "HM4"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.546441-05:00",
+      "id": "019b34f2-b37a-76ba-aebc-be3dbbf2d267",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.54644-05:00",
+        "effect_size": 0.028641659658036372,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.01,
+        "q_value": 0.019367088607594937,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HM1",
+        "variable_y": "HM2"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.546447-05:00",
+      "id": "019b34f2-b37a-76d2-9e67-bfc46c1fbc9c",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.546446-05:00",
+        "effect_size": 0.2542794200500586,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.00225,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HM1",
+        "variable_y": "HTGD"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.54645-05:00",
+      "id": "019b34f2-b37a-76dd-baef-3f4b539ce247",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.546449-05:00",
+        "effect_size": 0.24407723155205927,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.002217391304347826,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HM1",
+        "variable_y": "DiffFormPts"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.546452-05:00",
+      "id": "019b34f2-b37a-76e1-b3e8-23d0bda9001b",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.546451-05:00",
+        "effect_size": -0.01034135089135559,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.106993006993007,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HM1",
+        "variable_y": "AM1"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.546458-05:00",
+      "id": "019b34f2-b37a-76fd-9d54-0c5fe3bc91e0",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.546457-05:00",
+        "effect_size": 0.04026497327511891,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.0021857142857142856,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HM4",
+        "variable_y": "HM2"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.546464-05:00",
+      "id": "019b34f2-b37a-7714-81be-71bea8e7d4dd",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.546463-05:00",
+        "effect_size": 0.2417277151760275,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.0021549295774647885,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HM4",
+        "variable_y": "HTGD"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.546467-05:00",
+      "id": "019b34f2-b37a-7720-83c1-271f8deaa647",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.546466-05:00",
+        "effect_size": 0.1731120424995851,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.002125,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HM4",
+        "variable_y": "DiffFormPts"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.546469-05:00",
+      "id": "019b34f2-b37a-7728-8a56-5839100865be",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.546468-05:00",
+        "effect_size": 0.003194703340969497,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.10408163265306122,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HM4",
+        "variable_y": "AM1"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.546578-05:00",
+      "id": "019b34f2-b37a-78d1-9365-770d2fb3f58b",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.546577-05:00",
+        "effect_size": 0.2488979095714245,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.002095890410958904,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HM2",
+        "variable_y": "HTGD"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.54658-05:00",
+      "id": "019b34f2-b37a-78d9-b94a-147173908219",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.546579-05:00",
+        "effect_size": 0.20340323793012566,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.0020675675675675674,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HM2",
+        "variable_y": "DiffFormPts"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.54658-05:00",
+      "id": "019b34f2-b37a-78da-9b07-900b2d9a7020",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.54658-05:00",
+        "effect_size": 0.0038134295779334265,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.10200000000000001,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HM2",
+        "variable_y": "AM1"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.546622-05:00",
+      "id": "019b34f2-b37a-797d-80a2-eb0f08473b0f",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.546619-05:00",
+        "effect_size": 0.4804786569065796,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.00204,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HTGD",
+        "variable_y": "DiffFormPts"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.546623-05:00",
+      "id": "019b34f2-b37a-7981-819c-71be1463ef70",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.546622-05:00",
+        "effect_size": 0.0028982132890577523,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.1,
+        "q_value": 0.10065789473684211,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "HTGD",
+        "variable_y": "AM1"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.546628-05:00",
+      "id": "019b34f2-b37a-7995-bab1-69280394b2b6",
+      "kind": "relationship",
+      "payload": {
+        "discovered_at": "2025-12-18T23:51:19.546627-05:00",
+        "effect_size": -0.24495642675329338,
+        "effect_unit": "r",
+        "family_id": "family_035165eb-517c-4bd4-9624-049efee7b784|8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f|pairwise|pearson|test-registry|test-stage-plan",
+        "fdr_method": "BH",
+        "fingerprint": "relationship-fingerprint",
+        "p_value": 0.001,
+        "q_value": 0.002013157894736842,
+        "sample_size": 6840,
+        "test_type": "pearson",
+        "total_comparisons": 153,
+        "variable_x": "DiffFormPts",
+        "variable_y": "AM1"
+      }
+    },
+    {
+      "created_at": "2025-12-18T23:51:19.547262-05:00",
+      "id": "019b34f2-b37b-73ff-92ac-a250900830ea",
+      "kind": "sweep_manifest",
+      "payload": {
+        "artifact_counts": {
+          "fdr_family": 1,
+          "relationship": 153,
+          "skipped_relationship": 588,
+          "variable_profile": 39
+        },
+        "cohort_hash": "8c5440af9c7519c60bdcd37447e3a2ad4d58ef3de34749b6bb8dff7c2f98567f",
+        "created_at": "2025-12-18T23:51:19.547119-05:00",
+        "fingerprint": "sweep-fingerprint",
+        "registry_hash": "test-registry-hash",
+        "rejection_counts": {
+          "LOW_VARIANCE": 588
+        },
+        "runtime_ms": 416,
+        "seed": 42,
+        "skipped_tests": 588,
+        "snapshot_id": "035165eb-517c-4bd4-9624-049efee7b784",
+        "stage_plan_hash": "test-stage-plan-hash",
+        "successful_tests": 153,
+        "sweep_id": "019b34f2-b1da-7da8-b037-490dd2439e46",
+        "tests_executed": [
+          "profile",
+          "pairwise"
+        ],
+        "total_comparisons": 741
+      }
+    }
+  ],
+  "total_fields": 39,
+  "total_stats_artifacts": 154
+}
+
+---
+
+VARIABLE SELECTION RULES:
+- cause_key: Must be an exact column name from the field_metadata (e.g., "HTP", "HTGD", "HTWinStreak3")
+- effect_key: Must be the outcome variable you're trying to predict (usually "FTR" for match results)
+- Do NOT use generic names - use the EXACT field names from the dataset
+
+VALIDATION EXAMPLES:
+✓ GOOD: "cause_key": "HTP", "effect_key": "FTR"
+✗ BAD:  "cause_key": "", "effect_key": ""  ← Will be REJECTED
+✗ BAD:  "cause_key": "team_points", "effect_key": "outcome"  ← Field names don't exist
+
+---
+
+REQUIRED OUTPUT FORMAT (COPY THIS STRUCTURE EXACTLY):
+
+{
+  "industry_context": "Two-sentence summary from the Forensic Scout.",
+  "meta_analysis_meta": {
+    "system_entropy_grade": "A-F based on signal-to-noise ratio.",
+    "causal_topology": "Chaotic | Linear | Feedback-Dominant | Latent-Heavy"
+  },
+  "research_directives": [
+    {
+      "id": "HYP-001",
+      "business_hypothesis": "Simple sentence describing human behavior",
+      "science_hypothesis": "Precise technical description of the data interaction",
+      "null_case": "Description of what the data looks like if your idea is WRONG",
+      "cause_key": "HTP",
+      "effect_key": "FTR",
+      "opportunity_analysis": {
+        "strategic_value": "Advantage of knowing this pattern",
+        "risk_of_inaction": "Cost of ignoring this pattern",
+        "leverage_score": "High | Medium | Low"
+      },
+      "referee_gates": {
+        "selected_referees": [
+          "Permutation_Shredder",
+          "Chow_Stability_Test",
+          "Transfer_Entropy"
+        ],
+        "confidence_target": 0.999,
+        "rationale": "Why these 3 specific referees provide comprehensive validation"
+      }
+    },
+    {
+      "id": "HYP-002",
+      "business_hypothesis": "...",
+      "science_hypothesis": "...",
+      "null_case": "...",
+      "opportunity_analysis": {
+        "strategic_value": "...",
+        "risk_of_inaction": "...",
+        "leverage_score": "..."
+      },
+      "referee_gates": {
+        "selected_referees": [
+          "Permutation_Shredder",
+          "Conditional_MI",
+          "LOO_Cross_Validation"
+        ],
+        "confidence_target": 0.999,
+        "rationale": "..."
+      }
+    },
+    {
+      "id": "HYP-003",
+      "business_hypothesis": "...",
+      "science_hypothesis": "...",
+      "null_case": "...",
+      "opportunity_analysis": {
+        "strategic_value": "...",
+        "risk_of_inaction": "...",
+        "leverage_score": "..."
+      },
+      "referee_gates": {
+        "selected_referees": [
+          "Chow_Stability_Test",
+          "Transfer_Entropy",
+          "Persistent_Homology"
+        ],
+        "confidence_target": 0.999,
+        "rationale": "..."
+      }
+    }
+  ]
+}
+
+---
+
+AVAILABLE REFEREES (choose EXACTLY 3 from 3 DIFFERENT categories):
+
+SHREDDER: Permutation_Shredder
+DIRECTIONAL: Transfer_Entropy, Convergent_Cross_Mapping
+INVARIANCE: Chow_Stability_Test
+ANTI_CONFOUNDER: Conditional_MI
+MECHANISM: Isotonic_Mechanism_Check
+SENSITIVITY: LOO_Cross_Validation
+TOPOLOGICAL: Persistent_Homology
+THERMODYNAMIC: Algorithmic_Complexity
+COUNTERFACTUAL: Synthetic_Intervention
+SPECTRAL: Wavelet_Coherence
+
+VALIDATION RULES:
+1. Each hypothesis MUST have EXACTLY 3 referees (not 2, not 4, exactly 3)
+2. The 3 referees MUST be from 3 DIFFERENT categories
+3. Use exact spelling from the list above
+
+EXAMPLES OF VALID 3-REFEREE SELECTIONS:
+✓ ["Permutation_Shredder", "Chow_Stability_Test", "Transfer_Entropy"] - 3 referees from SHREDDER, INVARIANCE, DIRECTIONAL
+✓ ["Permutation_Shredder", "Conditional_MI", "LOO_Cross_Validation"] - 3 referees from SHREDDER, ANTI_CONFOUNDER, SENSITIVITY
+✓ ["Chow_Stability_Test", "Transfer_Entropy", "Persistent_Homology"] - 3 referees from INVARIANCE, DIRECTIONAL, TOPOLOGICAL
+
+EXAMPLES OF INVALID SELECTIONS (WILL BE REJECTED):
+✗ ["Permutation_Shredder", "Chow_Stability_Test"] - Only 2 referees (REJECTED)
+✗ ["Transfer_Entropy", "Convergent_Cross_Mapping", "Chow_Stability_Test", "Conditional_MI"] - 4 referees (REJECTED)
+✗ ["Transfer_Entropy", "Convergent_Cross_Mapping", "Persistent_Homology"] - 2 from same category DIRECTIONAL (REJECTED)
+
+Output ONLY valid JSON. No markdown, no explanatory text.

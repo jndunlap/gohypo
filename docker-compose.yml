@@ -1,0 +1,66 @@
+services:
+  # The Core Engine (Go)
+  app:
+    build: .
+    ports:
+      - "8080:8080"  # API
+      - "6060:6060"  # pprof Profiling
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./research_output:/app/research_output
+    environment:
+      - GIN_MODE=release
+    restart: unless-stopped
+    networks:
+      - gohypo-network
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: gohypo-postgres
+    environment:
+      POSTGRES_DB: gohypo
+      POSTGRES_USER: gohypo_user
+      POSTGRES_PASSWORD: gohypo_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./migrations/001_initial_schema.sql:/docker-entrypoint-initdb.d/001_initial_schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gohypo_user -d gohypo"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - gohypo-network
+
+  # Optional: pgAdmin for database management
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: gohypo-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@gohypo.local
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    networks:
+      - gohypo-network
+
+volumes:
+  postgres_data:
+  pgadmin_data:
+  valkey_data:
+
+networks:
+  gohypo-network:
+    driver: bridge

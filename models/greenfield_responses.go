@@ -1,20 +1,29 @@
 package models
 
+import (
+	"fmt"
+	"time"
+
+	"gohypo/internal/referee"
+)
+
 // GreenfieldResearchOutput - Exact match for your JSON schema
 type GreenfieldResearchOutput struct {
-	IndustryContext   string                      `json:"industry_context" description:"Two-sentence semantic summary of industry domain and primary friction points"`
+	IndustryContext    string                      `json:"industry_context" description:"Two-sentence semantic summary of industry domain and primary friction points"`
 	ResearchDirectives []ResearchDirectiveResponse `json:"research_directives" description:"Array of research directives from the LLM"`
 }
 
 type ResearchDirectiveResponse struct {
-	ID                 string             `json:"id" description:"Unique directive identifier (e.g., HYP-001)"`
-	BusinessHypothesis string             `json:"business_hypothesis" description:"The simple story of the impact"`
-	ScienceHypothesis  string             `json:"science_hypothesis" description:"The technical pattern in the data"`
-	NullCase           string             `json:"null_case" description:"Quantitative description of a failed/random result"`
+	ID                  string              `json:"id" description:"Unique directive identifier (e.g., HYP-001)"`
+	BusinessHypothesis  string              `json:"business_hypothesis" description:"The simple story of the impact"`
+	ScienceHypothesis   string              `json:"science_hypothesis" description:"The technical pattern in the data"`
+	NullCase            string              `json:"null_case" description:"Quantitative description of a failed/random result"`
+	CauseKey            string              `json:"cause_key" description:"Variable name for the hypothesized cause"`
+	EffectKey           string              `json:"effect_key" description:"Variable name for the hypothesized effect"`
 	OpportunityAnalysis OpportunityAnalysis `json:"opportunity_analysis" description:"Business impact and strategic value assessment"`
-	ValidationMethods  []ValidationMethod `json:"validation_methods" description:"Array of validation methods"`
-	RefereeGates       RefereeGates       `json:"referee_gates" description:"Pass/fail validation thresholds"`
+	RefereeGates        RefereeGates        `json:"referee_gates" description:"Structured referee selection and validation"`
 	// Legacy fields for backward compatibility
+	ValidationMethods  []ValidationMethod `json:"validation_methods,omitempty" description:"Legacy validation methods"`
 	Claim              string             `json:"claim,omitempty" description:"Legacy field"`
 	LogicType          string             `json:"logic_type,omitempty" description:"Legacy field"`
 	ValidationStrategy ValidationStrategy `json:"validation_strategy,omitempty" description:"Legacy field"`
@@ -39,10 +48,84 @@ type ValidationStrategy struct {
 }
 
 type RefereeGates struct {
-	ConfidenceTarget   float64 `json:"confidence_target" description:"Target confidence level (e.g., 0.99)"`
-	StabilityThreshold float64 `json:"stability_threshold" description:"Minimum required stability threshold"`
+	SelectedReferees []string `json:"selected_referees" description:"Exactly 3 referees selected for Tri-Gate validation"`
+	ConfidenceTarget float64  `json:"confidence_target" description:"Target confidence level (e.g., 0.999)"`
+	Rationale        string   `json:"rationale" description:"Explanation of why these 3 referees were selected"`
 	// Legacy fields for backward compatibility
-	PValueThreshold float64 `json:"p_value_threshold,omitempty" description:"Legacy field"`
-	StabilityScore  float64 `json:"stability_score,omitempty" description:"Legacy field"`
-	PermutationRuns int     `json:"permutation_runs,omitempty" description:"Legacy field"`
+	StabilityThreshold float64 `json:"stability_threshold,omitempty" description:"Legacy field"`
+	PValueThreshold    float64 `json:"p_value_threshold,omitempty" description:"Legacy field"`
+	StabilityScore     float64 `json:"stability_score,omitempty" description:"Legacy field"`
+	PermutationRuns    int     `json:"permutation_runs,omitempty" description:"Legacy field"`
+}
+
+// Validate ensures the RefereeGates structure contains valid referee selections
+func (rg *RefereeGates) Validate() error {
+	if len(rg.SelectedReferees) != 3 {
+		return fmt.Errorf("exactly 3 referees must be selected, got %d", len(rg.SelectedReferees))
+	}
+
+	// Check for duplicates
+	seen := make(map[string]bool)
+	for _, referee := range rg.SelectedReferees {
+		if seen[referee] {
+			return fmt.Errorf("duplicate referee selection: %s", referee)
+		}
+		seen[referee] = true
+	}
+
+	// Validate referee names against approved list
+	validReferees := []string{
+		"Permutation_Shredder",
+		"Transfer_Entropy",
+		"Convergent_Cross_Mapping",
+		"Chow_Stability_Test",
+		"Conditional_MI",
+		"Isotonic_Mechanism_Check",
+		"LOO_Cross_Validation",
+		"Persistent_Homology",
+		"Algorithmic_Complexity",
+		"Wavelet_Coherence",
+	}
+
+	for _, selected := range rg.SelectedReferees {
+		found := false
+		for _, valid := range validReferees {
+			if selected == valid {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("invalid referee: %s", selected)
+		}
+	}
+
+	return nil
+}
+
+// HypothesisResult represents the complete result of hypothesis validation
+type HypothesisResult struct {
+	ID                  string                  `json:"id"`
+	SessionID           string                  `json:"session_id,omitempty"` // Added for database storage
+	BusinessHypothesis  string                  `json:"business_hypothesis"`
+	ScienceHypothesis   string                  `json:"science_hypothesis"`
+	NullCase            string                  `json:"null_case"`
+	RefereeResults      []referee.RefereeResult `json:"referee_results"`
+	TriGateResult       referee.TriGateResult   `json:"tri_gate_result"`
+	Passed              bool                    `json:"passed"`
+	ValidationTimestamp time.Time               `json:"validation_timestamp"`
+	StandardsVersion    string                  `json:"standards_version"`
+	ExecutionMetadata   map[string]interface{}  `json:"execution_metadata"`
+	// Legacy fields for backward compatibility
+	Validated bool      `json:"validated,omitempty"`  // maps to Passed
+	Rejected  bool      `json:"rejected,omitempty"`   // maps to !Passed
+	CreatedAt time.Time `json:"created_at,omitempty"` // maps to ValidationTimestamp
+}
+
+// TriGateResult represents the aggregated result of Tri-Gate validation
+type TriGateResult struct {
+	RefereeResults []referee.RefereeResult `json:"referee_results"`
+	OverallPassed  bool                    `json:"overall_passed"`
+	Confidence     float64                 `json:"confidence"`
+	Rationale      string                  `json:"rationale"`
 }

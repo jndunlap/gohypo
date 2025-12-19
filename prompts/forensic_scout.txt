@@ -5,11 +5,16 @@ Your task: Identify the **Industry Context** and **Semantic Physics** of this da
 DATA SAMPLE:
 {DATA_SAMPLE}
 
-Provide a 2-sentence summary:
-1. Sentence 1: Identify the industry domain and business context (e.g., "This is a B2B SaaS marketing funnel tracking lead velocity from spend to conversion.")
-2. Sentence 2: Identify the primary friction point or key variable (e.g., "Field 'metric_29' is identified as the primary friction point (form latency).")
+Analyze this data and return a JSON object with these 5 labels. Use simple language (8th grade level) and keep each answer to 1-2 SHORT sentences maximum.
 
-Respond with JSON:
+IMPORTANT: Keep responses CONCISE. Match the length and style of these examples exactly:
+
 {
-  "industry_context": "Your two-sentence summary here."
+  "domain": "Professional Soccer & Sports Betting",
+  "context": "Tracks soccer game results and team stats to predict match outcomes.",
+  "bottleneck": "Predicting winners using team form is hard because early games have little history.",
+  "physics": "Points and goal difference are the main drivers that separate winners from losers.",
+  "map": "Structured but Complex - patterns hidden in rolling stats and time-series data."
 }
+
+Respond with valid JSON matching this exact format and conciseness.

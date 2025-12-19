@@ -1765,7 +1765,7 @@
     "field_key": "order_total",
     "value": {
       "type": "numeric",
-      "numeric_val": 305.4811239859565,
+      "numeric_val": 305.4811239859566,
       "is_missing": false
     }
   },

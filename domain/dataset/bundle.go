@@ -76,12 +76,13 @@ const (
 
 // VariableContract represents a variable's resolution rules
 type VariableContract struct {
-	VarKey           core.VariableKey `json:"var_key"`
-	AsOfMode         AsOfMode         `json:"as_of_mode"`
-	StatisticalType  StatisticalType  `json:"statistical_type"`
-	WindowDays       *int             `json:"window_days,omitempty"`
-	ImputationPolicy ImputationPolicy `json:"imputation_policy"`
-	ScalarGuarantee  bool             `json:"scalar_guarantee"`
+	VarKey              core.VariableKey   `json:"var_key"`
+	AsOfMode            AsOfMode           `json:"as_of_mode"`
+	StatisticalType     StatisticalType    `json:"statistical_type"`
+	WindowDays          *int               `json:"window_days,omitempty"`
+	ImputationPolicy    ImputationPolicy   `json:"imputation_policy"`
+	ScalarGuarantee     bool               `json:"scalar_guarantee"`
+	CategoricalEncoding map[string]float64 `json:"categorical_encoding,omitempty"` // For categorical variables: value -> numeric encoding
 }
 
 // StatisticalType defines variable types for analysis

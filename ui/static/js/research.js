@@ -6,8 +6,11 @@
 (function() {
     'use strict';
 
+    console.log('[Research UI] JavaScript loaded and executing');
+
     // Initialize when DOM is ready
     document.addEventListener('DOMContentLoaded', function() {
+        console.log('[Research UI] DOMContentLoaded event fired');
         initializeResearchUI();
         setupHTMXListeners();
         startProgressPolling();
@@ -266,9 +269,7 @@
     window.toggleEvidenceDrawer = function(hypothesisId) {
         const drawer = document.getElementById('drawer-' + hypothesisId);
         if (!drawer) return;
-
-        const isVisible = drawer.style.display !== 'none';
-        drawer.style.display = isVisible ? 'none' : 'table-row';
+        drawer.classList.toggle('hidden');
     };
 
     /**

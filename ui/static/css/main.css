@@ -1,73 +1,78 @@
 /* GoHypo Neo-Brutalist Laboratory Design System */
 
-/* ===== NEO-BRUTALIST COLOR PALETTE ===== */
+/* ===== MONOCHROMATIC MATTE PALETTE ===== */
 :root {
-  /* Core 4-Color System */
-  --deep-black: #000000;     /* Borders, headers, primary actions */
-  --paper-white: #FFFFFF;    /* Active data areas, cards */
-  --ghost-gray: #D1D1D1;     /* Inactive/disabled states */
-  --grid-background: #F0F0F0; /* Canvas background */
+  /* Paper and Ink Philosophy */
+  --paper-white: #FFFFFF;        /* Primary background - pure white */
+  --paper-gray: #FAFAFA;         /* Secondary background - very pale paper gray */
+  --industrial-gray: #B0B0B0;    /* Accents and secondary elements */
+  --charcoal-black: #000000;     /* Primary text and structural lines */
 
-  /* Legacy support - map to new palette */
-  --void: var(--deep-black);
+  /* Legacy support - map to monochromatic palette */
+  --deep-black: var(--charcoal-black);
+  --ghost-gray: var(--industrial-gray);
+  --grid-background: var(--paper-gray);
+  --void: var(--charcoal-black);
   --obsidian: var(--paper-white);
-  --cold-steel: var(--deep-black);
-  --hyper-lime: var(--deep-black);
-  --electric-cobalt: var(--deep-black);
-  --crimson-ghost: var(--deep-black);
-  --ghost-white: var(--deep-black);
+  --cold-steel: var(--charcoal-black);
+  --hyper-lime: var(--charcoal-black);
+  --electric-cobalt: var(--charcoal-black);
+  --crimson-ghost: var(--charcoal-black);
+  --ghost-white: var(--charcoal-black);
 }
 
-/* ===== NEO-BRUTALIST TYPOGRAPHY SYSTEM ===== */
+/* ===== TYPOGRAPHIC SURGICALITY ===== */
 
-/* Primary Headings - Sora Extra Bold */
+/* Primary Text - Neutral Grotesque Sans-Serif */
 .neo-heading-h1 {
-  font-family: 'Sora', sans-serif;
-  font-weight: 800;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
   font-size: 48px;
-  letter-spacing: -0.5px;
-  color: var(--deep-black);
+  letter-spacing: 0.02em;
+  color: var(--charcoal-black);
 }
 
 .neo-heading-h2 {
-  font-family: 'Sora', sans-serif;
-  font-weight: 800;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
   font-size: 32px;
-  letter-spacing: -0.3px;
-  color: var(--deep-black);
+  letter-spacing: 0.02em;
+  color: var(--charcoal-black);
 }
 
 .neo-heading-h3 {
-  font-family: 'Sora', sans-serif;
-  font-weight: 800;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
   font-size: 24px;
-  letter-spacing: -0.2px;
-  color: var(--deep-black);
+  letter-spacing: 0.02em;
+  color: var(--charcoal-black);
 }
 
-/* Data Typography - IBM Plex Mono */
+/* Body Text - Same neutral sans-serif */
 .neo-body {
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: 'Inter', sans-serif;
   font-weight: 400;
   font-size: 14px;
-  line-height: 1.6;
-  color: var(--deep-black);
+  line-height: 1.5;
+  color: var(--charcoal-black);
 }
 
+/* Technical Data - Monospaced Font */
 .neo-data {
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: 'JetBrains Mono', monospace;
   font-weight: 400;
   font-size: 12px;
-  line-height: 1.5;
-  color: var(--deep-black);
+  line-height: 1.4;
+  color: var(--charcoal-black);
 }
 
 .neo-label {
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: 'JetBrains Mono', monospace;
   font-weight: 600;
   font-size: 12px;
   text-transform: uppercase;
-  color: var(--deep-black);
+  letter-spacing: 0.08em;
+  color: var(--charcoal-black);
 }
 
 /* Legacy support */
@@ -83,49 +88,39 @@
   @apply neo-data;
 }
 
-/* ===== NEO-BRUTALIST STYLE & SPACING ===== */
+/* ===== STRUCTURAL GRID - HAIRLINE PRECISION ===== */
 
-/* Hard Offset Shadow System */
-.neo-shadow-standard {
-  box-shadow: 4px 4px 0px var(--deep-black);
-}
-
-.neo-shadow-pressed {
-  box-shadow: 0px 0px 0px var(--deep-black);
-}
-
+/* No shadows - structural honesty */
+.neo-shadow-standard,
+.neo-shadow-pressed,
 .neo-shadow-hover {
-  box-shadow: 6px 6px 0px var(--deep-black);
+  box-shadow: none;
 }
 
-/* Dot Grid Background Pattern */
+/* Clean background - no patterns */
 .neo-bg-dot-grid {
-  background-color: var(--grid-background);
-  background-image: radial-gradient(circle, rgba(0,0,0,0.1) 1px, transparent 1px);
-  background-size: 20px 20px;
+  background-color: var(--paper-gray);
 }
 
-/* Container Rules - No border-radius, 2px minimum borders */
+/* Hairline Borders - Zero Rounding */
 .neo-container {
-  border: 2px solid var(--deep-black);
+  border: 1px solid var(--charcoal-black);
   background: var(--paper-white);
-  box-shadow: 4px 4px 0px var(--deep-black);
   padding: 16px;
 }
 
 /* Global Layout */
 .forensic-container {
-  background-color: var(--grid-background);
-  color: var(--deep-black);
+  background-color: var(--paper-gray);
+  color: var(--charcoal-black);
   min-height: 100vh;
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: 'Inter', sans-serif;
 }
 
-/* Neo-Brutalist Components */
+/* Structural Components */
 .neo-card {
-  border: 2px solid var(--deep-black);
+  border: 1px solid var(--charcoal-black);
   background: var(--paper-white);
-  box-shadow: 4px 4px 0px var(--deep-black);
   padding: 16px;
   margin-bottom: 16px;
   position: relative;
@@ -136,19 +131,11 @@
   @apply neo-card;
 }
 
-/* Vitality Strip - Data Health Indicator */
+/* Data Health Indicator - Solid colors only */
 .vitality-strip {
   height: 2px;
   width: 100%;
-  background: linear-gradient(90deg,
-    var(--hyper-lime) 0%,
-    var(--hyper-lime) 20%,
-    var(--electric-cobalt) 20%,
-    var(--electric-cobalt) 40%,
-    var(--crimson-ghost) 40%,
-    var(--crimson-ghost) 60%,
-    var(--ghost-gray) 60%,
-    var(--ghost-gray) 100%);
+  background: var(--industrial-gray);
   margin-top: 8px;
 }
 
@@ -178,19 +165,19 @@
   box-shadow: 0 0 8px rgba(0, 255, 65, 0.1);
 }
 
-/* Status Indicators */
+/* Status Indicators - Monochromatic */
 .status-validated {
-  color: var(--hyper-lime);
+  color: var(--charcoal-black);
   font-weight: 600;
 }
 
 .status-vetoed {
-  color: var(--crimson-ghost);
+  color: var(--charcoal-black);
   font-weight: 600;
 }
 
 .status-system {
-  color: var(--electric-cobalt);
+  color: var(--industrial-gray);
   font-weight: 500;
 }
 
@@ -203,30 +190,13 @@
   right: 12px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.7rem;
-  color: var(--ghost-gray);
-  opacity: 0.6;
+  color: var(--industrial-gray);
   cursor: pointer;
-  transition: opacity 0.2s ease;
 }
 
-.hash-watermark:hover {
-  opacity: 1;
-  color: var(--hyper-lime);
-}
-
-/* Integrity Seal - Pulsing border for validated signals */
+/* Integrity Seal - Static indicator */
 .integrity-seal {
   position: relative;
-  animation: integrity-pulse 3s ease-in-out infinite;
-}
-
-@keyframes integrity-pulse {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(0, 255, 65, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 0 2px rgba(0, 255, 65, 0.4);
-  }
 }
 
 /* Logic Pulse - Footer heartbeat */
@@ -249,22 +219,17 @@
 }
 
 .logic-pulse-toggle {
-  font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-size: 10px;
-  color: var(--ghost-white);
-  background: transparent;
-  border: 1px solid var(--cold-steel);
+  color: var(--charcoal-black);
+  background: var(--paper-white);
+  border: 1px solid var(--charcoal-black);
   padding: 4px 8px;
   cursor: pointer;
   line-height: 1;
-}
-
-.logic-pulse-toggle:hover {
-  border-color: rgba(0, 255, 65, 0.35);
-  color: var(--hyper-lime);
 }
 
 .logic-pulse-caret {
@@ -316,78 +281,50 @@ main {
   padding-bottom: 44px;
 }
 
-/* Logic Veil Active State */
+/* Logic Veil - Simplified */
 .logic-veil-active * {
-  border: 1px solid rgba(0, 255, 65, 0.1) !important;
-  background-color: transparent !important;
-  color: var(--hyper-lime) !important;
-  font-family: 'JetBrains Mono', monospace !important;
-  border-radius: 0 !important;
+  border: 1px solid var(--charcoal-black) !important;
+  background-color: var(--paper-white) !important;
+  color: var(--charcoal-black) !important;
+  font-family: 'Inter', sans-serif !important;
   box-shadow: none !important;
 }
 
 .logic-veil-active {
-  background-color: var(--void) !important;
-}
-
-.logic-veil-active::after {
-  content: "DRAFT_MODE // ARCHITECTURAL_OVERLAY_ACTIVE";
-  position: fixed;
-  top: 10px;
-  right: 10px;
-  z-index: 500;
-  font-size: 10px;
-  color: var(--hyper-lime);
-  background: var(--void);
-  padding: 4px 8px;
-  border: 1px solid var(--hyper-lime);
+  background-color: var(--paper-gray) !important;
 }
 
 .logic-pulse-content {
   display: inline-block;
-  animation: logic-scroll 20s linear infinite;
 }
 
-@keyframes logic-scroll {
-  0% {
-    transform: translateX(100%);
-  }
-  100% {
-    transform: translateX(-100%);
-  }
-}
+/* ===== NON-REFLECTIVE COMPONENT LOGIC ===== */
 
-/* ===== NEO-BRUTALIST INTERACTION STATES ===== */
-
-/* Mechanical Button Mechanics */
+/* Matte Button - Solid blocks with crisp inversion */
 .neo-button {
-  border: 2px solid var(--deep-black);
+  border: 1px solid var(--charcoal-black);
   background: var(--paper-white);
-  box-shadow: 4px 4px 0px var(--deep-black);
+  color: var(--charcoal-black);
   position: relative;
-  top: 0px;
-  left: 0px;
-  transition: all 0.05s ease;
   cursor: pointer;
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: 'JetBrains Mono', monospace;
   font-weight: 600;
-  font-size: 14px;
-  letter-spacing: 0.5px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  padding: 8px 16px;
-  color: var(--deep-black);
+  padding: 10px 20px;
+  transition: none;
 }
 
 .neo-button:hover {
-  box-shadow: 6px 6px 0px var(--deep-black);
+  background: var(--charcoal-black);
+  color: var(--paper-white);
 }
 
 .neo-button:active,
 .neo-button.pressed {
-  box-shadow: 0px 0px 0px var(--deep-black);
-  position: relative;
-  top: 4px;
-  left: 4px;
+  background: var(--charcoal-black);
+  color: var(--paper-white);
 }
 
 /* Legacy support */
@@ -395,21 +332,19 @@ main {
   @apply neo-button;
 }
 
-/* Form Controls */
+/* Form Controls - Simple bordered boxes */
 .tactical-input {
-  background-color: var(--void);
-  border: 1px solid var(--cold-steel);
-  color: var(--ghost-white);
+  background-color: var(--paper-white);
+  border: 1px solid var(--charcoal-black);
+  color: var(--charcoal-black);
   padding: 8px 12px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.875rem;
-  transition: border-color 0.2s ease;
 }
 
 .tactical-input:focus {
   outline: none;
-  border-color: var(--hyper-lime);
-  box-shadow: 0 0 0 1px var(--hyper-lime);
+  border-color: var(--industrial-gray);
 }
 
 /* ===== RESPONSIVE DESIGN ===== */
@@ -459,29 +394,32 @@ main {
 
 /* Text utilities */
 .text-tactical {
-  @apply font-bold uppercase tracking-wider;
+  @apply font-bold uppercase;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.08em;
 }
 
 .text-narrative {
   @apply leading-relaxed;
+  font-family: 'Inter', sans-serif;
 }
 
 .text-computed {
   font-family: 'JetBrains Mono', monospace;
-  color: var(--hyper-lime);
+  color: var(--charcoal-black);
 }
 
-/* Background utilities */
-.bg-void { background-color: var(--void); }
-.bg-obsidian { background-color: var(--obsidian); }
-.bg-validated { background-color: rgba(0, 255, 65, 0.1); }
-.bg-vetoed { background-color: rgba(255, 0, 60, 0.1); }
-.bg-system { background-color: rgba(46, 91, 255, 0.1); }
+/* Background utilities - Monochromatic */
+.bg-void { background-color: var(--paper-white); }
+.bg-obsidian { background-color: var(--paper-gray); }
+.bg-validated { background-color: var(--paper-white); }
+.bg-vetoed { background-color: var(--paper-white); }
+.bg-system { background-color: var(--paper-gray); }
 
-/* Border utilities */
-.border-cold-steel { border-color: var(--cold-steel); }
-.border-validated { border-color: var(--hyper-lime); }
-.border-vetoed { border-color: var(--crimson-ghost); }
+/* Border utilities - Monochromatic */
+.border-cold-steel { border-color: var(--charcoal-black); }
+.border-validated { border-color: var(--charcoal-black); }
+.border-vetoed { border-color: var(--charcoal-black); }
 
 /* Animation utilities */
 .animate-integrity {
@@ -491,19 +429,64 @@ main {
 /* ===== PRINT STYLES ===== */
 @media print {
   .forensic-container {
-    background-color: white !important;
-    color: black !important;
+    background-color: var(--paper-white) !important;
+    color: var(--charcoal-black) !important;
   }
 
   .discovery-dossier,
   .registry-container {
-    border: 1px solid #000 !important;
+    border: 1px solid var(--charcoal-black) !important;
     box-shadow: none !important;
   }
 
   .hash-watermark {
     display: block !important;
     opacity: 1 !important;
-    color: #000 !important;
+    color: var(--charcoal-black) !important;
   }
+}
+
+/* ===== MODERN STATUS DISPLAY ENHANCEMENTS ===== */
+
+/* Tabular numbers for consistent digit width */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* Smooth number transitions */
+#hypothesis-count,
+#session-field-count,
+#session-estimated-duration {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Status text transitions */
+#research-status {
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.2s ease;
+}
+
+/* Pulse animation for active status */
+@keyframes status-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+#research-status:not(:empty):not([data-state="ready"]) {
+  animation: status-pulse 2s ease-in-out infinite;
+}
+
+/* Modern card hover effects */
+#research-session-info > div {
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+#research-session-info > div:hover {
+  transform: translateY(-1px);
 }
