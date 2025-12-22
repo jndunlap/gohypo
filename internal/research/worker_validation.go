@@ -78,21 +78,15 @@ func (rw *ResearchWorker) executeEValueValidationWithEvidence(ctx context.Contex
 	hypothesisID := directive.ID
 	log.Printf("[ResearchWorker] Starting validation for hypothesis %s", hypothesisID)
 
-	// Validate referee selection (allow any number including 0)
+	// Validate referee selection (require at least 1 referee)
 	if err := directive.RefereeGates.Validate(); err != nil {
 		log.Printf("[ResearchWorker] ERROR: Invalid referee selection for hypothesis %s: %v", hypothesisID, err)
 		rw.recordFailedHypothesis(ctx, sessionID, hypothesisID, fmt.Sprintf("Invalid referee selection: %v", err))
 		return false
 	}
 
-	// Allow any number of referees for dynamic validation
+	// Get referee count (must be at least 1 due to validation)
 	refereeCount := len(directive.RefereeGates.SelectedReferees)
-
-	// If no referees selected, use simple acceptance (e-value dynamic validation allows this)
-	if refereeCount == 0 {
-		log.Printf("[ResearchWorker] Hypothesis %s accepted with no referees required", hypothesisID)
-		return rw.acceptHypothesisWithEValue(ctx, sessionID, directive, []models.RefereeResult{}, 0)
-	}
 
 	// Load matrix data for the hypothesis variables
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)

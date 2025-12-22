@@ -21,9 +21,9 @@ type LogicalAuditorOutput struct {
 // ExplanationStructure - Structured explanation data for hypotheses
 type ExplanationStructure struct {
 	TheoreticalFoundation string `json:"theoretical_foundation" description:"What theory or framework makes this hypothesis interesting"`
-	DataDrivenRationale  string `json:"data_driven_rationale" description:"What patterns in the data suggest this relationship"`
-	BusinessImpact       string `json:"business_impact" description:"Quantify the potential value if validated"`
-	StrategicAction      string `json:"strategic_action" description:"What business changes this hypothesis implies"`
+	DataDrivenRationale   string `json:"data_driven_rationale" description:"What patterns in the data suggest this relationship"`
+	BusinessImpact        string `json:"business_impact" description:"Quantify the potential value if validated"`
+	StrategicAction       string `json:"strategic_action" description:"What business changes this hypothesis implies"`
 }
 
 type ResearchDirectiveResponse struct {
@@ -80,8 +80,10 @@ type RefereeGates struct {
 
 // Validate ensures the RefereeGates structure contains valid referee selections
 func (rg *RefereeGates) Validate() error {
-	// Dynamic e-value validation allows any number of referees (including 0)
-	// No validation required for referee count
+	// Require at least 1 referee from the approved list
+	if len(rg.SelectedReferees) < 1 {
+		return fmt.Errorf("at least 1 referee must be selected")
+	}
 
 	// Check for duplicates
 	seen := make(map[string]bool)
@@ -124,15 +126,15 @@ func (rg *RefereeGates) Validate() error {
 
 // RefereeResult represents the result of a single referee validation
 type RefereeResult struct {
-	GateName       string                 `json:"gate_name"`
-	Passed         bool                   `json:"passed"`
-	Statistic      float64                `json:"statistic"`
-	PValue         float64                `json:"p_value"`
-	EValue         float64                `json:"e_value"` // E-value from evidence auditing
-	StandardUsed   string                 `json:"standard_used"`
-	FailureReason  string                 `json:"failure_reason,omitempty"`
-	EvidenceBlocks []interface{}          `json:"evidence_blocks,omitempty"` // Detailed evidence data
-	ExecutionTime  time.Duration          `json:"execution_time,omitempty"`   // How long the test took
+	GateName       string        `json:"gate_name"`
+	Passed         bool          `json:"passed"`
+	Statistic      float64       `json:"statistic"`
+	PValue         float64       `json:"p_value"`
+	EValue         float64       `json:"e_value"` // E-value from evidence auditing
+	StandardUsed   string        `json:"standard_used"`
+	FailureReason  string        `json:"failure_reason,omitempty"`
+	EvidenceBlocks []interface{} `json:"evidence_blocks,omitempty"` // Detailed evidence data
+	ExecutionTime  time.Duration `json:"execution_time,omitempty"`  // How long the test took
 }
 
 // TriGateResult represents the aggregated result of Tri-Gate validation
@@ -147,46 +149,46 @@ type TriGateResult struct {
 
 // StabilityResult represents the results of stability selection analysis
 type StabilityResult struct {
-	SubsampleCount     int                    `json:"subsample_count"`
+	SubsampleCount     int                         `json:"subsample_count"`
 	RefereeStability   map[string]RefereeStability `json:"referee_stability"`
-	OverallStability   float64                `json:"overall_stability"`
-	StableHypotheses   []string               `json:"stable_hypotheses"`
-	UnstableHypotheses []string               `json:"unstable_hypotheses"`
-	RefereeNames       []string               `json:"referee_names"`
-	SubsampleResults   []SubsampleResult      `json:"subsample_results"`
-	StabilityThreshold float64                `json:"stability_threshold"`
-	MinStableSubs      int                    `json:"min_stable_subs"`
+	OverallStability   float64                     `json:"overall_stability"`
+	StableHypotheses   []string                    `json:"stable_hypotheses"`
+	UnstableHypotheses []string                    `json:"unstable_hypotheses"`
+	RefereeNames       []string                    `json:"referee_names"`
+	SubsampleResults   []SubsampleResult           `json:"subsample_results"`
+	StabilityThreshold float64                     `json:"stability_threshold"`
+	MinStableSubs      int                         `json:"min_stable_subs"`
 }
 
 // SubsampleResult represents results from a single subsample
 type SubsampleResult struct {
-	SubsampleIndex int            `json:"subsample_index"`
+	SubsampleIndex int             `json:"subsample_index"`
 	RefereeResults []RefereeResult `json:"referee_results"`
 }
 
 // RefereeStability represents stability analysis for a single referee
 type RefereeStability struct {
-	RefereeName     string  `json:"referee_name"`
-	StabilityScore  float64 `json:"stability_score"`
-	PassCount       int     `json:"pass_count"`
-	IsStable        bool    `json:"is_stable"`
+	RefereeName    string  `json:"referee_name"`
+	StabilityScore float64 `json:"stability_score"`
+	PassCount      int     `json:"pass_count"`
+	IsStable       bool    `json:"is_stable"`
 }
 
 // HypothesisResult represents the complete result of hypothesis validation
 type HypothesisResult struct {
-	ID                  string                 `json:"id"`
-	SessionID           string                 `json:"session_id,omitempty"`   // Added for database storage
-	WorkspaceID         string                 `json:"workspace_id,omitempty"` // Added for workspace scoping
-	BusinessHypothesis   string                    `json:"business_hypothesis"`
-	ScienceHypothesis    string                    `json:"science_hypothesis"`
-	NullCase             string                    `json:"null_case"`
-	ExplanationMarkdown string                 `json:"explanation_markdown,omitempty"` // Markdown explanation of why hypothesis was selected
-	ExplanationStructure ExplanationStructure     `json:"explanation_structure,omitempty"` // Legacy structured explanation data
-	RefereeResults       []RefereeResult           `json:"referee_results"`
-	Passed              bool                   `json:"passed"`
-	ValidationTimestamp time.Time              `json:"validation_timestamp"`
-	StandardsVersion    string                 `json:"standards_version"`
-	ExecutionMetadata   map[string]interface{} `json:"execution_metadata"`
+	ID                   string                 `json:"id"`
+	SessionID            string                 `json:"session_id,omitempty"`   // Added for database storage
+	WorkspaceID          string                 `json:"workspace_id,omitempty"` // Added for workspace scoping
+	BusinessHypothesis   string                 `json:"business_hypothesis"`
+	ScienceHypothesis    string                 `json:"science_hypothesis"`
+	NullCase             string                 `json:"null_case"`
+	ExplanationMarkdown  string                 `json:"explanation_markdown,omitempty"`  // Markdown explanation of why hypothesis was selected
+	ExplanationStructure ExplanationStructure   `json:"explanation_structure,omitempty"` // Legacy structured explanation data
+	RefereeResults       []RefereeResult        `json:"referee_results"`
+	Passed               bool                   `json:"passed"`
+	ValidationTimestamp  time.Time              `json:"validation_timestamp"`
+	StandardsVersion     string                 `json:"standards_version"`
+	ExecutionMetadata    map[string]interface{} `json:"execution_metadata"`
 
 	// New research ledger fields
 	PhaseEValues     []float64              `json:"phase_e_values"`
@@ -199,10 +201,10 @@ type HypothesisResult struct {
 	Status           string                 `json:"status"`
 
 	// Stability analysis results
-	StabilityResult  *StabilityResult       `json:"stability_result,omitempty"`
+	StabilityResult *StabilityResult `json:"stability_result,omitempty"`
 
 	// Scientific Ledger fields for traceability
-	EvidenceSID  int64 `json:"evidence_sid,omitempty"`  // SID of the evidence this hypothesis depends on
+	EvidenceSID   int64 `json:"evidence_sid,omitempty"`   // SID of the evidence this hypothesis depends on
 	HypothesisSID int64 `json:"hypothesis_sid,omitempty"` // SID of this hypothesis
 
 	// Legacy fields for backward compatibility
