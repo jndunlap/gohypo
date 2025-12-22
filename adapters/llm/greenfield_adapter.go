@@ -100,7 +100,7 @@ func (ga *GreenfieldAdapter) GenerateResearchDirectives(ctx context.Context, req
 	fmt.Printf("[GreenfieldAdapter] 🧠 Step 3: Calling LLM with greenfield_research prompt...\n")
 
 	// Call LLM with dynamic prompt and STRICT JSON system instructions
-	systemMessage := "You are a statistical research assistant. For dynamic e-value validation, you may select any number of referees (including 0) based on the hypothesis requirements. Output valid JSON only."
+	systemMessage := "You are a statistical research assistant. For dynamic e-value validation, you must select at least 1 referee from the approved list based on the hypothesis requirements. Output valid JSON only."
 	fmt.Printf("[GreenfieldAdapter] 📤 Sending request to LLM with greenfield_research prompt...\n")
 	fmt.Printf("[GreenfieldAdapter]   • System message: %s\n", systemMessage)
 	fmt.Printf("[GreenfieldAdapter]   • Prompt length: %d chars\n", len(dynamicPrompt))
