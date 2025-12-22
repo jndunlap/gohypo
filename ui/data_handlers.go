@@ -72,3 +72,79 @@ func (h *DataHandler) HandleDownloadHypothesis(storage *research.ResearchStorage
 		c.JSON(http.StatusOK, hypothesis)
 	}
 }
+
+func (h *DataHandler) HandleHypothesisCard(storage *research.ResearchStorage) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		idStr := c.Param("id")
+
+		hypothesis, err := storage.GetByID(c.Request.Context(), idStr)
+		if err != nil {
+			log.Printf("[API] Failed to get hypothesis %s: %v", idStr, err)
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "Hypothesis not found",
+			})
+			return
+		}
+
+		if c.GetHeader("HX-Request") == "true" {
+			c.Header("Content-Type", "text/html")
+			html := h.renderService.RenderHypothesisCard(hypothesis)
+			c.String(http.StatusOK, html)
+			return
+		}
+
+		c.JSON(http.StatusOK, hypothesis)
+	}
+}
+
+// HandleHypothesisToggle handles expanding/collapsing hypothesis cards
+func (h *DataHandler) HandleHypothesisToggle(storage *research.ResearchStorage) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		idStr := c.Param("id")
+
+		hypothesis, err := storage.GetByID(c.Request.Context(), idStr)
+		if err != nil {
+			log.Printf("[API] Failed to get hypothesis %s: %v", idStr, err)
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "Hypothesis not found",
+			})
+			return
+		}
+
+		if c.GetHeader("HX-Request") == "true" {
+			c.Header("Content-Type", "text/html")
+			// Return the expanded/collapsed card HTML
+			html := h.renderService.RenderHypothesisCardExpanded(hypothesis)
+			c.String(http.StatusOK, html)
+			return
+		}
+
+		c.JSON(http.StatusOK, hypothesis)
+	}
+}
+
+// HandleHypothesisEvidence handles showing/hiding evidence drawer
+func (h *DataHandler) HandleHypothesisEvidence(storage *research.ResearchStorage) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		idStr := c.Param("id")
+
+		hypothesis, err := storage.GetByID(c.Request.Context(), idStr)
+		if err != nil {
+			log.Printf("[API] Failed to get hypothesis %s: %v", idStr, err)
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "Hypothesis not found",
+			})
+			return
+		}
+
+		if c.GetHeader("HX-Request") == "true" {
+			c.Header("Content-Type", "text/html")
+			// Return the evidence drawer HTML
+			html := h.renderService.RenderHypothesisEvidence(hypothesis)
+			c.String(http.StatusOK, html)
+			return
+		}
+
+		c.JSON(http.StatusOK, hypothesis)
+	}
+}

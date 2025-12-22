@@ -1,0 +1,129 @@
+{{/* Field Details Template */}}
+<!-- Field Header -->
+<div class="mb-3 pb-2 border-b border-slate-200">
+    <div class="flex items-center justify-between">
+        <div>
+            <h4 class="text-[12px] font-bold text-slate-900">{{.Name}}</h4>
+            <p class="text-[9px] text-slate-500">{{if eq .Type "categorical"}}Categorical{{else}}Numeric{{end}} Field</p>
+        </div>
+        <div class="flex items-center space-x-1">
+            <span class="text-[8px] px-1.5 py-0.5 rounded bg-green-100 text-green-700"
+                {{if gt .MissingRate 0.1}}Poor{{else if gt .MissingRate 0.05}}Fair{{else}}Good{{end}}
+            </span>
+            <span class="text-[8px] text-slate-400">{{.SampleSize}} samples</span>
+        </div>
+    </div>
+</div>
+
+<!-- Statistical Details -->
+<div class="space-y-3">
+    {{if eq .Type "categorical"}}
+    <!-- Categorical Statistics -->
+    <div class="space-y-2">
+        <div class="grid grid-cols-2 gap-2 text-[9px]">
+            <div class="bg-white p-2 rounded">
+                <div class="text-slate-600 font-medium">Categories</div>
+                <div class="text-slate-900 font-mono text-[10px]">{{.Cardinality}}</div>
+            </div>
+            <div class="bg-white p-2 rounded">
+                <div class="text-slate-600 font-medium">Diversity</div>
+                <div class="text-slate-900 font-mono text-[10px]">{{printf "%.2f" .Entropy}}</div>
+            </div>
+        </div>
+        {{if .Mode}}
+        <div class="bg-purple-50 p-2 rounded">
+            <div class="text-purple-700 font-medium text-[9px]">Most Common</div>
+            <div class="text-purple-900 font-mono text-[10px] truncate" title="{{.Mode}}">{{.Mode}}</div>
+            <div class="text-purple-600 text-[8px]">{{.ModeFrequency}} occurrences</div>
+        </div>
+        {{end}}
+        {{if gt .Cardinality 20}}
+        <div class="bg-amber-50 p-2 rounded">
+            <div class="text-amber-700 font-medium text-[9px]">⚠️ High Cardinality</div>
+            <div class="text-amber-600 text-[8px]">Consider grouping categories</div>
+        </div>
+        {{end}}
+    </div>
+    {{else}}
+    <!-- Numeric Statistics -->
+    <div class="space-y-2">
+        <!-- Central tendency -->
+        <div class="grid grid-cols-2 gap-2 text-[9px]">
+            <div class="bg-blue-50 p-2 rounded">
+                <div class="text-blue-600 font-medium">Mean</div>
+                <div class="text-blue-900 font-mono text-[10px]">{{printf "%.2f" .Mean}}</div>
+            </div>
+            <div class="bg-blue-50 p-2 rounded">
+                <div class="text-blue-600 font-medium">Median</div>
+                <div class="text-blue-900 font-mono text-[10px]">{{printf "%.2f" .Median}}</div>
+            </div>
+        </div>
+
+        <!-- Variability -->
+        <div class="grid grid-cols-2 gap-2 text-[9px]">
+            <div class="bg-green-50 p-2 rounded">
+                <div class="text-green-600 font-medium">Std Dev</div>
+                <div class="text-green-900 font-mono text-[10px]">{{printf "%.2f" .StdDev}}</div>
+            </div>
+            <div class="bg-green-50 p-2 rounded">
+                <div class="text-green-600 font-medium">CV</div>
+                <div class="text-green-900 font-mono text-[10px]">{{printf "%.2f" .CV}}</div>
+            </div>
+        </div>
+
+        <!-- Range -->
+        <div class="bg-white p-2 rounded">
+            <div class="text-slate-600 font-medium text-[9px]">Range</div>
+            <div class="text-slate-900 font-mono text-[10px]">{{printf "%.1f" .Min}} → {{printf "%.1f" .Max}}</div>
+        </div>
+
+        <!-- Distribution -->
+        <div class="bg-white p-2 rounded">
+            <div class="text-slate-600 font-medium text-[9px]">Distribution</div>
+            <div class="text-slate-900 font-mono text-[10px]">
+                {{if .IsNormal}}Normal{{else if gt .Skewness 1.0}}Very Skewed{{else if gt .Skewness 0.5}}Right-skewed{{else if lt .Skewness -0.5}}Left-skewed{{else}}Mild Skew{{end}}
+            </div>
+        </div>
+
+        <!-- Warnings -->
+        {{if gt .OutlierCount 0}}
+        <div class="bg-amber-50 p-2 rounded">
+            <div class="text-amber-700 font-medium text-[9px]">⚠️ {{.OutlierCount}} outliers detected</div>
+        </div>
+        {{end}}
+        {{if gt .Kurtosis 5.0}}
+        <div class="bg-red-50 p-2 rounded">
+            <div class="text-red-700 font-medium text-[9px]">⚠️ Heavy tails - extreme values</div>
+        </div>
+        {{end}}
+    </div>
+    {{end}}
+
+    <!-- Relationship Analysis -->
+    <div class="border-t border-slate-200 pt-2">
+        <div class="flex justify-between items-center text-[9px]">
+            <div class="flex items-center space-x-1">
+                <span class="text-slate-600 font-medium">Relations:</span>
+                <span class="font-mono bg-slate-100 px-1 rounded">{{.InRelationships}}</span>
+            </div>
+            <div>
+                <span class="text-slate-500">Strongest:</span>
+                <span class="font-mono text-slate-600"
+                    {{if gt .TotalRelsAnalyzed 0}}{{printf "%.2f" .StrongestCorr}}{{else}}—{{end}}
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Actions -->
+<div class="mt-4 pt-3 border-t border-slate-200">
+    <div class="flex space-x-2">
+        <button class="flex-1 text-[9px] px-2 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded hover:bg-blue-100 transition-colors">
+            Use in Analysis
+        </button>
+        <button class="flex-1 text-[9px] px-2 py-1.5 bg-white text-slate-700 border border-slate-200 rounded hover:bg-slate-100 transition-colors">
+            View Distribution
+        </button>
+    </div>
+</div>

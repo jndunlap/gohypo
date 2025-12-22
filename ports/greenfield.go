@@ -14,12 +14,13 @@ type GreenfieldResearchPort interface {
 
 // GreenfieldResearchRequest - The metadata handoff
 type GreenfieldResearchRequest struct {
-	RunID                core.RunID                 `json:"run_id"`
-	SnapshotID           core.SnapshotID            `json:"snapshot_id"`
-	FieldMetadata        []greenfield.FieldMetadata `json:"field_metadata"`
-	StatisticalArtifacts []map[string]interface{}   `json:"statistical_artifacts,omitempty"` // Full statistical artifacts for context
-	DiscoveryBriefs      interface{}                `json:"discovery_briefs,omitempty"`      // Discovery briefs for grounding
-	Directives           int                        `json:"directives"`
+	RunID                   core.RunID                 `json:"run_id"`
+	SnapshotID              core.SnapshotID            `json:"snapshot_id"`
+	FieldMetadata           []greenfield.FieldMetadata `json:"field_metadata"`
+	StatisticalArtifacts    []map[string]interface{}   `json:"statistical_artifacts,omitempty"`    // Full statistical artifacts for context
+	DiscoveryBriefs         interface{}                `json:"discovery_briefs,omitempty"`         // Discovery briefs for grounding
+	ValidatedHypothesisSummary interface{}             `json:"validated_hypothesis_summary,omitempty"` // Summary of previously validated hypotheses
+	Directives              int                        `json:"directives"`
 }
 
 // GreenfieldResearchResponse - The engineering blueprint

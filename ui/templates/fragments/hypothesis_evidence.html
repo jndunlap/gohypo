@@ -1,0 +1,137 @@
+{{define "hypothesis_evidence"}}
+<div id="drawer-{{.Hypothesis.ID}}" class="mt-4 bg-white border border-gray-200 rounded-lg">
+  <div class="px-4 py-3 space-y-3">
+    {{if .Hypothesis.ScienceHypothesis}}
+    <div class="bg-white border border-gray-200 rounded-lg p-4">
+      <h4 class="text-sm font-semibold text-gray-900 mb-3">Scientific Hypothesis (H₁)</h4>
+      <p class="text-gray-700 text-sm leading-relaxed">{{.Hypothesis.ScienceHypothesis}}</p>
+    </div>
+    {{end}}
+    {{if .Hypothesis.NullCase}}
+    <div class="bg-white border border-gray-200 rounded-lg p-4">
+      <h4 class="text-sm font-semibold text-gray-900 mb-3">Null Hypothesis (H₀)</h4>
+      <p class="text-gray-700 text-sm leading-relaxed">{{.Hypothesis.NullCase}}</p>
+    </div>
+    {{end}}
+    <div class="bg-white border border-gray-200 rounded-lg p-4">
+      <h4 class="text-sm font-semibold text-gray-900 mb-4">E-value Validation Summary</h4>
+      <div class="grid grid-cols-2 gap-6 mb-4">
+        <div>
+          <div class="text-sm text-gray-600 font-medium mb-2">Final Verdict</div>
+          {{if .Hypothesis.Passed}}
+            <span class="inline-flex items-center px-3 py-1 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 text-sm font-semibold">ACCEPTED</span>
+          {{else}}
+            <span class="inline-flex items-center px-3 py-1 rounded-md bg-red-50 text-red-700 border border-red-200 text-sm font-semibold">REJECTED</span>
+          {{end}}
+        </div>
+        <div>
+          <div class="text-sm text-gray-600 font-medium mb-2">Confidence</div>
+          <div class="text-lg font-semibold text-gray-900">{{printf "%.1f%%" (mul .Hypothesis.Confidence 100)}}</div>
+        </div>
+      </div>
+      <div class="pt-4 border-t border-gray-200">
+        <p class="text-sm text-gray-700 leading-relaxed">E-value dynamic validation completed with {{len .Hypothesis.RefereeResults}} referee{{if ne (len .Hypothesis.RefereeResults) 1}}s{{end}} executed.</p>
+      </div>
+    </div>
+    {{if .Hypothesis.RefereeResults}}
+    <div>
+      <h4 class="text-sm font-semibold text-gray-900 mb-4">Forensic Evidence (Deca-Gate Execution)</h4>
+      <div class="space-y-4">
+        {{range $index, $result := .Hypothesis.RefereeResults}}
+        <div class="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow duration-200">
+          <div class="flex items-start justify-between mb-3">
+            <div class="flex items-center gap-3">
+              <span class="text-sm font-semibold text-gray-900">{{$result.GateName}}</span>
+              {{if $result.Passed}}
+                <span class="inline-flex items-center px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-medium">PASSED</span>
+              {{else}}
+                <span class="inline-flex items-center px-2 py-1 rounded-md bg-red-50 text-red-700 border border-red-200 text-xs font-medium">FAILED</span>
+              {{end}}
+            </div>
+          </div>
+
+          {{if $result.StandardUsed}}
+          <div class="text-sm text-gray-600 mb-4 font-mono bg-gray-50 p-2 rounded border">{{$result.StandardUsed}}</div>
+          {{end}}
+
+          <div class="grid grid-cols-3 gap-4 pt-4 border-t border-gray-200">
+            <div>
+              <div class="text-sm text-gray-600 font-medium mb-1">Statistic</div>
+              <div class="text-sm font-semibold font-mono text-gray-900">
+                {{if $result.Statistic}}
+                  {{if eq $result.Statistic 0.0}}
+                    <span class="text-gray-400">—</span>
+                  {{else}}
+                    {{printf "%.4f" $result.Statistic}}
+                  {{end}}
+                {{else}}
+                  <span class="text-gray-400">—</span>
+                {{end}}
+              </div>
+            </div>
+            <div>
+              <div class="text-sm text-gray-600 font-medium mb-1">P-Value</div>
+              <div class="text-sm font-semibold font-mono text-gray-900">
+                {{if $result.PValue}}
+                  {{if lt $result.PValue 0.001}}
+                    &lt;0.001
+                  {{else}}
+                    {{printf "%.4f" $result.PValue}}
+                  {{end}}
+                {{else}}
+                  <span class="text-gray-400">—</span>
+                {{end}}
+              </div>
+            </div>
+            <div>
+              <div class="text-sm text-gray-600 font-medium mb-1">Threshold</div>
+              <div class="text-sm font-semibold font-mono text-gray-900">
+                {{if $result.StandardUsed}}
+                  {{if contains $result.StandardUsed "p ≤ 0.001"}}
+                    α ≤ 0.001
+                  {{else if contains $result.StandardUsed "p < 0.001"}}
+                    α < 0.001
+                  {{else if contains $result.StandardUsed "p ≤ 0.05"}}
+                    α ≤ 0.05
+                  {{else if contains $result.StandardUsed "p < 0.05"}}
+                    α < 0.05
+                  {{else}}
+                    α ≤ 0.001
+                  {{end}}
+                {{else}}
+                  α ≤ 0.001
+                {{end}}
+              </div>
+            </div>
+          </div>
+
+          {{if and (not $result.Passed) $result.FailureReason}}
+          <div class="mt-4 pt-4 border-t border-gray-200 bg-red-50 rounded-md p-3">
+            <div class="text-sm font-semibold text-red-800 mb-1">Failure Reason</div>
+            <p class="text-sm text-red-700 leading-relaxed">{{$result.FailureReason}}</p>
+          </div>
+          {{end}}
+
+          {{if $result.Passed}}
+          <div class="mt-4 pt-4 border-t border-gray-200 bg-emerald-50 rounded-md p-3">
+            <div class="text-sm font-semibold text-emerald-800 mb-1">Validation Result</div>
+            <p class="text-sm text-emerald-700 leading-relaxed">Referee passed all statistical checks. Hypothesis shows robust signal.</p>
+          </div>
+          {{end}}
+        </div>
+        {{end}}
+      </div>
+    </div>
+    {{end}}
+    {{if .Hypothesis.StandardsVersion}}
+    <div class="bg-white border border-gray-200 rounded-lg p-4">
+      <div class="text-sm text-gray-600">
+        <span class="font-semibold">Standards Version:</span> <span class="font-mono text-gray-900">{{.Hypothesis.StandardsVersion}}</span>
+        <span class="mx-2 text-gray-400">•</span>
+        <span class="font-semibold">Validated:</span> <span class="font-mono text-gray-900">{{.Hypothesis.ValidationTimestamp.Format "2006-01-02 15:04:05"}}</span>
+      </div>
+    </div>
+    {{end}}
+  </div>
+</div>
+{{end}}

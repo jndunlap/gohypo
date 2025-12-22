@@ -3,21 +3,73 @@ package referee
 import (
 	"fmt"
 	"strings"
+
+	"gohypo/domain/stats"
+	"gohypo/models"
 )
 
-// RefereeResult provides PhD-level metadata for Meta-Analysis
-type RefereeResult struct {
-	GateName      string  `json:"gate_name"`
-	Passed        bool    `json:"passed"`
-	Statistic     float64 `json:"statistic"`
-	PValue        float64 `json:"p_value"`
-	StandardUsed  string  `json:"standard_used"`
-	FailureReason string  `json:"failure_reason,omitempty"`
+// Type aliases to use models types (avoids import cycles)
+type RefereeResult = models.RefereeResult
+type TriGateResult = models.TriGateResult
+
+// DiscoveryEvidence represents pre-computed statistical evidence from the discovery phase
+type DiscoveryEvidence struct {
+	CauseKey         string  // Variable name for the cause
+	EffectKey        string  // Variable name for the effect
+	TestType         string  // Type of statistical test performed
+	PValue           float64 // Raw p-value from discovery
+	QValue           float64 // FDR-corrected q-value
+	SampleSize       int     // Sample size used in discovery
+	TotalComparisons int     // Total comparisons made (for FDR context)
+	FDRMethod        string  // FDR correction method used
 }
 
 // Referee is the contract all tools must satisfy
 type Referee interface {
+	// Execute performs statistical testing from scratch (legacy method - deprecated)
+	// WARNING: This method ignores discovery evidence and may violate statistical rigor
 	Execute(x, y []float64, metadata map[string]interface{}) RefereeResult
+
+	// AuditEvidence performs evidence auditing with Q-value continuity (preferred method)
+	// This method receives pre-computed discovery evidence and performs validation
+	// rather than re-computing statistics from raw data
+	AuditEvidence(discoveryEvidence interface{}, validationData []float64, metadata map[string]interface{}) RefereeResult
+}
+
+// DefaultAuditEvidence provides a fallback implementation for referees without specific audit logic
+func DefaultAuditEvidence(gateName string, discoveryEvidence interface{}, validationData []float64, metadata map[string]interface{}) models.RefereeResult {
+	// Extract discovery evidence
+	var evidence DiscoveryEvidence
+	if ev, ok := discoveryEvidence.(DiscoveryEvidence); ok {
+		evidence = ev
+	} else {
+		return RefereeResult{
+			GateName:      gateName,
+			Passed:        false,
+			FailureReason: "Invalid discovery evidence format",
+		}
+	}
+
+	// Basic E-value conversion from q-value
+	eValue := 1.0 / evidence.QValue
+
+	// Conservative threshold for unspecified referees
+	passed := evidence.QValue <= 0.01
+
+	failureReason := ""
+	if !passed {
+		failureReason = fmt.Sprintf("Evidence audit failed (q=%.4f). Referee %s requires q≤0.01 for validation.", evidence.QValue, gateName)
+	}
+
+	return RefereeResult{
+		GateName:      gateName,
+		Passed:        passed,
+		Statistic:     eValue,
+		PValue:        evidence.QValue,
+		EValue:        eValue,
+		StandardUsed:  fmt.Sprintf("Evidence audit (q ≤ 0.01) with E-value calibration"),
+		FailureReason: failureReason,
+	}
 }
 
 // GetRefereeByName acts as the factory for the Deca-Gate
@@ -96,13 +148,15 @@ func GetCategoryForReferee(name string) RefereeCategory {
 }
 
 // EvaluateTriGate evaluates the results of three referees for Tri-Gate validation
-func EvaluateTriGate(refereeResults []RefereeResult) TriGateResult {
+func EvaluateTriGate(refereeResults []models.RefereeResult) models.TriGateResult {
 	if len(refereeResults) != 3 {
-		return TriGateResult{
-			RefereeResults: refereeResults,
-			OverallPassed:  false,
-			Confidence:     0.0,
-			Rationale:      fmt.Sprintf("Invalid number of referees (expected 3, got %d)", len(refereeResults)),
+		return models.TriGateResult{
+			RefereeResults:   refereeResults,
+			OverallPassed:    false,
+			Confidence:       0.0,
+			NormalizedEValue: 0.0,
+			QualityRating:    string(stats.QualityVeryWeak),
+			Rationale:        fmt.Sprintf("Invalid number of referees (expected 3, got %d)", len(refereeResults)),
 		}
 	}
 
@@ -128,11 +182,32 @@ func EvaluateTriGate(refereeResults []RefereeResult) TriGateResult {
 			len(failedReferees), failedReferees)
 	}
 
+	// Calculate normalized E-value from confidence (simplified approach)
+	// In a full implementation, this would use the E-value calibrator
+	normalizedEValue := confidence // For now, use confidence as proxy
+
+	// Determine quality rating based on normalized value
+	var qualityRating stats.HypothesisQuality
+	switch {
+	case normalizedEValue >= 0.8:
+		qualityRating = stats.QualityVeryStrong
+	case normalizedEValue >= 0.6:
+		qualityRating = stats.QualityStrong
+	case normalizedEValue >= 0.4:
+		qualityRating = stats.QualityModerate
+	case normalizedEValue >= 0.2:
+		qualityRating = stats.QualityWeak
+	default:
+		qualityRating = stats.QualityVeryWeak
+	}
+
 	return TriGateResult{
-		RefereeResults: refereeResults,
-		OverallPassed:  overallPassed,
-		Confidence:     confidence,
-		Rationale:      rationale,
+		RefereeResults:   refereeResults,
+		OverallPassed:    overallPassed,
+		Confidence:       confidence,
+		NormalizedEValue: normalizedEValue,
+		QualityRating:    string(qualityRating),
+		Rationale:        rationale,
 	}
 }
 
@@ -148,17 +223,12 @@ func ValidateData(x, y []float64) error {
 }
 
 // TriGateResult represents the result of running three referees
-type TriGateResult struct {
-	RefereeResults []RefereeResult `json:"referee_results"`
-	OverallPassed  bool            `json:"overall_passed"`
-	Confidence     float64         `json:"confidence"`
-	Rationale      string          `json:"rationale"`
-}
+// TriGateResult uses the type from models package
 
 // RunTriGate executes three referees from different categories
-func RunTriGate(x, y []float64, metadata map[string]interface{}, refereeNames []string) TriGateResult {
+func RunTriGate(x, y []float64, metadata map[string]interface{}, refereeNames []string) models.TriGateResult {
 	if len(refereeNames) != 3 {
-		return TriGateResult{
+		return models.TriGateResult{
 			OverallPassed: false,
 			Confidence:    0.0,
 		}

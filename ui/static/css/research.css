@@ -478,7 +478,7 @@
     }
 }
 
-/* ===== Tri-Gate Leading Indicator ===== */
+/* ===== E-value Leading Indicator ===== */
 .tri-gate-circle-container {
     display: flex;
     flex-direction: column;
@@ -646,7 +646,7 @@
     line-height: 1.5;
 }
 
-/* Tri-Gate Summary Card */
+/* E-value Summary Card */
 .tri-gate-summary {
     background-color: white;
     border: 1px solid #e5e7eb;

@@ -3,230 +3,111 @@ package ui
 import (
 	"context"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
-	"os"
-	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
-	"gohypo/adapters/excel"
-	domainBrief "gohypo/domain/stats/brief"
+	"gohypo/domain/core"
+	"gohypo/domain/dataset"
+	processor "gohypo/internal/dataset"
 
 	"github.com/gin-gonic/gin"
 )
 
-// extractFieldData extracts data for a specific field from Excel data
-func extractFieldData(excelData *excel.ExcelData, fieldName string) []float64 {
-	data := make([]float64, 0, len(excelData.Rows))
-	for _, row := range excelData.Rows {
-		if strVal, exists := row[fieldName]; exists && strVal != "" {
-			if val, err := strconv.ParseFloat(strVal, 64); err == nil {
-				data = append(data, val)
-			}
-		}
-	}
-	return data
-}
-
 func (s *Server) loadDatasetInfo(ctx context.Context) error {
-	startTime := time.Now()
-	log.Printf("[loadDatasetInfo] Starting dataset loading process")
+	log.Printf("[loadDatasetInfo] Loading dataset from DATABASE ONLY")
 
-	excelData, err := s.getCachedExcelData()
+	if s.datasetRepository == nil {
+		log.Printf("[loadDatasetInfo] ERROR: dataset repository not available")
+		return fmt.Errorf("dataset repository not available")
+	}
+
+	// Get the current dataset from database ONLY - NO FALLBACKS TO CSV
+	currentDataset, err := s.datasetRepository.GetCurrent(ctx)
 	if err != nil {
-		log.Printf("[loadDatasetInfo] FAILED - Excel data loading failed after %v: %v", time.Since(startTime), err)
-		return fmt.Errorf("failed to get Excel data: %w", err)
+		log.Printf("[loadDatasetInfo] ERROR: Failed to get current dataset from database: %v", err)
+		return fmt.Errorf("failed to load dataset from database: %w", err)
 	}
 
-	log.Printf("[loadDatasetInfo] Excel data loaded successfully - Fields: %d, Rows: %d", len(excelData.Headers), len(excelData.Rows))
+	if currentDataset == nil {
+		log.Printf("[loadDatasetInfo] ERROR: No current dataset found in database")
+		return fmt.Errorf("no current dataset found in database - please upload or create a dataset first")
+	}
 
-	fieldStats := make([]*FieldStats, 0, len(excelData.Headers))
-	log.Printf("[loadDatasetInfo] Starting field statistics computation for %d fields", len(excelData.Headers))
+	if currentDataset.Status != dataset.StatusReady {
+		log.Printf("[loadDatasetInfo] ERROR: Dataset is not ready (status: %s)", currentDataset.Status)
+		return fmt.Errorf("dataset is not ready for use (status: %s)", currentDataset.Status)
+	}
 
-	for i, fieldName := range excelData.Headers {
-		stat := &FieldStats{
-			Name:              fieldName,
-			MissingRate:       0.0,
-			MissingRatePct:    "—",
-			UniqueCount:       0,
-			Variance:          0.0,
-			Cardinality:       0,
-			Type:              "numeric",
-			SampleSize:        0,
-			InRelationships:   0,
-			StrongestCorr:     0.0,
-			AvgEffectSize:     0.0,
-			SignificantRels:   0,
-			TotalRelsAnalyzed: 0,
-		}
+	log.Printf("[loadDatasetInfo] Successfully loaded dataset from database: %s (%s)", currentDataset.DisplayName, currentDataset.Domain)
 
-		if s.analysisEngine != nil {
-			fieldData := extractFieldData(excelData, fieldName)
-			if len(fieldData) > 0 {
-				req := domainBrief.ComputationRequest{
-					ForValidation: true,
-					ForHypothesis: true,
-				}
-				if statBrief, err := s.analysisEngine.Computer().ComputeBrief(fieldData, fieldName, "ui", req); err == nil {
-					stat.StatisticalBrief = statBrief
-					stat.SampleSize = statBrief.SampleSize
-					stat.MissingRate = statBrief.Quality.MissingRatio
-					stat.MissingRatePct = fmt.Sprintf("%.1f", statBrief.Quality.MissingRatio*100)
+	// Use data from the database dataset
 
-					// Extract summary statistics with validation
-					stat.Mean = statBrief.Summary.Mean
-					stat.StdDev = statBrief.Summary.StdDev
-					// Ensure StdDev is non-negative
-					if stat.StdDev < 0 {
-						stat.StdDev = 0
-					}
-					stat.Min = statBrief.Summary.Min
-					stat.Max = statBrief.Summary.Max
-					// Ensure Min <= Max
-					if stat.Min > stat.Max {
-						stat.Min, stat.Max = stat.Max, stat.Min
-					}
-					stat.Median = statBrief.Summary.Median
+	// Dataset info from database
+	datasetInfo := map[string]interface{}{
+		"name":                currentDataset.DisplayName,
+		"domain":              currentDataset.Domain,
+		"description":         currentDataset.Description,
+		"record_count":        currentDataset.RecordCount,
+		"field_count":         currentDataset.FieldCount,
+		"missingness_overall": currentDataset.MissingRate,
+		"fileSize":            currentDataset.FileSize,
+		"mimeType":            currentDataset.MimeType,
+		"last_updated":        currentDataset.UpdatedAt.Format(time.RFC3339),
+	}
+	s.datasetCache["DatasetInfo"] = datasetInfo
 
-					// Calculate coefficient of variation (avoid division by zero and extreme values)
-					if stat.Mean != 0 && stat.Mean >= 0.001 { // Avoid very small means
-						stat.CV = stat.StdDev / stat.Mean
-						// Cap extreme CV values for display purposes
-						if stat.CV > 10.0 {
-							stat.CV = 10.0
-						}
-					}
-
-					// Set variance to standard deviation squared for compatibility
-					if statBrief.Summary.StdDev > 0 {
-						stat.Variance = statBrief.Summary.StdDev * statBrief.Summary.StdDev
-					}
-
-					// Extract distribution statistics
-					stat.Skewness = statBrief.Distribution.Skewness
-					stat.Kurtosis = statBrief.Distribution.Kurtosis
-					stat.IsNormal = statBrief.Distribution.IsNormal
-
-					// Extract quality statistics with bounds checking
-					stat.SparsityRatio = statBrief.Quality.SparsityRatio
-					// Ensure sparsity is between 0 and 1
-					if stat.SparsityRatio < 0 {
-						stat.SparsityRatio = 0
-					} else if stat.SparsityRatio > 1 {
-						stat.SparsityRatio = 1
-					}
-					stat.NoiseCoefficient = statBrief.Quality.NoiseCoefficient
-					// Ensure noise coefficient is non-negative
-					if stat.NoiseCoefficient < 0 {
-						stat.NoiseCoefficient = 0
-					}
-					stat.OutlierCount = statBrief.Quality.OutlierCount
-					// Ensure outlier count is non-negative
-					if stat.OutlierCount < 0 {
-						stat.OutlierCount = 0
-					}
-
-					// Set cardinality and unique count from categorical stats if available
-					if statBrief.Categorical != nil {
-						stat.UniqueCount = statBrief.Categorical.Cardinality
-						stat.Cardinality = statBrief.Categorical.Cardinality
-						stat.Entropy = statBrief.Categorical.Entropy
-						// Cap extreme entropy values for display
-						if stat.Entropy > 5.0 {
-							stat.Entropy = 5.0
-						}
-						stat.Mode = statBrief.Categorical.Mode
-						stat.ModeFrequency = statBrief.Categorical.ModeFrequency
-						if statBrief.Categorical.IsCategorical {
-							stat.Type = "categorical"
-						}
-					} else {
-						// For numeric fields, estimate unique count from sample size and quality
-						// This is a rough approximation - in practice, we'd compute this properly
-						stat.UniqueCount = int(float64(stat.SampleSize) * (1.0 - statBrief.Quality.SparsityRatio))
-						if stat.UniqueCount < 0 {
-							stat.UniqueCount = 0
-						}
-						stat.Cardinality = stat.UniqueCount
-					}
-				}
+	// Create field statistics from dataset metadata
+	fieldStats := make([]map[string]interface{}, 0, currentDataset.FieldCount)
+	if currentDataset.Metadata.Fields != nil && len(currentDataset.Metadata.Fields) > 0 {
+		for _, field := range currentDataset.Metadata.Fields {
+			fieldStat := map[string]interface{}{
+				"name":       field.Name,
+				"type":       string(field.DataType),
+				"sampleSize": currentDataset.RecordCount,
 			}
+			fieldStats = append(fieldStats, fieldStat)
 		}
-
-		fieldStats = append(fieldStats, stat)
-
-		// Log progress every 10 fields
-		if (i+1)%10 == 0 || i+1 == len(excelData.Headers) {
-			log.Printf("[loadDatasetInfo] Processed %d/%d fields (%d%%)", i+1, len(excelData.Headers), (i+1)*100/len(excelData.Headers))
-		}
-	}
-
-	// Calculate overall missingness rate
-	var totalMissingRate float64
-	var totalSampleSize int
-	for _, stat := range fieldStats {
-		if stat.SampleSize > 0 {
-			totalMissingRate += stat.MissingRate * float64(stat.SampleSize)
-			totalSampleSize += stat.SampleSize
-		}
-	}
-	var overallMissingness float64
-	if totalSampleSize > 0 {
-		overallMissingness = totalMissingRate / float64(totalSampleSize)
-	}
-
-	// Extract forensic scout context if available
-	var scoutData map[string]interface{}
-	if s.forensicScout != nil {
-		log.Printf("[loadDatasetInfo] Running forensic scout for industry context...")
-		if scoutResponse, err := s.forensicScout.ExtractIndustryContext(ctx); err == nil && scoutResponse != nil {
-			scoutData = map[string]interface{}{
-				"domain":     scoutResponse.Domain,
-				"context":    scoutResponse.Context,
-				"bottleneck": scoutResponse.Bottleneck,
-				"physics":    scoutResponse.Physics,
-				"map":        scoutResponse.Map,
+		log.Printf("[loadDatasetInfo] Created %d field stats from dataset metadata", len(fieldStats))
+	} else {
+		// Fallback: create basic field stats
+		for i := 1; i <= currentDataset.FieldCount; i++ {
+			fieldStat := map[string]interface{}{
+				"name":       fmt.Sprintf("field_%d", i),
+				"type":       "numeric",
+				"sampleSize": currentDataset.RecordCount,
 			}
-			log.Printf("[loadDatasetInfo] Forensic scout completed - Domain: %s", scoutResponse.Domain)
-		} else {
-			log.Printf("[loadDatasetInfo] Forensic scout failed or not available: %v", err)
+			fieldStats = append(fieldStats, fieldStat)
 		}
+		log.Printf("[loadDatasetInfo] Created %d basic field stats", len(fieldStats))
 	}
+	s.datasetCache["FieldStats"] = fieldStats
 
+	// Create sample rows from dataset metadata
+	var sampleRows []map[string]interface{}
+	if currentDataset.Metadata.SampleRows != nil && len(currentDataset.Metadata.SampleRows) > 0 {
+		sampleRows = currentDataset.Metadata.SampleRows
+		log.Printf("[loadDatasetInfo] Using %d sample rows from dataset metadata", len(sampleRows))
+	} else {
+		// No sample rows available - create empty array
+		sampleRows = make([]map[string]interface{}, 0)
+		log.Printf("[loadDatasetInfo] No sample rows available in dataset metadata")
+	}
+	s.datasetCache["SampleRows"] = sampleRows
+
+	// Variables total
+	s.datasetCache["VariablesTotal"] = currentDataset.FieldCount
+
+	// Populate dataset cache
 	s.cacheMutex.Lock()
 	defer s.cacheMutex.Unlock()
 
-	s.datasetCache = map[string]interface{}{
-		"VariablesTotal":    len(fieldStats),
-		"VariablesEligible": len(fieldStats),
-		"VariablesRejected": 0,
-		"FieldStats":        fieldStats,
-		"FieldCount":        len(fieldStats),
-		"DatasetInfo": map[string]interface{}{
-			"name":               "Dataset",
-			"missingnessOverall": overallMissingness,
-		},
-		"RunStatus":         "READY",
-		"RelationshipCount": 0,
-		"SignificantCount":  0,
-		"StageStatuses": map[string]interface{}{
-			"Profile": map[string]interface{}{
-				"Status":        "COMPLETE",
-				"ArtifactCount": len(fieldStats),
-			},
-		},
-		"ForensicScout": scoutData,
-	}
-
+	// Mark cache as loaded
 	s.cacheLoaded = true
-	s.cacheLastUpdated = time.Now()
 
-	totalDuration := time.Since(startTime)
-	log.Printf("[loadDatasetInfo] Dataset loading completed successfully in %v - Total fields: %d", totalDuration, len(fieldStats))
-
+	log.Printf("[loadDatasetInfo] Successfully loaded dataset from database: %d columns, %d rows", currentDataset.FieldCount, currentDataset.RecordCount)
+	log.Printf("[loadDatasetInfo] Dataset cache loaded successfully - APIs should now work")
 	return nil
 }
 
@@ -268,78 +149,198 @@ func (s *Server) handleFileUpload(c *gin.Context) {
 	}
 	defer file.Close()
 
-	// Validate file type (only allow Excel/CSV files)
+	// Validate file size (50MB limit)
+	const maxFileSize = 50 * 1024 * 1024 // 50MB
+	if header.Size > maxFileSize {
+		log.Printf("[handleFileUpload] FAILED - File too large: %d bytes", header.Size)
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("File size (%.1f MB) exceeds the 50MB limit", float64(header.Size)/(1024*1024))})
+		return
+	}
+
+	// Validate file type
 	filename := header.Filename
-	if !strings.HasSuffix(strings.ToLower(filename), ".xlsx") &&
-		!strings.HasSuffix(strings.ToLower(filename), ".xls") &&
-		!strings.HasSuffix(strings.ToLower(filename), ".csv") {
-		log.Printf("[handleFileUpload] FAILED - Invalid file type: %s", filename)
+	contentType := header.Header.Get("Content-Type")
+
+	// Check file extension
+	validExtensions := []string{".xlsx", ".xls", ".csv"}
+	hasValidExtension := false
+	for _, ext := range validExtensions {
+		if strings.HasSuffix(strings.ToLower(filename), ext) {
+			hasValidExtension = true
+			break
+		}
+	}
+
+	if !hasValidExtension {
+		log.Printf("[handleFileUpload] FAILED - Invalid file extension: %s", filename)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Only Excel (.xlsx, .xls) and CSV (.csv) files are allowed"})
 		return
 	}
 
-	// Create uploads directory if it doesn't exist
-	uploadDir := "uploads"
-	if err := os.MkdirAll(uploadDir, 0755); err != nil {
-		log.Printf("[handleFileUpload] FAILED - Could not create uploads directory: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create upload directory"})
-		return
+	// Validate MIME type for additional security
+	validMimeTypes := []string{
+		"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // .xlsx
+		"application/vnd.ms-excel", // .xls
+		"text/csv",
+		"application/csv",
+		"text/plain", // Some CSV files might be detected as plain text
 	}
 
-	// Generate unique filename to avoid conflicts
-	ext := filepath.Ext(filename)
-	baseName := strings.TrimSuffix(filename, ext)
-	timestamp := time.Now().Format("20060102_150405")
-	newFilename := fmt.Sprintf("%s_%s%s", baseName, timestamp, ext)
-	filepath := filepath.Join(uploadDir, newFilename)
-
-	// Save the uploaded file
-	out, err := os.Create(filepath)
-	if err != nil {
-		log.Printf("[handleFileUpload] FAILED - Could not create file: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save uploaded file"})
-		return
-	}
-	defer out.Close()
-
-	if _, err := io.Copy(out, file); err != nil {
-		log.Printf("[handleFileUpload] FAILED - Could not save file content: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file content"})
-		return
-	}
-
-	log.Printf("[handleFileUpload] File uploaded successfully: %s", filepath)
-
-	// Update the dataset file and trigger a reload
-	go func() {
-		log.Printf("[handleFileUpload] Switching to uploaded file: %s", filepath)
-
-		// Update the current dataset file
-		s.currentDatasetFile = filepath
-
-		// Clear existing caches
-		s.excelCacheMutex.Lock()
-		s.excelCacheLoaded = false
-		s.excelDataCache = nil
-		s.excelCacheMutex.Unlock()
-
-		s.cacheMutex.Lock()
-		s.cacheLoaded = false
-		s.datasetCache = make(map[string]interface{})
-		s.cacheMutex.Unlock()
-
-		// Reload with new file
-		ctx := context.Background()
-		if err := s.loadDatasetInfo(ctx); err != nil {
-			log.Printf("[handleFileUpload] Dataset reload failed: %v", err)
-		} else {
-			log.Printf("[handleFileUpload] Dataset reloaded successfully with new file")
+	isValidMimeType := false
+	for _, mimeType := range validMimeTypes {
+		if contentType == mimeType {
+			isValidMimeType = true
+			break
 		}
-	}()
+	}
+
+	if !isValidMimeType && !strings.Contains(contentType, "excel") && !strings.Contains(contentType, "csv") {
+		log.Printf("[handleFileUpload] WARNING - Unexpected MIME type: %s for file: %s", contentType, filename)
+		// Don't reject yet, but log the warning - some systems might not detect MIME types correctly
+	}
+
+	// Get user ID from context (for now, use default user)
+	userID := core.ID("550e8400-e29b-41d4-a716-446655440000") // Default user for single-user mode
+
+	// Get workspace ID from form data, default to user's default workspace
+	workspaceIDStr := c.PostForm("workspace_id")
+	workspaceID := core.ID(workspaceIDStr)
+
+	// If no workspace specified, ensure user has a default workspace and use it
+	if workspaceID == "" {
+		if s.workspaceRepository != nil {
+			defaultWorkspace, err := s.ensureDefaultWorkspace(c.Request.Context(), userID)
+			if err != nil {
+				log.Printf("[handleFileUpload] Failed to ensure default workspace: %v", err)
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to setup workspace"})
+				return
+			}
+			workspaceID = defaultWorkspace.ID
+		} else {
+			// Fallback if workspace repository not available
+			workspaceID = core.ID("550e8400-e29b-41d4-a716-446655440001")
+		}
+	}
+
+	// Create upload object for processor
+	upload := &dataset.DatasetUpload{
+		UserID:      userID,
+		WorkspaceID: workspaceID,
+		Filename:    filename,
+		File:        file,
+		MimeType:    header.Header.Get("Content-Type"),
+	}
+
+	// Process the dataset using the new processor
+	ctx := context.Background()
+	datasetID, err := s.datasetProcessor.ProcessUpload(ctx, upload)
+	if err != nil {
+		log.Printf("[handleFileUpload] FAILED - Dataset processing failed: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to process dataset: %v", err)})
+		return
+	}
+
+	// Return success response with dataset ID
+	c.JSON(http.StatusOK, gin.H{
+		"message":      "Dataset uploaded and processing started",
+		"dataset_id":   datasetID,
+		"dataset_name": "", // Will be available after processing completes
+		"workspace_id": workspaceID,
+	})
+}
+
+// handleMergeDatasets handles dataset merging requests
+func (s *Server) handleMergeDatasets(c *gin.Context) {
+	if s.datasetProcessor == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Dataset processor not available"})
+		return
+	}
+
+	var req struct {
+		DatasetIDs    []string `json:"dataset_ids" binding:"required"`
+		OutputName    string   `json:"output_name" binding:"required"`
+		WorkspaceID   string   `json:"workspace_id"`
+		MergeStrategy string   `json:"merge_strategy"`
+		JoinType      string   `json:"join_type"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request format"})
+		return
+	}
+
+	if len(req.DatasetIDs) < 2 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "At least 2 datasets required for merging"})
+		return
+	}
+
+	// Convert string IDs to core.ID
+	sourceIDs := make([]core.ID, len(req.DatasetIDs))
+	for i, idStr := range req.DatasetIDs {
+		sourceIDs[i] = core.ID(idStr)
+	}
+
+	// Default workspace if not specified
+	workspaceID := core.ID(req.WorkspaceID)
+	if workspaceID == "" {
+		userID := core.ID("550e8400-e29b-41d4-a716-446655440000") // Default user
+		if s.workspaceRepository != nil {
+			if defaultWorkspace, err := s.ensureDefaultWorkspace(c.Request.Context(), userID); err == nil {
+				workspaceID = defaultWorkspace.ID
+			}
+		}
+	}
+
+	// Set default merge configuration
+	config := &processor.MergeConfig{
+		Strategy:       processor.HybridMerge,
+		JoinType:       processor.UnionJoin,
+		ValidateSchema: true,
+	}
+
+	// Override based on request
+	if req.MergeStrategy == "streaming" {
+		config.Strategy = processor.StreamingMerge
+	}
+	if req.JoinType == "inner" {
+		config.JoinType = processor.InnerJoin
+	} else if req.JoinType == "left" {
+		config.JoinType = processor.LeftJoin
+	}
+
+	// Start merge operation
+	ctx := context.Background()
+	mergeResult, err := s.datasetProcessor.Merger.MergeDatasets(ctx, sourceIDs, req.OutputName, config)
+	if err != nil {
+		log.Printf("[handleMergeDatasets] Merge failed: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Merge operation failed: %v", err)})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message":  "File uploaded successfully. Dataset is reloading...",
-		"filename": newFilename,
-		"filepath": filepath,
+		"message":      "Merge operation completed successfully",
+		"output_path":  mergeResult.OutputPath,
+		"status":       "completed",
+		"row_count":    mergeResult.RowCount,
+		"column_count": mergeResult.ColumnCount,
+		"dataset_ids":  req.DatasetIDs,
+	})
+}
+
+// handleMergeStatus checks the status of a merge operation
+func (s *Server) handleMergeStatus(c *gin.Context) {
+	mergeID := c.Param("id")
+	if mergeID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Merge ID is required"})
+		return
+	}
+
+	// For now, return a placeholder status
+	// TODO: Implement actual merge status tracking
+	c.JSON(http.StatusOK, gin.H{
+		"merge_id": mergeID,
+		"status":   "completed", // Assume completed for now
+		"progress": 100,
+		"message":  "Merge operation completed successfully",
 	})
 }

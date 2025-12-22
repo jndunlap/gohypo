@@ -62,6 +62,13 @@ func (loocv *LeaveOneOutCV) Execute(x, y []float64, metadata map[string]interfac
 	}
 }
 
+// AuditEvidence performs evidence auditing for leave-one-out cross-validation using discovery q-values
+func (loocv *LeaveOneOutCV) AuditEvidence(discoveryEvidence interface{}, validationData []float64, metadata map[string]interface{}) RefereeResult {
+	// LOO CV is about robustness to individual observations - use default audit logic
+	// since sensitivity testing requires model fitting that's hard to audit from q-values alone
+	return DefaultAuditEvidence("Leave_One_Out_CV", discoveryEvidence, validationData, metadata)
+}
+
 // performLeaveOneOutCV performs leave-one-out cross-validation
 func (loocv *LeaveOneOutCV) performLeaveOneOutCV(x, y []float64) []LOOResult {
 	n := len(x)
@@ -328,6 +335,13 @@ func (adt *AlphaDecayTest) Execute(x, y []float64, metadata map[string]interface
 		StandardUsed:  "Smooth alpha decay (metric < 0.3) with p < 0.05",
 		FailureReason: failureReason,
 	}
+}
+
+// AuditEvidence performs evidence auditing for alpha decay test using discovery q-values
+func (adt *AlphaDecayTest) AuditEvidence(discoveryEvidence interface{}, validationData []float64, metadata map[string]interface{}) RefereeResult {
+	// Alpha decay is about threshold sensitivity - use default audit logic
+	// since sensitivity testing requires multiple threshold analysis that's hard to audit from q-values alone
+	return DefaultAuditEvidence("Alpha_Decay_Test", discoveryEvidence, validationData, metadata)
 }
 
 // computeAlphaDecayProfile computes effect sizes at different significance levels

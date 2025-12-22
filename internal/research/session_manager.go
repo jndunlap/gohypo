@@ -35,6 +35,22 @@ func (sm *SessionManager) CreateSession(ctx context.Context, metadata map[string
 	return sm.sessionRepo.CreateSession(ctx, user.ID, metadata)
 }
 
+// CreateSessionInWorkspace creates a new research session in a specific workspace
+func (sm *SessionManager) CreateSessionInWorkspace(ctx context.Context, workspaceID string, metadata map[string]interface{}) (*models.ResearchSession, error) {
+	user, err := sm.userRepo.GetOrCreateDefaultUser(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get default user: %w", err)
+	}
+
+	// Add workspace ID to metadata
+	if metadata == nil {
+		metadata = make(map[string]interface{})
+	}
+	metadata["workspace_id"] = workspaceID
+
+	return sm.sessionRepo.CreateSession(ctx, user.ID, metadata)
+}
+
 // GetSession retrieves a session by ID for the default user
 func (sm *SessionManager) GetSession(ctx context.Context, sessionID string) (*models.ResearchSession, error) {
 	user, err := sm.userRepo.GetOrCreateDefaultUser(ctx)
@@ -48,6 +64,24 @@ func (sm *SessionManager) GetSession(ctx context.Context, sessionID string) (*mo
 	}
 
 	return sm.sessionRepo.GetSession(ctx, user.ID, sessionUUID)
+}
+
+// IsSessionActive checks if a session exists and is not in a terminal state
+func (sm *SessionManager) IsSessionActive(sessionID string) bool {
+	ctx := context.Background() // Use background context for validation
+
+	session, err := sm.GetSession(ctx, sessionID)
+	if err != nil {
+		return false // Session doesn't exist or error occurred
+	}
+
+	// Check if session is in a terminal state
+	switch session.State {
+	case models.SessionStateComplete, models.SessionStateError:
+		return false
+	default:
+		return true
+	}
 }
 
 // UpdateSessionProgress updates progress for a session
@@ -156,5 +190,3 @@ func (sm *SessionManager) CleanupOldSessions(maxAge time.Duration) int {
 	// TODO: Implement database-based cleanup if needed
 	return 0
 }
-
-

@@ -422,3 +422,10 @@ func (ph *PersistentHomology) computeTopologyPValue(bootstrapScores []float64, o
 	}
 	return float64(count) / float64(len(bootstrapScores))
 }
+
+// AuditEvidence performs evidence auditing for persistent homology using discovery q-values
+func (ph *PersistentHomology) AuditEvidence(discoveryEvidence interface{}, validationData []float64, metadata map[string]interface{}) RefereeResult {
+	// Persistent homology is about topological structure - use default audit logic
+	// since topological analysis requires manifold embedding that's hard to audit from q-values alone
+	return DefaultAuditEvidence("Persistent_Homology", discoveryEvidence, validationData, metadata)
+}

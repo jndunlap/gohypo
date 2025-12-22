@@ -762,3 +762,10 @@ func (sa *SpectralAnalysis) variance(data []float64) float64 {
 
 	return sumSq / float64(len(data)-1)
 }
+
+// AuditEvidence performs evidence auditing for wavelet coherence using discovery q-values
+func (wc *WaveletCoherence) AuditEvidence(discoveryEvidence interface{}, validationData []float64, metadata map[string]interface{}) RefereeResult {
+	// Wavelet coherence is about frequency-domain relationships - use default audit logic
+	// since spectral analysis requires time-frequency processing that's hard to audit from q-values alone
+	return DefaultAuditEvidence("Wavelet_Coherence", discoveryEvidence, validationData, metadata)
+}

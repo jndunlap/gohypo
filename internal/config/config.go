@@ -10,11 +10,11 @@ import (
 
 // Config represents the complete application configuration
 type Config struct {
-	Database DatabaseConfig `validate:"required"`
-	AI       AIConfig       `validate:"required"`
-	Server   ServerConfig   `validate:"required"`
-	Paths    PathConfig     `validate:"required"`
-	Data     DataConfig     `validate:"required"`
+	Database  DatabaseConfig `validate:"required"`
+	AI        AIConfig       `validate:"required"`
+	Server    ServerConfig   `validate:"required"`
+	Paths     PathConfig     `validate:"required"`
+	Data      DataConfig     `validate:"required"`
 	Profiling ProfilingConfig
 }
 
@@ -41,7 +41,7 @@ type AIConfig struct {
 
 // ServerConfig holds web server settings
 type ServerConfig struct {
-	Port   string `validate:"required"`
+	Port    string `validate:"required"`
 	GinMode string
 }
 
@@ -133,14 +133,14 @@ func loadAIConfig() (*AIConfig, error) {
 
 	model := os.Getenv("LLM_MODEL")
 	if model == "" {
-		model = "gpt-4-turbo-preview" // default
+		model = "gpt-5.2turbo-preview" // default
 	}
 
 	return &AIConfig{
 		OpenAIKey:     openaiKey,
 		OpenAIModel:   model,
 		SystemContext: "You are a statistical research assistant",
-		MaxTokens:     getEnvIntOrDefault("MAX_TOKENS", 80000),
+		MaxTokens:     getEnvIntOrDefault("MAX_TOKENS", 4000), // Reasonable default for gpt-5.2 (8192 context limit)
 		Temperature:   getEnvFloatOrDefault("TEMPERATURE", 1.0),
 		PromptsDir:    promptsDir,
 	}, nil
@@ -229,4 +229,3 @@ func getEnvDurationOrDefault(key string, defaultValue time.Duration) time.Durati
 	}
 	return defaultValue
 }
-

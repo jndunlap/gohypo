@@ -42,6 +42,29 @@ func NewExcelMatrixResolverAdapter(config ExcelConfig) *ExcelMatrixResolverAdapt
 	}
 }
 
+// addSyntheticEntityColumn adds a synthetic entity ID column when no natural entity column exists
+func (a *ExcelMatrixResolverAdapter) addSyntheticEntityColumn(data *ExcelData) {
+	// Add synthetic entity column to headers
+	data.Headers = append([]string{"synthetic_entity_id"}, data.Headers...)
+
+	// Add synthetic entity IDs to each row
+	for i := range data.Rows {
+		// Create a unique entity ID for each row (row index + 1)
+		entityID := fmt.Sprintf("entity_%d", i+1)
+		newRow := make(map[string]string)
+		newRow["synthetic_entity_id"] = entityID
+
+		// Copy existing data
+		for k, v := range data.Rows[i] {
+			newRow[k] = v
+		}
+
+		data.Rows[i] = newRow
+	}
+
+	log.Printf("[ExcelMatrixResolver] Added synthetic entity column with %d entities", len(data.Rows))
+}
+
 // NewExcelMatrixResolverAdapterWithData creates a new Excel-based matrix resolver with pre-loaded data
 func NewExcelMatrixResolverAdapterWithData(config ExcelConfig, preloadedData *ExcelData) *ExcelMatrixResolverAdapter {
 	coercerInstance := coercer.NewTypeCoercer(config.CoercionConfig)
@@ -99,7 +122,10 @@ func (a *ExcelMatrixResolverAdapter) ResolveMatrix(ctx context.Context, req port
 	// Step 2: Auto-detect entity column
 	entityColumn, err := a.reader.DetectEntityColumn(rawData)
 	if err != nil {
-		return nil, fmt.Errorf("failed to detect entity column: %w", err)
+		// If no entity column can be detected, add a synthetic one
+		log.Printf("[ExcelMatrixResolver] No entity column detected, adding synthetic entity column")
+		entityColumn = "synthetic_entity_id"
+		a.addSyntheticEntityColumn(rawData)
 	}
 	a.entityColumn = entityColumn
 

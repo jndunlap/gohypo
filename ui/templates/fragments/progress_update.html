@@ -1,0 +1,17 @@
+{{define "progress_update"}}
+<div id="research-progress" class="mb-4 px-6" hx-swap-oob="outerHTML:#research-progress">
+    <div class="bg-white rounded-lg border p-4">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-sm font-medium text-gray-700">{{.Phase}}</span>
+            <span class="text-sm text-gray-500">{{printf "%.1f" .Progress}}%</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2 mb-2">
+            <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: {{.Progress}}%"></div>
+        </div>
+        <div class="text-xs text-gray-600">{{.Message}}</div>
+        {{if .ActiveHypotheses}}
+        <div class="text-xs text-gray-500 mt-1">{{.ActiveHypotheses}} hypotheses active</div>
+        {{end}}
+    </div>
+</div>
+{{end}}

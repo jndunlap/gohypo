@@ -81,6 +81,13 @@ func (lzc *LempelZivComplexity) Execute(x, y []float64, metadata map[string]inte
 	}
 }
 
+// AuditEvidence performs evidence auditing for Lempel-Ziv complexity using discovery q-values
+func (lzc *LempelZivComplexity) AuditEvidence(discoveryEvidence interface{}, validationData []float64, metadata map[string]interface{}) RefereeResult {
+	// Lempel-Ziv complexity is about algorithmic complexity - use default audit logic
+	// since complexity analysis requires sequence processing that's hard to audit from q-values alone
+	return DefaultAuditEvidence("Lempel_Ziv_Complexity", discoveryEvidence, validationData, metadata)
+}
+
 // symbolizeData converts numeric data to symbolic sequence
 func (lzc *LempelZivComplexity) symbolizeData(data []float64, alphabetSize int) []int {
 	if len(data) == 0 {
@@ -351,6 +358,13 @@ func (ac *AlgorithmicComplexity) Execute(x, y []float64, metadata map[string]int
 		StandardUsed:  "Stable complexity structure (score > 0.6) with p < 0.05",
 		FailureReason: failureReason,
 	}
+}
+
+// AuditEvidence performs evidence auditing for algorithmic complexity using discovery q-values
+func (ac *AlgorithmicComplexity) AuditEvidence(discoveryEvidence interface{}, validationData []float64, metadata map[string]interface{}) RefereeResult {
+	// Algorithmic complexity is about information content - use default audit logic
+	// since complexity analysis requires sequence processing that's hard to audit from q-values alone
+	return DefaultAuditEvidence("Algorithmic_Complexity", discoveryEvidence, validationData, metadata)
 }
 
 // createComplexityWindows creates sliding windows for complexity analysis

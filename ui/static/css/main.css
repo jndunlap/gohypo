@@ -1,5 +1,9 @@
 /* GoHypo Neo-Brutalist Laboratory Design System */
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* ===== MONOCHROMATIC MATTE PALETTE ===== */
 :root {
   /* Paper and Ink Philosophy */

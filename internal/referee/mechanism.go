@@ -519,3 +519,59 @@ func (fft *FunctionalFormTest) solveLinearSystem(A [][]float64, b []float64) []f
 
 	return x
 }
+
+// AuditEvidence performs evidence auditing for monotonicity mechanism using discovery q-values
+func (mt *MonotonicityTest) AuditEvidence(discoveryEvidence interface{}, validationData []float64, metadata map[string]interface{}) RefereeResult {
+	// Extract discovery evidence
+	var evidence DiscoveryEvidence
+	if ev, ok := discoveryEvidence.(DiscoveryEvidence); ok {
+		evidence = ev
+	} else {
+		return RefereeResult{
+			GateName:      "Monotonicity_Stress_Test",
+			Passed:        false,
+			FailureReason: "Invalid discovery evidence format",
+		}
+	}
+
+	// Set defaults
+	if mt.MaxSignFlips == 0 {
+		mt.MaxSignFlips = MECHANISM_SIGN_FLIPS_MAX
+	}
+	if mt.SpearmanMinimum == 0 {
+		mt.SpearmanMinimum = SPEARMAN_RHO_MIN
+	}
+
+	// Convert q-value to E-value for mechanism validation
+	eValue := 1.0 / evidence.QValue
+
+	// Apply mechanism specificity - monotonicity tests are good for causal mechanism
+	if evidence.TestType == "correlation_spearman" {
+		eValue *= 1.1 // Slight bonus for monotonic relationship evidence
+	}
+
+	// Mechanism tests are conservative by nature
+	eValue *= 0.9
+
+	// For mechanism validation, we require strong evidence
+	passed := evidence.QValue <= 0.001 // Very strict for mechanism validation
+
+	failureReason := ""
+	if !passed {
+		if evidence.QValue >= 0.1 {
+			failureReason = fmt.Sprintf("NO MONOTONIC MECHANISM: Relationship shows no monotonic pattern after FDR correction (q=%.4f). Causal mechanism may be non-monotonic or relationship may be spurious.", evidence.QValue)
+		} else {
+			failureReason = fmt.Sprintf("WEAK MECHANISM EVIDENCE: Some monotonic relationship detected but insufficient strength for causal mechanism validation (q=%.4f). May be weak monotonicity or noisy data.", evidence.QValue)
+		}
+	}
+
+	return RefereeResult{
+		GateName:      "Monotonicity_Stress_Test",
+		Passed:        passed,
+		Statistic:     eValue,
+		PValue:        evidence.QValue,
+		EValue:        eValue,
+		StandardUsed:  fmt.Sprintf("Causal mechanism audit (q ≤ 0.001) with monotonicity E-value calibration"),
+		FailureReason: failureReason,
+	}
+}

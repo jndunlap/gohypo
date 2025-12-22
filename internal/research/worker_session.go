@@ -9,7 +9,7 @@ import (
 
 // StartWorkerPool starts a pool of workers for handling research requests
 func (rw *ResearchWorker) StartWorkerPool(numWorkers int) {
-	log.Printf("[ResearchWorker] 🚀 Starting worker pool with %d workers", numWorkers)
+	rw.logger.Info("Starting worker pool with %d workers", numWorkers)
 	for i := 0; i < numWorkers; i++ {
 		go rw.workerLoop(i)
 	}
@@ -17,7 +17,7 @@ func (rw *ResearchWorker) StartWorkerPool(numWorkers int) {
 
 // workerLoop runs the worker event loop with timeout handling and session cleanup
 func (rw *ResearchWorker) workerLoop(workerID int) {
-	log.Printf("[ResearchWorker] 👷 Worker %d started", workerID)
+	rw.logger.Debug("Worker %d started", workerID)
 
 	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()

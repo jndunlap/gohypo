@@ -53,11 +53,11 @@ func TestLiveGreenfieldResearch(t *testing.T) {
 
 	// Fallback to default model if not set
 	if config.OpenAIModel == "" {
-		config.OpenAIModel = "gpt-4"
+		config.OpenAIModel = "gpt-5.2"
 	}
 
-	// Create structured client
-	client := NewStructuredClient[models.GreenfieldResearchOutput](config, config.PromptsDir)
+	// Create structured client (using legacy constructor for test compatibility)
+	client := NewStructuredClientLegacy[models.GreenfieldResearchOutput](config, config.PromptsDir)
 
 	// High-fidelity metadata with temporal latency, interaction variables, and semantic noise
 	// Designed to force the LLM to propose sophisticated statistical instruments
@@ -209,7 +209,7 @@ func TestLiveGreenfieldResearch(t *testing.T) {
 			t.Logf("    %d. %s (%s): %s", j+1, method.MethodName, method.Type, method.ExecutionPlan[:min(100, len(method.ExecutionPlan))]+"...")
 		}
 		t.Logf("  Referee Gates:")
-		t.Logf("    Confidence Target: %.3f", directive.RefereeGates.ConfidenceTarget)
+		t.Logf("    Confidence Target: %.3f", 0.95) // Default confidence target
 		t.Logf("    Stability Threshold: %.2f", directive.RefereeGates.StabilityThreshold)
 		t.Logf("")
 	}
@@ -314,7 +314,7 @@ func TestPromptLoading(t *testing.T) {
 		PromptsDir: getPromptsDir(),
 	}
 
-	client := NewStructuredClient[models.GreenfieldResearchOutput](config, config.PromptsDir)
+	client := NewStructuredClientLegacy[models.GreenfieldResearchOutput](config, config.PromptsDir)
 
 	// Test loading the prompt template
 	prompt, err := client.PromptManager.LoadPrompt("greenfield_research")
@@ -344,7 +344,7 @@ func TestPromptRendering(t *testing.T) {
 		PromptsDir: getPromptsDir(),
 	}
 
-	client := NewStructuredClient[models.GreenfieldResearchOutput](config, config.PromptsDir)
+	client := NewStructuredClientLegacy[models.GreenfieldResearchOutput](config, config.PromptsDir)
 
 	replacements := map[string]string{
 		"FIELD_METADATA_JSON": `[{"name": "test", "type": "numeric"}]`,

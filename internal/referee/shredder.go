@@ -129,3 +129,65 @@ func (s *Shredder) pearsonCorrelation(x, y []float64) float64 {
 
 	return result
 }
+
+// AuditEvidence performs evidence auditing using discovery q-values instead of re-running permutation tests
+func (s *Shredder) AuditEvidence(discoveryEvidence interface{}, validationData []float64, metadata map[string]interface{}) RefereeResult {
+	// Extract discovery evidence
+	var evidence DiscoveryEvidence
+	if ev, ok := discoveryEvidence.(DiscoveryEvidence); ok {
+		evidence = ev
+	} else {
+		return RefereeResult{
+			GateName:      "Permutation_Shredder",
+			Passed:        false,
+			FailureReason: "Invalid discovery evidence format",
+		}
+	}
+
+	// Set defaults
+	if s.Iterations == 0 {
+		s.Iterations = SHREDDER_ITERATIONS
+	}
+	if s.Alpha == 0 {
+		s.Alpha = SHREDDER_P_ALPHA
+	}
+
+	// Convert q-value to E-value with FDR awareness
+	// Since q-values are already FDR-corrected, we use them directly
+	eValue := 1.0 / evidence.QValue
+
+	// Apply FDR awareness - q-values are already corrected, so be more conservative
+	if evidence.QValue < 0.01 {
+		eValue *= 0.8 // Slightly conservative for strong signals
+	}
+
+	// Apply sample size correction
+	if evidence.SampleSize < 100 {
+		eValue *= 0.9 // More conservative for small samples
+	}
+
+	// Check if q-value meets the standard (equivalent to p < 0.001 for uncorrected data)
+	passed := evidence.QValue <= s.Alpha
+
+	failureReason := ""
+	if !passed {
+		if evidence.QValue >= 0.5 {
+			failureReason = fmt.Sprintf("CRITICAL: No statistical relationship detected (q=%.4f). The FDR-corrected evidence shows completely random behavior - hypothesis is not supported by evidence. Expected strong causal signal for valid hypothesis.", evidence.QValue)
+		} else if evidence.QValue >= 0.05 {
+			failureReason = fmt.Sprintf("WEAK SIGNAL: Hypothesis shows some relationship but lacks statistical rigor after FDR correction (q=%.4f). May be due to noise, small sample, or weak effect. Need q<0.001 for causal confidence.", evidence.QValue)
+		} else {
+			failureReason = fmt.Sprintf("INSUFFICIENT PRECISION: Statistical test passed but q=%.4f doesn't meet PhD standard of q<0.001 after FDR correction. Hypothesis may be true but requires more data or stronger effect size.", evidence.QValue)
+		}
+	}
+
+	return RefereeResult{
+		GateName:  "Permutation_Shredder",
+		Passed:    passed,
+		Statistic: eValue,          // Use E-value as statistic for auditing
+		PValue:    evidence.QValue, // Report q-value as p-value for compatibility
+		EValue:    eValue,
+		StandardUsed: fmt.Sprintf("FDR-corrected evidence audit (q ≤ %.3f) with E-value calibration",
+			s.Alpha),
+		FailureReason: failureReason,
+	}
+}

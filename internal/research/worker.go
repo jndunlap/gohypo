@@ -6,9 +6,13 @@ import (
 	"log"
 	"time"
 
+	"gohypo/ai"
 	"gohypo/app"
 	"gohypo/domain/greenfield"
+	"gohypo/internal"
+	"gohypo/internal/analysis"
 	"gohypo/internal/api"
+	refereePkg "gohypo/internal/referee"
 	"gohypo/internal/testkit"
 	"gohypo/models"
 	"gohypo/ports"
@@ -20,17 +24,29 @@ type statsSweepRunner interface {
 
 // ResearchWorker handles asynchronous research processing
 type ResearchWorker struct {
-	sessionMgr     *SessionManager
-	storage        *ResearchStorage
-	promptRepo     interface{}                  // Prompt repository for saving prompts
-	greenfieldPort ports.GreenfieldResearchPort // Port interface for generating research directives
-	statsSweepSvc  statsSweepRunner             // Stats sweep service
-	testkit        *testkit.TestKit             // TestKit for matrix bundle creation
-	sseHub         interface{}                  // SSE hub for real-time updates
+	sessionMgr      *SessionManager
+	storage         *ResearchStorage
+	promptRepo      interface{}                  // Prompt repository for saving prompts
+	greenfieldPort  ports.GreenfieldResearchPort // Port interface for generating research directives
+	statsSweepSvc   statsSweepRunner             // Stats sweep service
+	testkit         *testkit.TestKit             // TestKit for matrix bundle creation
+	sseHub          interface{}                  // SSE hub for real-time updates
+	logger          *internal.Logger             // Logger for controlled verbosity
+	evalueValidator *EValueValidator             // E-value based validator
+	dataPartitioner *analysis.DataPartitioner    // Sample splitting for rigor
+
+	// New AI and validation components
+	uiBroadcaster      *ResearchUIBroadcaster      // HTML fragment broadcaster
+	hypothesisAnalyzer *ai.HypothesisAnalysisAgent // Hypothesis analysis agent
+	validationEngine   interface{}                 // Validation engine (placeholder)
+	dynamicSelector    interface{}                 // Dynamic test selector (placeholder)
+
+	// Validated hypothesis summarizer for feedback learning
+	hypothesisSummarizer *app.ValidatedHypothesisSummarizer // Summarizes validated hypotheses for prompt feedback
 }
 
 // NewResearchWorker creates a new research worker
-func NewResearchWorker(sessionMgr *SessionManager, storage *ResearchStorage, promptRepo interface{}, greenfieldSvc interface{}, llmConfig *models.AIConfig, statsSweepSvc statsSweepRunner, kitAny interface{}, sseHub interface{}) *ResearchWorker {
+func NewResearchWorker(sessionMgr *SessionManager, storage *ResearchStorage, promptRepo interface{}, greenfieldSvc interface{}, llmConfig *models.AIConfig, statsSweepSvc statsSweepRunner, kitAny interface{}, sseHub interface{}, uiBroadcaster *ResearchUIBroadcaster, hypothesisAnalyzer *ai.HypothesisAnalysisAgent, validationEngine interface{}, dynamicSelector interface{}, hypothesisRepo ports.HypothesisRepository) *ResearchWorker {
 	// Extract the port from the greenfield service
 	var greenfieldPort ports.GreenfieldResearchPort
 	if gs, ok := greenfieldSvc.(*app.GreenfieldService); ok {
@@ -46,21 +62,37 @@ func NewResearchWorker(sessionMgr *SessionManager, storage *ResearchStorage, pro
 		kit = tk
 	}
 
+	// Initialize statistical rigor components
+	evalueCalibrator := analysis.NewEValueCalibrator()
+	evalueValidator := NewEValueValidator(evalueCalibrator)
+	dataPartitioner := analysis.NewDataPartitioner()
+
+	// Initialize hypothesis summarizer for feedback learning
+	hypothesisSummarizer := app.NewValidatedHypothesisSummarizer(hypothesisRepo)
+
 	return &ResearchWorker{
-		sessionMgr:     sessionMgr,
-		storage:        storage,
-		promptRepo:     promptRepo,
-		greenfieldPort: greenfieldPort,
-		statsSweepSvc:  statsSweepSvc,
-		testkit:        kit,
+		sessionMgr:            sessionMgr,
+		storage:               storage,
+		promptRepo:            promptRepo,
+		greenfieldPort:        greenfieldPort,
+		statsSweepSvc:         statsSweepSvc,
+		testkit:               kit,
+		sseHub:                sseHub,
+		logger:                internal.NewDefaultLogger(),
+		evalueValidator:       evalueValidator,
+		dataPartitioner:       dataPartitioner,
+		uiBroadcaster:         uiBroadcaster,
+		hypothesisAnalyzer:    hypothesisAnalyzer,
+		validationEngine:      validationEngine,
+		dynamicSelector:       dynamicSelector,
+		hypothesisSummarizer:  hypothesisSummarizer,
 	}
 }
 
 // ProcessResearch initiates and manages the research generation workflow
 func (rw *ResearchWorker) ProcessResearch(ctx context.Context, sessionID string, fieldMetadata []greenfield.FieldMetadata, statsArtifacts []map[string]interface{}, sseHub interface{}) {
 	sessionStart := time.Now()
-	log.Printf("[ResearchWorker] 🚀 STARTING research process for session %s", sessionID)
-	log.Printf("[ResearchWorker] 📊 Session context: %d fields, %d existing artifacts", len(fieldMetadata), len(statsArtifacts))
+	rw.logger.Info("Starting research process for session %s (%d fields, %d artifacts)", sessionID, len(fieldMetadata), len(statsArtifacts))
 
 	// Initialize session-level variables
 	var totalHypotheses int
@@ -68,18 +100,10 @@ func (rw *ResearchWorker) ProcessResearch(ctx context.Context, sessionID string,
 
 	defer func() {
 		sessionDuration := time.Since(sessionStart)
-		// Generate comprehensive session summary
-		log.Printf("[ResearchWorker] 🏁 SESSION COMPLETE: %s", sessionID)
-		log.Printf("[ResearchWorker] ⏱️ Total duration: %.2fs", sessionDuration.Seconds())
-		log.Printf("[ResearchWorker] 📊 Hypotheses processed: %d total", totalHypotheses)
-		if successCount > 0 || failureCount > 0 {
-			log.Printf("[ResearchWorker] ✅ Validation results: %d passed, %d failed", successCount, failureCount)
+		rw.logger.Info("Session %s completed: %d hypotheses in %.2fs", sessionID, totalHypotheses, sessionDuration.Seconds())
+		if rw.logger.GetLevel() >= internal.LogLevelDebug && (successCount > 0 || failureCount > 0) {
+			rw.logger.Debug("Validation results: %d passed, %d failed", successCount, failureCount)
 		}
-		if totalHypotheses > 0 {
-			log.Printf("[ResearchWorker] 📈 Average hypothesis processing time: %.2fs",
-				sessionDuration.Seconds()/float64(totalHypotheses))
-		}
-		log.Printf("[ResearchWorker] 💾 All results saved to persistent storage")
 	}()
 
 	// Emit Layer 0 start event
@@ -98,13 +122,10 @@ func (rw *ResearchWorker) ProcessResearch(ctx context.Context, sessionID string,
 
 	// Update session state to analyzing
 	phaseStart := time.Now()
-	log.Printf("[ResearchWorker] 📊 Phase 1/4: Analysis Setup - Updating session %s to analyzing state", sessionID)
 	if err := rw.sessionMgr.SetSessionState(ctx, sessionID, models.SessionStateAnalyzing); err != nil {
-		log.Printf("[ResearchWorker] ❌ CRITICAL ERROR: Failed to update session state to analyzing: %v", err)
-		log.Printf("[ResearchWorker] 💥 Session %s terminated due to state management failure", sessionID)
+		log.Printf("[ResearchWorker] ERROR: Failed to start analysis for session %s: %v", sessionID, err)
 		return
 	}
-	log.Printf("[ResearchWorker] ✅ Session state updated in %.3fs", time.Since(phaseStart).Seconds())
 
 	// Run stats sweep if no statistical artifacts are available
 	phaseStart = time.Now()
@@ -170,7 +191,63 @@ func (rw *ResearchWorker) ProcessResearch(ctx context.Context, sessionID string,
 		return
 	} else {
 		log.Printf("[ResearchWorker] ✅ LLM hypothesis generation completed in %.2fs", phaseDuration.Seconds())
-		log.Printf("[ResearchWorker] 🎯 Generated %d research hypotheses ready for validation", len(hypotheses.ResearchDirectives))
+		log.Printf("[ResearchWorker] Generated %d hypotheses for validation", len(hypotheses.ResearchDirectives))
+	}
+
+	// NEW: Phase 3.5 - AI Hypothesis Analysis
+	if rw.hypothesisAnalyzer != nil {
+		log.Printf("[ResearchWorker] 🧠 Phase 3.5/4: AI Hypothesis Analysis - Analyzing %d hypotheses for risk profiles", len(hypotheses.ResearchDirectives))
+
+		analysisStart := time.Now()
+		riskProfiles := make(map[string]interface{}) // Store risk profiles by hypothesis ID
+
+		for _, directive := range hypotheses.ResearchDirectives {
+			// Create data topology snapshot from available metadata
+			dataSnapshot := ai.DataTopologySnapshot{
+				SampleSize:         1000,       // TODO: Get actual sample size from fieldMetadata
+				SparsityRatio:      0.05,       // TODO: Calculate from actual data
+				CardinalityCause:   50,         // TODO: Get from fieldMetadata
+				CardinalityEffect:  50,         // TODO: Get from fieldMetadata
+				SkewnessCause:      0.0,        // TODO: Calculate from actual data
+				SkewnessEffect:     0.0,        // TODO: Calculate from actual data
+				TemporalCoverage:   1.0,        // TODO: Calculate from actual data
+				ConfoundingSignals: []string{}, // TODO: Analyze from fieldMetadata
+				AvailableFields:    make([]string, len(fieldMetadata)),
+			}
+
+			for i, field := range fieldMetadata {
+				dataSnapshot.AvailableFields[i] = field.Name
+			}
+
+			// Analyze hypothesis risk
+			riskProfile, err := rw.hypothesisAnalyzer.AnalyzeHypothesis(ctx, directive, dataSnapshot)
+			if err != nil {
+				log.Printf("[ResearchWorker] ⚠️ Failed to analyze hypothesis %s: %v", directive.ID, err)
+				continue
+			}
+
+			riskProfiles[directive.ID] = riskProfile
+
+			// Broadcast risk assessment to UI
+			if rw.uiBroadcaster != nil {
+				if err := rw.uiBroadcaster.BroadcastHypothesisRiskAssessed(sessionID, directive.ID, riskProfile); err != nil {
+					log.Printf("[ResearchWorker] ⚠️ Failed to broadcast risk assessment for hypothesis %s: %v", directive.ID, err)
+				}
+			}
+
+			log.Printf("[ResearchWorker] 📊 Hypothesis %s analyzed: Risk=%d, Tests=%d-%d, Feasibility=%.1f%%",
+				directive.ID, int(riskProfile.RiskLevel), riskProfile.RequiredTestCount.Min,
+				riskProfile.RequiredTestCount.Max, riskProfile.FeasibilityScore*100)
+		}
+
+		analysisDuration := time.Since(analysisStart)
+		log.Printf("[ResearchWorker] ✅ AI hypothesis analysis completed in %.2fs for %d hypotheses",
+			analysisDuration.Seconds(), len(riskProfiles))
+
+		// Store risk profiles for use in validation phase
+		// TODO: Pass riskProfiles to validation phase
+	} else {
+		log.Printf("[ResearchWorker] ⚠️ Hypothesis analyzer not available, skipping AI risk assessment")
 	}
 
 	// Emit Layer 2 start event
@@ -180,7 +257,7 @@ func (rw *ResearchWorker) ProcessResearch(ctx context.Context, sessionID string,
 			EventType: "layer2_start",
 			Progress:  50.0,
 			Data: map[string]interface{}{
-				"message": "Starting Referee phase - Tri-Gate validation gauntlet",
+				"message": "Starting Referee phase - E-value dynamic validation",
 				"phase":   "Layer 2: Referee",
 			},
 			Timestamp: time.Now(),
@@ -188,53 +265,47 @@ func (rw *ResearchWorker) ProcessResearch(ctx context.Context, sessionID string,
 	}
 
 	// Update session state to validating
-	log.Printf("[ResearchWorker] 🔬 Updating session %s to validating state", sessionID)
+	log.Printf("[ResearchWorker] Updating session %s to validating state", sessionID)
 	if err := rw.sessionMgr.SetSessionState(ctx, sessionID, models.SessionStateValidating); err != nil {
-		log.Printf("[ResearchWorker] ❌ CRITICAL: Failed to update session state to validating: %v", err)
+		log.Printf("[ResearchWorker] ERROR: Failed to update session state to validating: %v", err)
 		return
 	}
 
-	// Validate each hypothesis using Tri-Gate validation
+	// Validate each hypothesis using e-value dynamic validation
 	phaseStart = time.Now()
 	totalHypotheses = len(hypotheses.ResearchDirectives)
-	log.Printf("[ResearchWorker] ⚖️ Phase 4/4: Tri-Gate Validation - Processing %d hypotheses for session %s", totalHypotheses, sessionID)
-	log.Printf("[ResearchWorker] 📋 Validation strategy: Parallel referee execution with statistical integrity checks")
+	log.Printf("[ResearchWorker] Starting validation phase for %d hypotheses in session %s", totalHypotheses, sessionID)
 
 	for i, directive := range hypotheses.ResearchDirectives {
 		hypothesisStart := time.Now()
 		hypothesisNum := i + 1
 		progressPercent := float64(hypothesisNum-1) / float64(totalHypotheses) * 100
 
-		log.Printf("[ResearchWorker] 🔍 Processing hypothesis %d/%d (%.1f%%) - ID: %s",
-			hypothesisNum, totalHypotheses, progressPercent, directive.ID)
-		log.Printf("[ResearchWorker] 📊 Testing relationship: %s → %s", directive.CauseKey, directive.EffectKey)
+		log.Printf("[ResearchWorker] Processing hypothesis %d/%d (%.1f%%) - ID: %s", hypothesisNum, totalHypotheses, progressPercent, directive.ID)
 
 		// Update progress
 		progress := float64(i) / float64(totalHypotheses) * 100
-		currentHypothesis := fmt.Sprintf("Tri-Gate Validating: %s - %s", directive.ID, directive.BusinessHypothesis)
+		currentHypothesis := fmt.Sprintf("E-value Validating: %s - %s", directive.ID, directive.BusinessHypothesis)
 		rw.sessionMgr.UpdateSessionProgress(ctx, sessionID, progress, currentHypothesis)
 
-		// Execute Tri-Gate validation for this hypothesis with error recovery
+		// Execute E-value validation with Q-value continuity and sample partitioning
 		var validationPassed bool
 		func() {
 			defer func() {
 				if r := recover(); r != nil {
-					log.Printf("[ResearchWorker] 💥 PANIC in hypothesis %s validation: %v", directive.ID, r)
+					log.Printf("[ResearchWorker] ERROR: Panic in hypothesis %s validation: %v", directive.ID, r)
 					rw.recordFailedHypothesis(ctx, sessionID, directive.ID, fmt.Sprintf("Panic during validation: %v", r))
 					validationPassed = false
 				}
 			}()
 
-			validationPassed = rw.executeTriGateValidation(ctx, sessionID, directive)
+			validationPassed = rw.executeEValueValidation(ctx, sessionID, directive)
 		}()
 
 		hypothesisDuration := time.Since(hypothesisStart)
 		phaseDuration = time.Since(phaseStart)
 
-		log.Printf("[ResearchWorker] ⏱️ Hypothesis %s completed in %.2fs (total phase: %.1fs)",
-			directive.ID, hypothesisDuration.Seconds(), phaseDuration.Seconds())
-		log.Printf("[ResearchWorker] 📈 Progress: %d/%d hypotheses processed (%.1f%%)",
-			hypothesisNum, totalHypotheses, float64(hypothesisNum)/float64(totalHypotheses)*100)
+		log.Printf("[ResearchWorker] Hypothesis %s validation completed in %.2fs", directive.ID, hypothesisDuration.Seconds())
 
 		// Count successes vs failures
 		if validationPassed {
@@ -244,7 +315,7 @@ func (rw *ResearchWorker) ProcessResearch(ctx context.Context, sessionID string,
 		}
 	}
 
-	log.Printf("[ResearchWorker] 📊 Validation summary for session %s: %d hypotheses processed", sessionID, totalHypotheses)
+	log.Printf("[ResearchWorker] Validation completed for session %s: %d hypotheses processed", sessionID, totalHypotheses)
 
 	// Emit Layer 3 start event
 	if sseHub, ok := rw.sseHub.(*api.SSEHub); ok {
@@ -285,4 +356,116 @@ func (rw *ResearchWorker) ProcessResearch(ctx context.Context, sessionID string,
 			Timestamp: time.Now(),
 		})
 	}
+}
+
+// buildDiscoveryEvidenceFromStats extracts FDR-corrected evidence from statistical artifacts
+func (rw *ResearchWorker) buildDiscoveryEvidenceFromStats(
+	statsArtifacts []map[string]interface{},
+	directive models.ResearchDirectiveResponse,
+) []refereePkg.DiscoveryEvidence {
+
+	var evidence []refereePkg.DiscoveryEvidence
+
+	for _, artifact := range statsArtifacts {
+		kind, _ := artifact["kind"].(string)
+		if kind != "relationship" {
+			continue
+		}
+
+		payload, ok := artifact["payload"].(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		// Extract relationship data
+		metrics, ok := payload["metrics"].(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		// Check if this relationship matches our hypothesis variables
+		varX, _ := payload["variable_x"].(string)
+		varY, _ := payload["variable_y"].(string)
+
+		if varX == directive.CauseKey && varY == directive.EffectKey {
+			// This is relevant evidence - extract Q-values and other data
+			discoveryEv := refereePkg.DiscoveryEvidence{
+				CauseKey:         varX,
+				EffectKey:        varY,
+				TestType:         getString(metrics, "test_type"),
+				PValue:           getFloat64(metrics, "p_value"),
+				QValue:           getFloat64(metrics, "q_value"),
+				SampleSize:       int(getFloat64(metrics, "sample_size")),
+				TotalComparisons: int(getFloat64(metrics, "total_comparisons")),
+				FDRMethod:        getString(metrics, "fdr_method"),
+			}
+
+			evidence = append(evidence, discoveryEv)
+		}
+	}
+
+	return evidence
+}
+
+// performSamplePartitioningForValidation creates discovery and validation partitions
+func (rw *ResearchWorker) performSamplePartitioningForValidation(
+	ctx context.Context,
+	directive models.ResearchDirectiveResponse,
+) (*analysis.PartitionResult, error) {
+
+	// Get full dataset for partitioning
+	matrixBundle, err := rw.loadMatrixBundleForHypothesisWithContext(ctx, directive)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load matrix for partitioning: %w", err)
+	}
+
+	// Extract entity IDs and data matrix
+	entityIDs := matrixBundle.Matrix.EntityIDs
+	variableKeys := matrixBundle.Matrix.VariableKeys
+	dataMatrix := matrixBundle.Matrix // Simplified - would need actual data extraction
+
+	// Perform sample partitioning
+	partitionConfig := analysis.DefaultPartitionConfig()
+	partitionResult, err := rw.dataPartitioner.PartitionDataset(
+		entityIDs,
+		variableKeys,
+		dataMatrix,
+		partitionConfig,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("sample partitioning failed: %w", err)
+	}
+
+	// Validate partition quality
+	if err := rw.dataPartitioner.ValidatePartitions(partitionResult); err != nil {
+		return nil, fmt.Errorf("partition validation failed: %w", err)
+	}
+
+	return partitionResult, nil
+}
+
+// convertPartitionToMatrixBundle converts a partition to matrix bundle format
+func (rw *ResearchWorker) convertPartitionToMatrixBundle(partition analysis.DatasetPartition) MatrixBundle {
+	return MatrixBundle{
+		Matrix:          partition.DataMatrix,
+		EntityIDs:       partition.EntityIDs,
+		VariableKeys:    partition.VariableKeys,
+		IsValidationSet: partition.IsDiscovery, // Note: inverted logic for naming
+	}
+}
+
+// Helper functions for type conversion
+func getFloat64(m map[string]interface{}, key string) float64 {
+	if val, ok := m[key]; ok {
+		switch v := val.(type) {
+		case float64:
+			return v
+		case int:
+			return float64(v)
+		case int64:
+			return float64(v)
+		}
+	}
+	return 0.0
 }

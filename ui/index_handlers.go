@@ -623,8 +623,9 @@ func (a *App) handleIndex(w http.ResponseWriter, r *http.Request) {
 		"FieldStats":         fieldStats,
 		"FieldRelationships": fieldRelationships,
 		"ValidatedCount":     significantCount,
+		"SessionID":          "default", // Will be updated with actual session ID
 	}
-	a.renderTemplate(w, "index.html", data)
+	a.renderTemplate(w, "main.html", data)
 }
 
 // getExcelFieldNames reads all field names from the test kit

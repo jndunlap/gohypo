@@ -3,12 +3,15 @@ package main
 import (
 	"context"
 	"embed"
+	"fmt"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
+	"time"
 
 	"gohypo/adapters/excel"
 	"gohypo/adapters/llm"
+	"gohypo/ai"
 	"gohypo/app"
 	"gohypo/internal/analysis/brief"
 	"gohypo/internal/config"
@@ -29,6 +32,32 @@ import (
 //go:embed ui/templates/** ui/static/*
 var embeddedFiles embed.FS
 
+// resetDatabase drops all tables and recreates the database schema
+func resetDatabase(db *sqlx.DB) error {
+	log.Println("🔄 Resetting database - dropping all tables...")
+
+	// Drop tables in reverse dependency order
+	dropTables := []string{
+		"workspace_dataset_relations",
+		"datasets",
+		"workspaces",
+		"hypothesis_results",
+		"research_prompts",
+		"research_sessions",
+		"users",
+	}
+
+	for _, table := range dropTables {
+		_, err := db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s CASCADE", table))
+		if err != nil {
+			log.Printf("Warning: failed to drop table %s: %v", table, err)
+		}
+	}
+
+	log.Println("✅ Database reset complete")
+	return nil
+}
+
 // initDatabase initializes the PostgreSQL database connection
 func initDatabase(appConfig *config.Config) (*sqlx.DB, error) {
 	if appConfig.Database.URL == "" {
@@ -45,6 +74,11 @@ func initDatabase(appConfig *config.Config) (*sqlx.DB, error) {
 		return nil, errors.Wrap(err, "failed to ping database")
 	}
 
+	// Reset database on each bootup (development mode)
+	if err := resetDatabase(db); err != nil {
+		return nil, errors.Wrap(err, "database reset failed")
+	}
+
 	// Run migrations
 	migrator := migration.NewRunner()
 	if err := migrator.Run(context.Background(), db); err != nil {
@@ -55,6 +89,10 @@ func initDatabase(appConfig *config.Config) (*sqlx.DB, error) {
 }
 
 func main() {
+	// #region agent log
+	log.Printf(`{"sessionId":"debug-session","runId":"initial","hypothesisId":"H2","location":"main.go:57","message":"Application starting","data":{},"timestamp":%d}`, time.Now().UnixMilli())
+	// #endregion
+
 	// Load environment variables from .env file
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found, using system environment variables")
@@ -63,8 +101,15 @@ func main() {
 	// Load application configuration
 	appConfig, err := config.Load()
 	if err != nil {
+		// #region agent log
+		log.Printf(`{"sessionId":"debug-session","runId":"initial","hypothesisId":"H2","location":"main.go:66","message":"Configuration loading failed","data":{"error":"%s"},"timestamp":%d}`, err.Error(), time.Now().UnixMilli())
+		// #endregion
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
+
+	// #region agent log
+	log.Printf(`{"sessionId":"debug-session","runId":"initial","hypothesisId":"H2","location":"main.go:70","message":"Configuration loaded successfully","data":{},"timestamp":%d}`, time.Now().UnixMilli())
+	// #endregion
 
 	// Initialize database
 	db, err := initDatabase(appConfig)
@@ -85,7 +130,12 @@ func main() {
 		log.Fatalf("Failed to initialize container: %v", err)
 	}
 
-	// Configure data source (keeping existing pattern for now)
+	// Ensure default workspace exists
+	if err := appContainer.EnsureDefaultWorkspace(context.Background()); err != nil {
+		log.Fatalf("Failed to ensure default workspace exists: %v", err)
+	}
+
+	// Configure data source
 	var kit *testkit.TestKit
 	if appConfig.Data.ExcelFile != "" {
 		excelConfig := excel.DefaultExcelConfig()
@@ -100,7 +150,12 @@ func main() {
 			log.Fatalf("Failed to initialize test kit: %v", err)
 		}
 	} else {
-		log.Fatal("EXCEL_FILE not configured")
+		log.Printf("No Excel file configured, using synthetic data for testing")
+		var err error
+		kit, err = testkit.NewTestKit()
+		if err != nil {
+			log.Fatalf("Failed to initialize test kit with synthetic data: %v", err)
+		}
 	}
 
 	// Setup AI services (keeping existing pattern for now)
@@ -113,9 +168,17 @@ func main() {
 		PromptsDir:    appConfig.AI.PromptsDir,
 	}
 
+	// Create hypothesis analyzer if AI is available
+	var hypothesisAnalyzer *ai.HypothesisAnalysisAgent
+	if aiConfig.OpenAIKey != "" && aiConfig.PromptsDir != "" {
+		// TODO: Create proper LLM client here
+		// For now, we'll create a placeholder
+		hypothesisAnalyzer = nil // Will be set when LLM client is available
+	}
+
 	var greenfieldService *app.GreenfieldService
 	if aiConfig.OpenAIKey != "" && aiConfig.PromptsDir != "" {
-		greenfieldService = setupGreenfieldServices(aiConfig, kit.LedgerAdapter())
+		greenfieldService = setupGreenfieldServices(aiConfig, kit.LedgerAdapter(), hypothesisAnalyzer)
 		log.Println("Greenfield research service initialized")
 	}
 
@@ -126,7 +189,6 @@ func main() {
 	statsSweepService := app.NewStatsSweepService(stageRunner, kit.LedgerAdapter(), rngPort)
 
 	if greenfieldService != nil {
-		successGateway := research.NewSuccessGateway(appContainer.HypothesisRepo, appContainer.UserRepo, appContainer.SessionRepo)
 		worker = research.NewResearchWorker(
 			appContainer.SessionManager,
 			appContainer.ResearchStorage,
@@ -135,7 +197,12 @@ func main() {
 			aiConfig,
 			statsSweepService,
 			kit,
-			successGateway,
+			appContainer.SSEHub, // Pass SSEHub instead of successGateway
+			appContainer.UIBroadcaster,
+			appContainer.HypothesisAnalyzer,
+			appContainer.ValidationEngine,
+			appContainer.DynamicSelector,
+			appContainer.HypothesisRepo,
 		)
 		worker.StartWorkerPool(2)
 		log.Println("Research worker pool initialized")
@@ -147,13 +214,13 @@ func main() {
 	// Initialize web server
 	server := ui.NewServer(embeddedFiles)
 	reader := kit.LedgerReaderAdapter()
-	if err := server.Initialize(kit, reader, embeddedFiles, greenfieldService, statisticalEngine, aiConfig); err != nil {
+	if err := server.Initialize(kit, reader, embeddedFiles, greenfieldService, statisticalEngine, aiConfig, db, appContainer.SSEHub, appContainer.UserRepo); err != nil {
 		log.Fatalf("Failed to initialize server: %v", err)
 	}
 
 	// Add research routes using container components
 	if worker != nil {
-		server.AddResearchRoutes(appContainer.SessionManager, appContainer.ResearchStorage, worker, appContainer.SSEHub)
+		server.AddResearchRoutes(appContainer.SessionManager, appContainer.ResearchStorage, worker, appContainer.SSEHub, appContainer)
 		log.Println("Research API routes added with SSE support")
 	}
 
@@ -174,7 +241,7 @@ func main() {
 }
 
 // setupGreenfieldServices creates and configures the greenfield research service
-func setupGreenfieldServices(config *models.AIConfig, ledgerPort ports.LedgerPort) *app.GreenfieldService {
+func setupGreenfieldServices(config *models.AIConfig, ledgerPort ports.LedgerPort, hypothesisAnalyzer *ai.HypothesisAnalysisAgent) *app.GreenfieldService {
 	greenfieldAdapter := llm.NewGreenfieldAdapter(config)
-	return app.NewGreenfieldService(greenfieldAdapter, ledgerPort)
+	return app.NewGreenfieldService(greenfieldAdapter, ledgerPort, hypothesisAnalyzer)
 }

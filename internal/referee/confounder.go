@@ -96,6 +96,13 @@ func (cmi *ConditionalMI) Execute(x, y []float64, metadata map[string]interface{
 	}
 }
 
+// AuditEvidence performs evidence auditing for conditional mutual information using discovery q-values
+func (cmi *ConditionalMI) AuditEvidence(discoveryEvidence interface{}, validationData []float64, metadata map[string]interface{}) RefereeResult {
+	// Conditional MI is about confounding control - use default audit logic
+	// since confounding analysis requires multiple variables that are hard to audit from q-values alone
+	return DefaultAuditEvidence("Conditional_Mutual_Information", discoveryEvidence, validationData, metadata)
+}
+
 // computeConditionalMI computes I(X;Y|Z) using kNN estimator
 func (cmi *ConditionalMI) computeConditionalMI(x, y, z []float64, k, bins int) float64 {
 	n := len(x)

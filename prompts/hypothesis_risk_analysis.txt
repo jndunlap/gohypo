@@ -1,0 +1,50 @@
+ANALYZE HYPOTHESIS RISK WITH SCIENTIFIC RIGOR
+
+HYPOTHESIS: {business_hypothesis}
+SCIENTIFIC CLAIM: {science_hypothesis}
+CAUSE VARIABLE: {cause_key}
+EFFECT VARIABLE: {effect_key}
+
+DATA TOPOLOGY CONTEXT:
+- Sample Size: {sample_size} observations
+- Sparsity: {sparsity_ratio}% missing data
+- Cause Variable Cardinality: {cardinality_cause} unique values
+- Effect Variable Cardinality: {cardinality_effect} unique values
+- Distribution Skewness (Cause): {skewness_cause}
+- Distribution Skewness (Effect): {skewness_effect}
+- Temporal Coverage: {temporal_coverage}% complete
+
+ASSESSED CONFOUNDING SIGNALS:
+{confounding_signals}
+
+RISK ASSESSMENT FRAMEWORK:
+
+1. SEMANTIC COMPLEXITY (1-10 scale):
+   - 1-2: Simple descriptive claims ("X is correlated with Y")
+   - 3-5: Moderate causal claims ("X influences Y under certain conditions")
+   - 6-8: Complex causal claims ("X influences Y through mediating variables")
+   - 9-10: Extraordinary claims ("X reverses established relationships")
+
+2. STATISTICAL FRAGILITY (0.0-1.0 scale):
+   - Based on sample size, sparsity, cardinality, and temporal coverage
+   - Higher fragility = more validation tests required
+
+3. RISK LEVEL DETERMINATION:
+   - LOW: Simple claims with abundant, clean data (>1000 samples, <5% missing, low skew)
+   - MEDIUM: Moderate complexity or data challenges
+   - HIGH: Complex causality, sparse data, or high confounding potential
+   - CRITICAL: Claims requiring extraordinary evidence (counterintuitive, high-stakes)
+
+4. TEST COUNT RECOMMENDATIONS:
+   - LOW RISK: 1-3 basic integrity checks
+   - MEDIUM RISK: 3-6 comprehensive tests
+   - HIGH RISK: 6-9 rigorous validation
+   - CRITICAL RISK: 8-10 full statistical battery
+
+5. CATEGORY PRIORITIZATION:
+   - Always include SHREDDER for statistical integrity
+   - Add INVARIANCE for temporal claims
+   - Add ANTI_CONFOUNDER for complex causal claims
+   - Add MECHANISM for non-obvious relationships
+
+REQUIRED OUTPUT: Valid JSON with risk assessment, test count range, critical concerns, and rationale.

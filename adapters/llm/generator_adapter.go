@@ -16,7 +16,7 @@ import (
 
 // Config holds LLM adapter configuration
 type Config struct {
-	Model               string        // e.g., "gpt-4.1-mini"
+	Model               string        // e.g., "gpt-5.2.1-mini"
 	APIKey              string        // OpenAI API key
 	BaseURL             string        // Optional override (default: https://api.openai.com/v1)
 	Temperature         float64       // 0.0-1.0, lower = more deterministic
@@ -28,14 +28,11 @@ type Config struct {
 // GeneratorAdapter implements GeneratorPort using LLM
 type GeneratorAdapter struct {
 	config      Config
-	llmClient   LLMClient
+	llmClient   ports.LLMClient
 	fallbackGen ports.GeneratorPort
 }
 
-// LLMClient interface for LLM providers
-type LLMClient interface {
-	ChatCompletion(ctx context.Context, model string, prompt string, maxTokens int) (string, error)
-}
+// LLMClient interface is now defined in ports/llm.go
 
 // NewGeneratorAdapter creates a new LLM generator adapter
 func NewGeneratorAdapter(config Config, fallbackGen ports.GeneratorPort) (*GeneratorAdapter, error) {

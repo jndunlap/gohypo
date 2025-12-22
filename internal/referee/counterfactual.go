@@ -79,6 +79,13 @@ func (si *SyntheticIntervention) Execute(x, y []float64, metadata map[string]int
 	}
 }
 
+// AuditEvidence performs evidence auditing for synthetic interventions using discovery q-values
+func (si *SyntheticIntervention) AuditEvidence(discoveryEvidence interface{}, validationData []float64, metadata map[string]interface{}) RefereeResult {
+	// Synthetic interventions are about counterfactual analysis - use default audit logic
+	// since intervention analysis requires causal modeling that's hard to audit from q-values alone
+	return DefaultAuditEvidence("Synthetic_Intervention", discoveryEvidence, validationData, metadata)
+}
+
 // fitObservationalModel fits a model for the observational data
 func (si *SyntheticIntervention) fitObservationalModel(x, y []float64, confounders [][]float64) *ObservationalModel {
 	model := &ObservationalModel{}

@@ -1,0 +1,665 @@
+{{define "upload_modal"}}
+<!-- Upload Modal -->
+<div id="upload-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50" style="display: none;">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full border border-gray-200">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-start gap-2 px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Add Dataset</h3>
+                <button id="close-upload-modal" class="p-1 text-gray-400 hover:text-gray-600 rounded hover:bg-gray-50">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="px-6 py-6">
+                <div class="mb-6">
+                    <p class="text-sm text-gray-700 mb-6 leading-relaxed">
+                        Upload Excel or CSV files to add datasets to your research catalog.
+                        AI will automatically analyze structure and prepare data for analysis.
+                    </p>
+
+                    <form id="upload-form" hx-post="/api/dataset/upload"
+                          hx-target="#upload-result"
+                          hx-encoding="multipart/form-data"
+                          hx-swap="none"
+                          class="space-y-4">
+
+                        <!-- Workspace Selection -->
+                        <div class="mb-6">
+                            <label for="workspace-select" class="block text-sm font-semibold text-gray-900 mb-3 font-mono">
+                                Workspace
+                            </label>
+                            <select id="workspace-select" name="workspace_id" class="block w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 disabled:bg-gray-50 disabled:text-gray-500">
+                                <option disabled>Loading workspaces...</option>
+                            </select>
+                            <p class="mt-2 text-sm text-gray-600">Choose workspace for this dataset.</p>
+                        </div>
+
+                        <!-- File Upload Section -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-semibold text-gray-900 mb-3 font-mono">
+                                Dataset File
+                            </label>
+                            <div id="drop-zone" class="relative border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 hover:bg-gray-50 transition-colors cursor-pointer">
+                                <div class="space-y-4">
+                                    <!-- Upload Icon -->
+                                    <div id="upload-icon" class="mx-auto w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center mb-4">
+                                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                        </svg>
+                                    </div>
+
+                                    <div>
+                                        <p class="text-sm font-semibold text-gray-900" id="drop-zone-text">
+                                            Drop file here or <span class="text-gray-700 hover:text-gray-900 font-medium">browse</span>
+                                        </p>
+                                        <p class="text-xs text-gray-600 mt-2">
+                                            Excel (.xlsx, .xls) and CSV (.csv) files up to 50MB
+                                        </p>
+                                    </div>
+                                    <input type="file"
+                                           id="dataset-file"
+                                           name="dataset"
+                                           accept=".xlsx,.xls,.csv"
+                                           required
+                                           class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                                </div>
+                            </div>
+
+                            <!-- File Preview -->
+                            <div id="file-preview" class="mt-4 hidden">
+                                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-8 h-8 bg-gray-200 rounded-lg flex items-center justify-center">
+                                            <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm font-medium text-gray-900 font-mono" id="file-name">—</p>
+                                            <p class="text-xs text-gray-600" id="file-size">—</p>
+                                        </div>
+                                    </div>
+                                    <button type="button" id="remove-file" class="text-gray-500 hover:text-gray-700 p-1">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Upload Progress -->
+                        <div id="upload-progress" class="hidden">
+                            <div class="space-y-3">
+                                <div class="flex justify-between text-sm">
+                                    <span id="progress-text" class="font-medium text-gray-900">Processing...</span>
+                                    <span id="progress-percent" class="font-mono text-gray-600">0%</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div id="progress-bar" class="bg-gray-900 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="upload-result" class="text-sm"></div>
+
+                        <!-- Modal Footer -->
+                        <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200 mt-6">
+                            <button type="button"
+                                    id="cancel-upload"
+                                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
+                                Cancel
+                            </button>
+                            <button type="submit"
+                                    class="px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-md hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    id="upload-submit-btn">
+                                Upload Dataset
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+// Upload state management
+let selectedFile = null;
+let uploadProgressInterval = null;
+
+// Reset circular progress back to upload icon
+function resetCircularProgress() {
+    const uploadIcon = document.getElementById('upload-icon');
+    const progressIcon = document.getElementById('progress-icon');
+
+    if (uploadIcon) {
+        uploadIcon.style.display = 'block';
+    }
+    if (progressIcon) {
+        progressIcon.style.display = 'none';
+    }
+}
+
+// Override the global placeholder functions with actual implementations
+window.resetUploadState = function() {
+    selectedFile = null;
+    const form = document.getElementById('upload-form');
+    if (form) form.reset();
+    const result = document.getElementById('upload-result');
+    if (result) result.innerHTML = '';
+    const preview = document.getElementById('file-preview');
+    if (preview) preview.classList.add('hidden');
+    const progress = document.getElementById('upload-progress');
+    if (progress) progress.classList.add('hidden');
+
+    // Reset circular progress back to upload icon
+    resetCircularProgress();
+
+    const progressText = document.getElementById('merge-progress-text');
+    if (progressText) progressText.textContent = 'Preparing merge...';
+    const progressPercent = document.getElementById('merge-progress-percent');
+    if (progressPercent) progressPercent.textContent = '0%';
+    const statusMessages = document.getElementById('merge-status-messages');
+    if (statusMessages) statusMessages.innerHTML = '';
+
+    if (uploadProgressInterval) {
+        clearInterval(uploadProgressInterval);
+        uploadProgressInterval = null;
+    }
+};
+
+window.loadWorkspaces = async function() {
+    const select = document.getElementById('workspace-select');
+    if (!select) return;
+
+    // Show loading state
+    select.innerHTML = '<option disabled>Loading workspaces...</option>';
+    select.disabled = true;
+
+    try {
+        const response = await fetch('/api/workspaces');
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        select.innerHTML = ''; // Clear loading option
+
+        if (data.workspaces && data.workspaces.length > 0) {
+            // Sort workspaces: default first, then alphabetically
+            const sortedWorkspaces = data.workspaces.sort((a, b) => {
+                if (a.is_default) return -1;
+                if (b.is_default) return 1;
+                return a.name.localeCompare(b.name);
+            });
+
+            sortedWorkspaces.forEach(workspace => {
+                const option = document.createElement('option');
+                option.value = workspace.id;
+                option.textContent = workspace.name;
+                if (workspace.is_default) {
+                    option.textContent += ' (Default)';
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+
+            console.log(`Loaded ${data.workspaces.length} workspaces for upload modal`);
+        } else {
+            // Fallback option if no workspaces found
+            const option = document.createElement('option');
+            option.value = '550e8400-e29b-41d4-a716-446655440001';
+            option.textContent = 'Default Workspace';
+            option.selected = true;
+            select.appendChild(option);
+            console.warn('No workspaces found, using fallback');
+        }
+    } catch (error) {
+        console.error('Failed to load workspaces:', error);
+        select.innerHTML = ''; // Clear loading option
+
+        // Fallback to default workspace
+        const option = document.createElement('option');
+        option.value = '550e8400-e29b-41d4-a716-446655440001';
+        option.textContent = 'Default Workspace (Offline)';
+        option.selected = true;
+        select.appendChild(option);
+
+        // Show error message
+        const resultDiv = document.getElementById('upload-result');
+        if (resultDiv) {
+            resultDiv.innerHTML = '<div class="p-2 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">Using default workspace due to connection issues</div>';
+        }
+    } finally {
+        select.disabled = false;
+    }
+}
+
+// Modal control functions
+window.showUploadModal = function() {
+    const modal = document.getElementById('upload-modal');
+    if (modal) {
+        modal.style.display = 'block';
+        document.body.classList.add('overflow-hidden');
+
+        // Load workspaces when modal opens
+        loadWorkspaces();
+        window.resetUploadState();
+    }
+};
+
+
+// File validation and size formatting
+function validateFile(file) {
+    const maxSize = 50 * 1024 * 1024; // 50MB
+    const allowedTypes = ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                         'application/vnd.ms-excel',
+                         'text/csv'];
+
+    if (file.size > maxSize) {
+        return `File size (${formatFileSize(file.size)}) exceeds the 50MB limit.`;
+    }
+
+    if (!allowedTypes.includes(file.type) && !file.name.match(/\.(xlsx|xls|csv)$/i)) {
+        return 'Only Excel (.xlsx, .xls) and CSV (.csv) files are allowed.';
+    }
+
+    return null; // Valid
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+function updateFilePreview(file) {
+    document.getElementById('file-name').textContent = file.name;
+    document.getElementById('file-size').textContent = formatFileSize(file.size);
+    document.getElementById('file-preview').classList.remove('hidden');
+}
+
+// Drag and drop handling
+function handleDragOver(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    document.getElementById('drop-zone').classList.add('border-gray-400', 'bg-gray-50');
+}
+
+function handleDragLeave(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    document.getElementById('drop-zone').classList.remove('border-gray-400', 'bg-gray-50');
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    document.getElementById('drop-zone').classList.remove('border-gray-400', 'bg-gray-50');
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        handleFileSelection(files[0]);
+    }
+}
+
+function handleFileSelection(file) {
+    const error = validateFile(file);
+    if (error) {
+        showError(error);
+        return;
+    }
+
+    selectedFile = file;
+    updateFilePreview(file);
+    document.getElementById('upload-result').innerHTML = '';
+}
+
+// Highly concurrent dataset processing with parallel operations
+async function waitForLLMProcessing(datasetId) {
+    const maxAttempts = 120; // 10 minutes max wait (increased for concurrent processing)
+    const basePollInterval = 2000; // 2 seconds base interval
+    let consecutiveErrors = 0;
+    const maxConsecutiveErrors = 3;
+
+    // Start concurrent operations
+    const processingPromise = pollDatasetStatus(datasetId, maxAttempts, basePollInterval);
+    const uiUpdatePromise = createConcurrentUIUpdates(datasetId);
+
+    try {
+        // Wait for both operations concurrently
+        const [processingResult] = await Promise.allSettled([
+            processingPromise,
+            uiUpdatePromise
+        ]);
+
+        if (processingResult.status === 'fulfilled') {
+            return processingResult.value;
+        } else {
+            throw processingResult.reason;
+        }
+    } catch (error) {
+        console.error('[Upload] Concurrent processing failed:', error);
+        throw error;
+    }
+
+    // Concurrent polling function
+    async function pollDatasetStatus(datasetId, maxAttempts, basePollInterval) {
+        let lastProgressUpdate = 0;
+
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+            try {
+                // Dynamic polling interval - faster at start, slower later
+                const pollInterval = calculateDynamicInterval(attempt, basePollInterval);
+                if (attempt > 0) {
+                    await new Promise(resolve => setTimeout(resolve, pollInterval));
+                }
+
+                // Parallel fetch requests for better responsiveness
+                const [mainResponse, statsResponse] = await Promise.allSettled([
+                    fetch(`/api/datasets/${datasetId}`),
+                    attempt > 5 ? fetch(`/api/datasets/${datasetId}/stats`) : Promise.resolve({status: 'rejected'}) // Start stats polling later
+                ]);
+
+                // Handle main dataset status
+                if (mainResponse.status === 'fulfilled') {
+                    const response = mainResponse.value;
+                    if (!response.ok) {
+                        if (response.status === 404) {
+                            console.warn(`[Upload] Dataset ${datasetId} not found yet (attempt ${attempt + 1})`);
+                        } else {
+                            console.warn(`[Upload] Dataset ${datasetId} returned status ${response.status} (attempt ${attempt + 1})`);
+                        }
+                        consecutiveErrors++;
+                        if (consecutiveErrors >= maxConsecutiveErrors) {
+                            throw new Error(`Too many consecutive errors (${consecutiveErrors})`);
+                        }
+                        continue;
+                    }
+
+                    consecutiveErrors = 0; // Reset error counter
+                    const datasetInfo = await response.json();
+
+                    // Check if LLM processing is complete
+                    if (datasetInfo.status === 'ready' && datasetInfo.name && datasetInfo.name.trim() !== '') {
+                        console.log('[Upload] LLM processing complete for dataset:', datasetId, 'Name:', datasetInfo.name);
+                        return true; // Success
+                    }
+
+                    // Calculate and update progress with more granularity
+                    const progressPercent = calculateProgressPercentage(datasetInfo, attempt, maxAttempts);
+                    if (progressPercent > lastProgressUpdate + 2) { // Only update if significant change
+                        updateProgress('processing', progressPercent,
+                            generateConcurrentStatusMessage(datasetInfo, attempt, maxAttempts));
+                        lastProgressUpdate = progressPercent;
+                    }
+                }
+
+                // Handle stats response if available (for more detailed progress)
+                if (statsResponse.status === 'fulfilled' && statsResponse.value.ok) {
+                    try {
+                        const stats = await statsResponse.value.json();
+                        updateDetailedProgress(stats);
+                    } catch (e) {
+                        // Stats parsing failed, continue without it
+                    }
+                }
+
+            } catch (error) {
+                console.error(`[Upload] Error in attempt ${attempt + 1}:`, error);
+                consecutiveErrors++;
+                if (consecutiveErrors >= maxConsecutiveErrors) {
+                    throw new Error(`Too many consecutive errors (${consecutiveErrors}): ${error.message}`);
+                }
+            }
+        }
+
+        console.warn('[Upload] LLM processing timeout - proceeding with available data');
+        throw new Error('LLM processing timeout');
+    }
+
+    // Create concurrent UI updates
+    async function createConcurrentUIUpdates(datasetId) {
+        // This function can be expanded to handle concurrent UI updates
+        // For now, it just ensures the UI stays responsive
+        return Promise.resolve();
+    }
+
+    // Calculate dynamic polling interval based on attempt number
+    function calculateDynamicInterval(attempt, baseInterval) {
+        if (attempt < 5) return baseInterval / 2; // Fast polling at start
+        if (attempt < 15) return baseInterval; // Normal polling
+        if (attempt < 30) return baseInterval * 1.5; // Slightly slower
+        return baseInterval * 2; // Slow polling for long waits
+    }
+
+    // Calculate progress percentage with more intelligence
+    function calculateProgressPercentage(datasetInfo, attempt, maxAttempts) {
+        const baseProgress = 80; // Start at 80% when LLM processing begins
+
+        // If we have status information, use it
+        if (datasetInfo.status === 'processing') {
+            return Math.min(95, baseProgress + (attempt * 0.8)); // Gradual increase during processing
+        } else if (datasetInfo.status === 'ready') {
+            return 100; // Complete
+        }
+
+        // Fallback calculation
+        return Math.min(95, baseProgress + (attempt * 1.2));
+    }
+
+    // Generate concurrent status messages
+    function generateConcurrentStatusMessage(datasetInfo, attempt, maxAttempts) {
+        const messages = [
+            'AI analyzing data structure...',
+            'Extracting column patterns...',
+            'Identifying data relationships...',
+            'Generating intelligent naming...',
+            'Optimizing data types...',
+            'Finalizing dataset analysis...'
+        ];
+
+        const messageIndex = Math.min(messages.length - 1, Math.floor((attempt * messages.length) / Math.min(maxAttempts, 30)));
+        return `${messages[messageIndex]} (${attempt + 1}/${maxAttempts})`;
+    }
+
+    // Update detailed progress from stats (if available)
+    function updateDetailedProgress(stats) {
+        // This could show more granular progress like:
+        // - Columns processed: 5/10
+        // - Relationships found: 3
+        // - Quality score: 85%
+        // For now, just log it
+        if (stats && typeof stats === 'object') {
+            console.log('[Upload] Detailed progress:', stats);
+        }
+    }
+}
+
+function updateProgress(eventType, progress, message) {
+    const progressDiv = document.getElementById('upload-progress');
+    const progressBar = document.getElementById('progress-bar');
+    const progressText = document.getElementById('progress-text');
+    const progressPercent = document.getElementById('progress-percent');
+
+    progressDiv.classList.remove('hidden');
+    progressBar.style.width = progress + '%';
+    progressPercent.textContent = Math.round(progress) + '%';
+    progressText.textContent = message;
+
+    if (eventType === 'upload_failed') {
+        progressBar.classList.remove('bg-gray-900');
+        progressBar.classList.add('bg-red-600');
+    } else {
+        progressBar.classList.remove('bg-red-600');
+        progressBar.classList.add('bg-gray-900');
+    }
+}
+
+
+
+function showError(message) {
+    document.getElementById('upload-result').innerHTML =
+        `<div class="p-3 bg-red-50 border border-red-200 rounded-md">
+            <div class="flex items-center">
+                <svg class="w-4 h-4 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+                <span class="text-sm text-red-800">${message}</span>
+            </div>
+        </div>`;
+}
+
+function showSuccess(message) {
+    document.getElementById('upload-result').innerHTML =
+        `<div class="p-3 bg-green-50 border border-green-200 rounded-md">
+            <div class="flex items-center">
+                <svg class="w-4 h-4 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span class="text-sm text-green-800">${message}</span>
+            </div>
+        </div>`;
+}
+
+window.hideUploadModal = function() {
+    const modal = document.getElementById('upload-modal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.classList.remove('overflow-hidden');
+        window.resetUploadState();
+    }
+};
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Modal controls
+    document.getElementById('close-upload-modal').addEventListener('click', hideUploadModal);
+    document.getElementById('cancel-upload').addEventListener('click', hideUploadModal);
+
+    // Close modal when clicking outside
+    document.getElementById('upload-modal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            hideUploadModal();
+        }
+    });
+
+    // Drag and drop events
+    const dropZone = document.getElementById('drop-zone');
+    dropZone.addEventListener('dragover', handleDragOver);
+    dropZone.addEventListener('dragleave', handleDragLeave);
+    dropZone.addEventListener('drop', handleDrop);
+
+    // File input change
+    document.getElementById('dataset-file').addEventListener('change', function(e) {
+        if (e.target.files.length > 0) {
+            handleFileSelection(e.target.files[0]);
+        }
+    });
+
+    // Remove file button
+    document.getElementById('remove-file').addEventListener('click', function() {
+        selectedFile = null;
+        document.getElementById('upload-form').reset();
+        document.getElementById('file-preview').classList.add('hidden');
+        document.getElementById('upload-result').innerHTML = '';
+        resetCircularProgress();
+    });
+
+    // Form submission
+    document.getElementById('upload-form').addEventListener('htmx:beforeRequest', function() {
+        if (!selectedFile) {
+            showError('Please select a file to upload.');
+            return;
+        }
+
+        const error = validateFile(selectedFile);
+        if (error) {
+            showError(error);
+            return;
+        }
+
+        document.getElementById('upload-submit-btn').disabled = true;
+        document.getElementById('upload-submit-btn').textContent = 'Starting Upload...';
+        // Clear result div since HTMX won't handle it
+        document.getElementById('upload-result').innerHTML = '';
+    });
+
+    document.getElementById('upload-form').addEventListener('htmx:afterRequest', function(evt) {
+        document.getElementById('upload-submit-btn').disabled = false;
+        document.getElementById('upload-submit-btn').textContent = 'Upload Dataset';
+
+        // Clear any result messages since we're handling the response manually
+        const resultDiv = document.getElementById('upload-result');
+        if (resultDiv) {
+            resultDiv.innerHTML = '';
+        }
+
+        if (evt.detail.xhr.status === 200) {
+            try {
+                const response = JSON.parse(evt.detail.xhr.responseText);
+                const datasetId = response.dataset_id;
+
+                // Start monitoring LLM processing
+                console.log('[Upload] Upload successful, monitoring LLM processing for dataset:', datasetId);
+
+                // Use polling to wait for LLM processing to complete
+                if (datasetId) {
+                    waitForLLMProcessing(datasetId).then(() => {
+                        updateProgress('llm_complete', 100, 'AI analysis complete - dataset ready!');
+                        setTimeout(() => {
+                            hideUploadModal();
+                            window.location.reload();
+                        }, 1500);
+                    }).catch(error => {
+                        console.error('[Upload] Error waiting for LLM processing:', error);
+                        // Fallback: close modal anyway after showing completion
+                        updateProgress('llm_complete', 100, 'Dataset processed - refreshing...');
+                        setTimeout(() => {
+                            hideUploadModal();
+                            window.location.reload();
+                        }, 1500);
+                    });
+                } else {
+                    console.warn('[Upload] No dataset ID returned, closing modal');
+                setTimeout(() => {
+                    hideUploadModal();
+                    window.location.reload();
+                }, 1000);
+                }
+
+            } catch (e) {
+                console.error('[Upload] Failed to parse response:', e);
+                // Show error in result div since HTMX won't handle it
+                if (resultDiv) {
+                    resultDiv.innerHTML = '<div class="p-3 bg-red-50 border border-red-200 rounded-md"><div class="flex items-center"><svg class="w-4 h-4 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg><span class="text-sm text-red-800">Failed to process upload response</span></div></div>';
+                }
+                document.getElementById('upload-progress').classList.add('hidden');
+            }
+        } else {
+            // Handle error response manually since HTMX won't swap it
+            try {
+                const errorResponse = JSON.parse(evt.detail.xhr.responseText);
+                if (resultDiv && errorResponse.error) {
+                    resultDiv.innerHTML = `<div class="p-3 bg-red-50 border border-red-200 rounded-md"><div class="flex items-center"><svg class="w-4 h-4 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg><span class="text-sm text-red-800">${errorResponse.error}</span></div></div>`;
+                }
+            } catch (e) {
+                // Fallback error message
+                if (resultDiv) {
+                    resultDiv.innerHTML = '<div class="p-3 bg-red-50 border border-red-200 rounded-md"><div class="flex items-center"><svg class="w-4 h-4 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg><span class="text-sm text-red-800">Upload failed</span></div></div>';
+                }
+            }
+            document.getElementById('upload-progress').classList.add('hidden');
+        }
+    });
+});
+</script>
+{{end}}

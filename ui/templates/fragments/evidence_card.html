@@ -79,10 +79,9 @@
       <div style="width: 100%;">
         <h4 class="text-sm font-semibold text-gray-900 mb-2">Validation Methods</h4>
         {{$methods := .ValidationMethods}}
-        {{$n := minInt (len $methods) 3}}
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4" style="width: 100%;">
-          {{range $i := until $n}}
-            {{with index $methods $i}}
+          {{range $i, $method := $methods}}
+            {{if lt $i 3}}
             <div class="bg-white border border-gray-200 p-3">
               <div class="flex items-start justify-between mb-2 gap-3">
                 <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">{{.Type}}</span>

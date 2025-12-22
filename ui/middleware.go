@@ -5,11 +5,18 @@ import (
 	"log"
 	"net/http"
 
+	"gohypo/ui/middleware"
+
 	"github.com/gin-gonic/gin"
 )
 
 // setupMiddleware configures Gin middleware
 func (s *Server) setupMiddleware() {
+	// Add workspace middleware to ensure default workspace exists
+	if s.workspaceRepository != nil {
+		s.router.Use(middleware.EnsureWorkspace(s.workspaceRepository))
+	}
+
 	staticFS, err := fs.Sub(s.embeddedFiles, "ui/static")
 	if err != nil {
 		log.Printf("[setupMiddleware] Error creating static filesystem: %v", err)
@@ -42,5 +49,3 @@ func (s *Server) setupMiddleware() {
 		s.router.StaticFS("/static", http.FS(staticFS))
 	}
 }
-
-

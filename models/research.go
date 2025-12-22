@@ -56,6 +56,7 @@ func (j *JSONBMap) Scan(value interface{}) error {
 type ResearchSession struct {
 	ID                  uuid.UUID          `json:"id" db:"id"`
 	UserID              uuid.UUID          `json:"user_id" db:"user_id"`
+	WorkspaceID         uuid.UUID          `json:"workspace_id" db:"workspace_id"`
 	State               SessionState       `json:"state" db:"state"`
 	Progress            float64            `json:"progress" db:"progress"`
 	CurrentHypothesis   string             `json:"current_hypothesis" db:"current_hypothesis"`

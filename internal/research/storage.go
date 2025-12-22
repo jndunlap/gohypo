@@ -15,13 +15,15 @@ import (
 type ResearchStorage struct {
 	hypothesisRepo ports.HypothesisRepository
 	userRepo       ports.UserRepository
+	sessionRepo    ports.SessionRepository
 }
 
 // NewResearchStorage creates a new research storage instance with database repositories
-func NewResearchStorage(hypothesisRepo ports.HypothesisRepository, userRepo ports.UserRepository) *ResearchStorage {
+func NewResearchStorage(hypothesisRepo ports.HypothesisRepository, userRepo ports.UserRepository, sessionRepo ports.SessionRepository) *ResearchStorage {
 	return &ResearchStorage{
 		hypothesisRepo: hypothesisRepo,
 		userRepo:       userRepo,
+		sessionRepo:    sessionRepo,
 	}
 }
 
@@ -35,6 +37,17 @@ func (rs *ResearchStorage) SaveHypothesis(ctx context.Context, result *models.Hy
 	sessionUUID, err := uuid.Parse(result.SessionID)
 	if err != nil {
 		return fmt.Errorf("invalid session ID: %w", err)
+	}
+
+	// Get the session to extract workspace ID
+	session, err := rs.sessionRepo.GetSession(ctx, user.ID, sessionUUID)
+	if err != nil {
+		return fmt.Errorf("failed to get session: %w", err)
+	}
+
+	// Set workspace ID on the result
+	if session.WorkspaceID != uuid.Nil {
+		result.WorkspaceID = session.WorkspaceID.String()
 	}
 
 	return rs.hypothesisRepo.SaveHypothesis(ctx, user.ID, sessionUUID, result)
@@ -107,11 +120,19 @@ func (rs *ResearchStorage) GetStats(ctx context.Context) (map[string]interface{}
 	}, nil
 }
 
+// ListByWorkspace returns hypotheses for a specific workspace
+func (rs *ResearchStorage) ListByWorkspace(ctx context.Context, workspaceID string, limit int) ([]*models.HypothesisResult, error) {
+	user, err := rs.userRepo.GetOrCreateDefaultUser(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get default user: %w", err)
+	}
+
+	return rs.hypothesisRepo.ListByWorkspace(ctx, user.ID, workspaceID, limit)
+}
+
 // CleanupOldFiles removes hypothesis files older than the specified duration
 // Note: Database cleanup can be handled separately if needed
 func (rs *ResearchStorage) CleanupOldFiles(maxAge time.Duration) (int, error) {
 	// Database-backed storage doesn't need file cleanup
 	return 0, nil
 }
-
-

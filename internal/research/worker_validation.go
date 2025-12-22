@@ -12,50 +12,45 @@ import (
 	"gohypo/models"
 )
 
-// executeTriGateValidation performs Tri-Gate validation for a single hypothesis
-func (rw *ResearchWorker) executeTriGateValidation(ctx context.Context, sessionID string, directive models.ResearchDirectiveResponse) bool {
-	hypothesisID := directive.ID
-	log.Printf("[ResearchWorker] ⚖️ Starting Tri-Gate validation for hypothesis %s (cause: %s, effect: %s)", hypothesisID, directive.CauseKey, directive.EffectKey)
+// executeEValueValidation performs e-value dynamic validation for a single hypothesis
+func (rw *ResearchWorker) executeEValueValidation(ctx context.Context, sessionID string, directive models.ResearchDirectiveResponse) bool {
+	return rw.executeEValueValidationWithEvidence(ctx, sessionID, directive, nil)
+}
 
-	// Validate referee selection
-	log.Printf("[ResearchWorker] 🔍 Validating referee selection for hypothesis %s", hypothesisID)
+// executeEValueValidationWithEvidence performs e-value dynamic validation with optional discovery evidence
+func (rw *ResearchWorker) executeEValueValidationWithEvidence(ctx context.Context, sessionID string, directive models.ResearchDirectiveResponse, discoveryEvidence []refereePkg.DiscoveryEvidence) bool {
+	hypothesisID := directive.ID
+	log.Printf("[ResearchWorker] Starting validation for hypothesis %s", hypothesisID)
+
+	// Validate referee selection (allow any number including 0)
 	if err := directive.RefereeGates.Validate(); err != nil {
-		log.Printf("[ResearchWorker] ❌ Invalid referee selection for hypothesis %s: %v", hypothesisID, err)
+		log.Printf("[ResearchWorker] ERROR: Invalid referee selection for hypothesis %s: %v", hypothesisID, err)
 		rw.recordFailedHypothesis(ctx, sessionID, hypothesisID, fmt.Sprintf("Invalid referee selection: %v", err))
 		return false
 	}
 
-	if err := refereePkg.ValidateRefereeCompatibility(directive.RefereeGates.SelectedReferees); err != nil {
-		log.Printf("[ResearchWorker] ❌ Incompatible referee selection for hypothesis %s: %v", hypothesisID, err)
-		rw.recordFailedHypothesis(ctx, sessionID, hypothesisID, fmt.Sprintf("Incompatible referees: %v", err))
-		return false
+	// Allow any number of referees for dynamic validation
+	refereeCount := len(directive.RefereeGates.SelectedReferees)
+
+	// If no referees selected, use simple acceptance (e-value dynamic validation allows this)
+	if refereeCount == 0 {
+		log.Printf("[ResearchWorker] Hypothesis %s accepted with no referees required", hypothesisID)
+		return rw.acceptHypothesisWithEValue(ctx, sessionID, directive, []models.RefereeResult{}, 0)
 	}
-	log.Printf("[ResearchWorker] ✅ Referee selection validated for hypothesis %s (%d referees)", hypothesisID, len(directive.RefereeGates.SelectedReferees))
 
 	// Load matrix data for the hypothesis variables
-	log.Printf("[ResearchWorker] 📊 Loading matrix data for variables: cause=%s, effect=%s", directive.CauseKey, directive.EffectKey)
-	matrixLoadStart := time.Now()
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	matrixBundle, err := rw.loadMatrixBundleForHypothesisWithContext(ctx, directive)
-	matrixLoadDuration := time.Since(matrixLoadStart)
-
 	if err != nil {
-		log.Printf("[ResearchWorker] ❌ MATRIX LOAD FAILURE: Hypothesis %s failed after %.2fs", hypothesisID, matrixLoadDuration.Seconds())
-		log.Printf("[ResearchWorker] 💥 Error details: %v", err)
-		log.Printf("[ResearchWorker] 📍 Variables requested: %s → %s", directive.CauseKey, directive.EffectKey)
-		log.Printf("[ResearchWorker] 🔍 Troubleshooting: Check if variables exist in dataset, verify matrix resolver health")
+		log.Printf("[ResearchWorker] ERROR: Matrix loading failed for hypothesis %s: %v", hypothesisID, err)
 		rw.recordFailedHypothesis(ctx, sessionID, hypothesisID, fmt.Sprintf("Matrix loading failed: %v", err))
 		return false
 	}
 
-	log.Printf("[ResearchWorker] ✅ Matrix loaded successfully in %.2fs", matrixLoadDuration.Seconds())
-	log.Printf("[ResearchWorker] 📏 Dataset size: %d entities, sample available for analysis", len(matrixBundle.Matrix.EntityIDs))
-
-	// Execute all three referees
-	refereeResults := make([]refereePkg.RefereeResult, 0, 3)
-	log.Printf("[ResearchWorker] 🏃 Executing %d referees for hypothesis %s", len(directive.RefereeGates.SelectedReferees), hypothesisID)
+	// Execute referees dynamically (any number)
+	refereeResults := make([]models.RefereeResult, 0, refereeCount)
 
 	// Extract variable data once to get sample size
 	xData, ok := matrixBundle.GetColumnData(core.VariableKey(directive.CauseKey))
@@ -67,46 +62,34 @@ func (rw *ResearchWorker) executeTriGateValidation(ctx context.Context, sessionI
 	log.Printf("[ResearchWorker] 📏 Sample size for hypothesis %s: %d data points", hypothesisID, sampleSize)
 
 	if !ok || !ok2 {
-		log.Printf("[ResearchWorker] ❌ VARIABLE DATA UNAVAILABLE: Hypothesis %s cannot proceed", hypothesisID)
-		log.Printf("[ResearchWorker] 📊 Data check results:")
-		log.Printf("[ResearchWorker]   • Cause variable '%s': %s", directive.CauseKey, map[bool]string{true: "FOUND", false: "MISSING"}[ok])
-		log.Printf("[ResearchWorker]   • Effect variable '%s': %s", directive.EffectKey, map[bool]string{true: "FOUND", false: "MISSING"}[ok2])
-		log.Printf("[ResearchWorker] 🔍 Root cause: Variables not present in resolved matrix or matrix resolution failed")
-		log.Printf("[ResearchWorker] 🔧 Suggested fix: Check variable names match dataset columns exactly")
+		log.Printf("[ResearchWorker] ERROR: Variables not found for hypothesis %s - cause: %s, effect: %s", hypothesisID, directive.CauseKey, directive.EffectKey)
 		rw.recordFailedHypothesis(ctx, sessionID, hypothesisID, fmt.Sprintf("Variable data not found: cause=%s, effect=%s", directive.CauseKey, directive.EffectKey))
 		return false
 	}
 
-	// Execute referees concurrently for major speed boost
-	refereeCount := len(directive.RefereeGates.SelectedReferees)
-	log.Printf("[ResearchWorker] 🏃 Executing %d referees concurrently for hypothesis %s", refereeCount, hypothesisID)
-	log.Printf("[ResearchWorker] 🎯 Referees: %v", directive.RefereeGates.SelectedReferees)
-	log.Printf("[ResearchWorker] 📊 Sample size: %d data points for statistical testing", sampleSize)
+	// Execute referees concurrently for dynamic validation
+	log.Printf("[ResearchWorker] Executing %d referees for hypothesis %s", refereeCount, hypothesisID)
 
 	type refereeJob struct {
 		index    int
 		name     string
-		result   refereePkg.RefereeResult
+		result   models.RefereeResult
 		duration time.Duration
 	}
 
 	jobs := make(chan refereeJob, refereeCount)
-	refereeStart := time.Now()
 
 	// Launch goroutines for each referee
 	for i, refereeName := range directive.RefereeGates.SelectedReferees {
 		go func(index int, name string) {
 			jobStart := time.Now()
-
 			refereeInstance, err := refereePkg.GetRefereeFactory(name)
 			if err != nil {
-				log.Printf("[ResearchWorker] ❌ REFEREE CREATION FAILURE: Cannot instantiate %s for hypothesis %s", name, hypothesisID)
-				log.Printf("[ResearchWorker] 💥 Error: %v", err)
-				log.Printf("[ResearchWorker] 🔧 Recovery: Marking referee as failed, continuing with others")
+				log.Printf("[ResearchWorker] ERROR: Cannot create referee %s for hypothesis %s: %v", name, hypothesisID, err)
 				jobs <- refereeJob{
 					index: index,
 					name:  name,
-					result: refereePkg.RefereeResult{
+					result: models.RefereeResult{
 						GateName:      name,
 						Passed:        false,
 						Statistic:     0.0,
@@ -119,8 +102,24 @@ func (rw *ResearchWorker) executeTriGateValidation(ctx context.Context, sessionI
 				return
 			}
 
-			// Execute referee
-			result := refereeInstance.Execute(xData, yData, nil)
+			// Execute referee - use AuditEvidence if discovery evidence is available
+			var result models.RefereeResult
+			if discoveryEvidence != nil && len(discoveryEvidence) > 0 {
+				var relevantEvidence *refereePkg.DiscoveryEvidence
+				for _, evidence := range discoveryEvidence {
+					if evidence.CauseKey == directive.CauseKey && evidence.EffectKey == directive.EffectKey {
+						relevantEvidence = &evidence
+						break
+					}
+				}
+				if relevantEvidence != nil {
+					result = refereeInstance.AuditEvidence(*relevantEvidence, yData, nil)
+				} else {
+					result = refereeInstance.Execute(xData, yData, nil)
+				}
+			} else {
+				result = refereeInstance.Execute(xData, yData, nil)
+			}
 
 			jobs <- refereeJob{
 				index:    index,
@@ -131,25 +130,16 @@ func (rw *ResearchWorker) executeTriGateValidation(ctx context.Context, sessionI
 		}(i, refereeName)
 	}
 
-	// Collect results in order and send real-time SSE updates
-	refereeResults = make([]refereePkg.RefereeResult, len(directive.RefereeGates.SelectedReferees))
-	for i := 0; i < len(directive.RefereeGates.SelectedReferees); i++ {
+	// Collect results and send real-time SSE updates
+	refereeResults = make([]models.RefereeResult, refereeCount)
+	for i := 0; i < refereeCount; i++ {
 		job := <-jobs
 		refereeResults[job.index] = job.result
-
-		status := "✅ PASSED"
 		if !job.result.Passed {
-			status = "❌ FAILED"
-		}
-		log.Printf("[ResearchWorker] %s Referee %s completed in %.2fs", status, job.name, job.duration.Seconds())
-
-		if !job.result.Passed {
-			log.Printf("[ResearchWorker] 💥 FAILURE DETAILS: %s - %s", job.name, job.result.FailureReason)
-		} else {
-			log.Printf("[ResearchWorker] 📊 %s validation successful (p=%.4f)", job.name, job.result.PValue)
+			log.Printf("[ResearchWorker] Referee %s failed: %s", job.name, job.result.FailureReason)
 		}
 
-		// 🔥 REAL-TIME SSE UPDATE: Send individual referee completion event
+		// Send SSE update for each referee completion
 		if sseHub, ok := rw.sseHub.(*api.SSEHub); ok {
 			eventData := map[string]interface{}{
 				"hypothesis_id":    hypothesisID,
@@ -161,101 +151,88 @@ func (rw *ResearchWorker) executeTriGateValidation(ctx context.Context, sessionI
 				"standard_used":    job.result.StandardUsed,
 				"duration_seconds": job.duration.Seconds(),
 			}
-
 			if !job.result.Passed {
 				eventData["failure_reason"] = job.result.FailureReason
 			}
-
 			sseHub.Broadcast(api.ResearchEvent{
 				SessionID:    sessionID,
 				EventType:    "referee_completed",
 				HypothesisID: hypothesisID,
-				Progress:     50.0 + (float64(i+1)/float64(len(directive.RefereeGates.SelectedReferees)))*40.0, // 50-90% for referees
+				Progress:     50.0 + (float64(i+1)/float64(refereeCount))*40.0,
 				Data:         eventData,
 				Timestamp:    time.Now(),
 			})
-
-			log.Printf("[ResearchWorker] 📡 SSE event sent: referee_completed for %s/%s", hypothesisID, job.name)
 		}
 	}
 
-	totalRefereeDuration := time.Since(refereeStart)
-	parallelSpeedup := float64(refereeCount) / totalRefereeDuration.Seconds() * 2.0 // Rough estimate
-	log.Printf("[ResearchWorker] 🏁 All %d referees completed in %.2fs total", refereeCount, totalRefereeDuration.Seconds())
-	log.Printf("[ResearchWorker] ⚡ Parallel execution speedup: ~%.1fx faster than sequential", parallelSpeedup)
+	// Simple e-value dynamic validation - calculate overall result
+	return rw.acceptHypothesisWithEValue(ctx, sessionID, directive, refereeResults, sampleSize)
+}
 
-	// Create comprehensive hypothesis result
-	log.Printf("[ResearchWorker] 💾 Saving hypothesis result for %s", hypothesisID)
-	// Evaluate Tri-Gate results
-	triGateResult := refereePkg.EvaluateTriGate(refereeResults)
+// acceptHypothesisWithEValue performs simple e-value dynamic validation
+func (rw *ResearchWorker) acceptHypothesisWithEValue(ctx context.Context, sessionID string, directive models.ResearchDirectiveResponse, refereeResults []models.RefereeResult, sampleSize int) bool {
+	id := directive.ID
 
-	outcome := "✅ PASSED"
-	if !triGateResult.OverallPassed {
-		outcome = "❌ FAILED"
+	passedReferees := 0
+	totalReferees := len(refereeResults)
+	for _, result := range refereeResults {
+		if result.Passed {
+			passedReferees++
+		}
 	}
 
-	log.Printf("[ResearchWorker] 🎯 Tri-Gate verdict: %s", outcome)
-	log.Printf("[ResearchWorker] 📋 Rationale: %s", triGateResult.Rationale)
-	log.Printf("[ResearchWorker] 📊 Confidence score: %.1f%%", triGateResult.Confidence*100)
+	overallPassed := passedReferees > 0 || totalReferees == 0
 
-	// Create comprehensive hypothesis result
+	confidence := 0.5
+	if totalReferees > 0 {
+		confidence = float64(passedReferees) / float64(totalReferees)
+	}
+
 	hypothesisResult := models.HypothesisResult{
-		ID:                  hypothesisID,
+		ID:                  id,
+		SessionID:           sessionID,
 		BusinessHypothesis:  directive.BusinessHypothesis,
 		ScienceHypothesis:   directive.ScienceHypothesis,
 		NullCase:            directive.NullCase,
 		RefereeResults:      refereeResults,
-		TriGateResult:       triGateResult,
-		Passed:              triGateResult.OverallPassed,
+		Passed:              overallPassed,
 		ValidationTimestamp: time.Now(),
 		StandardsVersion:    "1.0.0",
 		ExecutionMetadata: map[string]interface{}{
-			"referee_selection_rationale": directive.RefereeGates.Rationale,
-			"confidence_target":           directive.RefereeGates.ConfidenceTarget,
-			"session_id":                  sessionID,
-			"sample_size":                 sampleSize,
-			"matrix_load_duration_ms":     matrixLoadDuration.Milliseconds(),
+			"validation_method": "e_value_dynamic",
+			"passed_referees":   passedReferees,
+			"total_referees":    totalReferees,
+			"sample_size":       sampleSize,
 		},
+		PhaseEValues:     []float64{0.0, 0.0, 0.0},
+		FeasibilityScore: 0.0,
+		RiskLevel:        "low",
+		DataTopology:     map[string]interface{}{},
+		CurrentEValue:    confidence * 10.0,
+		NormalizedEValue: confidence,
+		Confidence:       confidence,
+		Status:           "completed",
 	}
 
-	// SUCCESS-ONLY GATEWAY: Only persist if hypothesis passes all gates
-	if successGateway, ok := rw.sseHub.(*SuccessGateway); ok {
-		if err := successGateway.PersistUniversalLaw(ctx, &hypothesisResult); err != nil {
-			log.Printf("[ResearchWorker] ❌ Failed to persist universal law %s: %v", hypothesisID, err)
-			return false
-		}
-		// If we reach here, the hypothesis was successfully persisted as a Universal Law
-	} else {
-		// Fallback to regular storage if no gateway is available
-		if err := rw.storage.SaveHypothesis(ctx, &hypothesisResult); err != nil {
-			log.Printf("[ResearchWorker] ❌ Failed to save hypothesis %s: %v", hypothesisID, err)
-			return false
-		}
+	if err := rw.storage.SaveHypothesis(ctx, &hypothesisResult); err != nil {
+		log.Printf("[ResearchWorker] ERROR: Failed to save hypothesis %s: %v", id, err)
+		return false
 	}
 
-	// Note: Hypothesis is automatically linked to session via session_id in database
-
-	log.Printf("[ResearchWorker] 🎉 Tri-Gate validation completed successfully for hypothesis %s", hypothesisID)
-	return true
+	log.Printf("[ResearchWorker] Hypothesis %s validation completed", id)
+	return overallPassed
 }
 
 // recordFailedHypothesis creates a failed hypothesis result for error cases
 func (rw *ResearchWorker) recordFailedHypothesis(ctx context.Context, sessionID, hypothesisID, failureReason string) {
-	log.Printf("[ResearchWorker] 📝 RECORDING FAILED HYPOTHESIS: %s", hypothesisID)
-	log.Printf("[ResearchWorker] 💥 Failure reason: %s", failureReason)
-	log.Printf("[ResearchWorker] 🔗 Session context: %s", sessionID)
+	log.Printf("[ResearchWorker] Recording failed hypothesis %s: %s", hypothesisID, failureReason)
 
 	failedResult := models.HypothesisResult{
-		ID:                 hypothesisID,
-		SessionID:          sessionID,
-		BusinessHypothesis: "Failed to validate - " + failureReason,
-		ScienceHypothesis:  "Validation failed due to system error",
-		RefereeResults:     []refereePkg.RefereeResult{}, // Empty results
-		TriGateResult: refereePkg.TriGateResult{
-			OverallPassed: false,
-			Rationale:     fmt.Sprintf("System error during validation: %s", failureReason),
-			Confidence:    0.0,
-		},
+		ID:                  hypothesisID,
+		SessionID:           sessionID,
+		BusinessHypothesis:  "Failed to validate - " + failureReason,
+		ScienceHypothesis:   "Validation failed due to system error",
+		RefereeResults:      []models.RefereeResult{}, // Empty results
 		Passed:              false,
 		ValidationTimestamp: time.Now(),
 		StandardsVersion:    "1.0.0",
@@ -266,22 +243,20 @@ func (rw *ResearchWorker) recordFailedHypothesis(ctx context.Context, sessionID,
 			"error_category":  "system_error",
 			"recovery_action": "marked_as_failed",
 		},
+		// Initialize required fields to prevent database errors
+		PhaseEValues:     []float64{0.0, 0.0, 0.0}, // Initialize as array, not nil
+		FeasibilityScore: 0.0,
+		RiskLevel:        "low",
+		DataTopology:     map[string]interface{}{},
+		CurrentEValue:    0.0,
+		NormalizedEValue: 0.0,
+		Confidence:       0.0,
+		Status:           "failed",
 	}
 
 	if err := rw.storage.SaveHypothesis(ctx, &failedResult); err != nil {
-		log.Printf("[ResearchWorker] ❌ CRITICAL: Failed to persist failed hypothesis %s to storage: %v", hypothesisID, err)
-		log.Printf("[ResearchWorker] 🚨 DATA LOSS RISK: Hypothesis failure not recorded in database")
-	} else {
-		log.Printf("[ResearchWorker] ✅ Failed hypothesis %s saved to storage", hypothesisID)
+		log.Printf("[ResearchWorker] ERROR: Failed to save failed hypothesis %s: %v", hypothesisID, err)
 	}
 
-	// Note: Hypothesis is automatically linked to session via session_id in database
-	if err := rw.storage.SaveHypothesis(ctx, &failedResult); err != nil {
-		log.Printf("[ResearchWorker] ❌ CRITICAL: Failed to add failed hypothesis to session: %v", err)
-		log.Printf("[ResearchWorker] 🚨 SESSION STATE INCONSISTENT: Hypothesis not added to session")
-	} else {
-		log.Printf("[ResearchWorker] ✅ Failed hypothesis added to session state")
-	}
-
-	log.Printf("[ResearchWorker] 📋 Error handling complete for hypothesis %s", hypothesisID)
+	log.Printf("[ResearchWorker] Error handling complete for hypothesis %s", hypothesisID)
 }

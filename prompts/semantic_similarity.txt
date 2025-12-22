@@ -1,0 +1,83 @@
+You are an expert data scientist specializing in semantic analysis and domain understanding. Your task is to analyze two datasets based on their field names and determine if they represent semantically related data that should be connected or merged.
+
+DATASET 1 FIELD NAMES:
+{field_set_1}
+
+DATASET 2 FIELD NAMES:
+{field_set_2}
+
+Perform a comprehensive semantic analysis:
+
+1. DOMAIN IDENTIFICATION:
+   For each dataset, identify the primary domain/business area:
+   - Finance/Accounting
+   - Sales/Marketing
+   - Customer Relationship Management
+   - Human Resources
+   - Operations/Logistics
+   - Healthcare/Medical
+   - Education
+   - Research/Analytics
+   - E-commerce
+   - Other (specify)
+
+2. ENTITY RECOGNITION:
+   Identify the main entities/concepts represented in each dataset:
+   - People (customers, employees, users)
+   - Transactions (orders, payments, events)
+   - Products/Services
+   - Locations/Geographic data
+   - Time-based data
+   - Measurements/Metrics
+   - Documents/Records
+
+3. RELATIONSHIP ANALYSIS:
+   Determine how these datasets relate:
+   - SAME_ENTITY_DIFFERENT_ASPECTS: Different views of the same entity
+   - RELATED_ENTITIES: Connected through business relationships
+   - TEMPORAL_SEQUENCE: Time-ordered events or states
+   - HIERARCHICAL: Parent-child or master-detail relationships
+   - CROSS_REFERENCE: Lookup/reference data
+   - UNRELATED: No meaningful semantic connection
+
+4. SEMANTIC SIMILARITY SCORE (0.0 to 1.0):
+   - 1.0 = Identical semantic meaning and purpose
+   - 0.8-0.9 = Strong semantic overlap
+   - 0.6-0.7 = Moderate semantic relationship
+   - 0.4-0.5 = Weak semantic connection
+   - 0.0-0.3 = No semantic relationship
+
+5. BUSINESS CONTEXT ANALYSIS:
+   Describe what business questions these datasets could answer together:
+   - Combined insights or analytics possibilities
+   - Cross-domain analysis opportunities
+   - Process optimization potential
+
+6. INTEGRATION RECOMMENDATIONS:
+   Suggest how these datasets should be integrated:
+   - MERGE: Combine into single dataset
+   - JOIN: Link via common keys
+   - CROSS_REFERENCE: Use as lookup tables
+   - SEPARATE: Keep independent
+
+7. DATA QUALITY CONSIDERATIONS:
+   Identify potential semantic issues:
+   - Conflicting business definitions
+   - Different granularity levels
+   - Time period mismatches
+   - Geographic scope differences
+
+RESPONSE FORMAT:
+{
+  "dataset1_domain": "Sales",
+  "dataset2_domain": "Customer Service",
+  "dataset1_entities": ["customers", "orders", "products"],
+  "dataset2_entities": ["customers", "support_tickets", "interactions"],
+  "relationship_type": "SAME_ENTITY_DIFFERENT_ASPECTS",
+  "semantic_similarity": 0.78,
+  "business_context": "Customer lifecycle analysis combining purchase and service interactions",
+  "integration_recommendation": "JOIN",
+  "quality_considerations": ["Different customer ID formats may require standardization"],
+  "confidence": 0.85,
+  "analysis_details": "Detailed explanation of semantic relationships and business value..."
+}

@@ -11,18 +11,47 @@ import (
 	"gohypo/domain/core"
 	"gohypo/domain/greenfield"
 	"gohypo/internal/api"
-	refereePkg "gohypo/internal/referee"
 	"gohypo/models"
 	"gohypo/ports"
 )
 
+// Broadcaster defines the interface for broadcasting events
+type Broadcaster interface {
+	Broadcast(event api.ResearchEvent)
+}
+
+// getBroadcaster returns the SSE broadcaster if available
+func (rw *ResearchWorker) getBroadcaster() Broadcaster {
+	if sseHub, ok := rw.sseHub.(*api.SSEHub); ok {
+		return sseHub
+	}
+	return nil
+}
+
 // generateHypothesesWithContext calls the LLM to generate research hypotheses via the GreenfieldAdapter (which includes Forensic Scout)
 func (rw *ResearchWorker) generateHypothesesWithContext(ctx context.Context, sessionID string, fieldJSON string) (*models.GreenfieldResearchOutput, error) {
+	if ctx == nil {
+		return nil, fmt.Errorf("context cannot be nil")
+	}
+
+	if sessionID == "" {
+		return nil, fmt.Errorf("sessionID cannot be empty")
+	}
+
+	if fieldJSON == "" {
+		return nil, fmt.Errorf("fieldJSON cannot be empty")
+	}
+
 	log.Printf("[ResearchWorker] 🤖 Starting hypothesis generation for session %s", sessionID)
 
 	if rw.greenfieldPort == nil {
 		log.Printf("[ResearchWorker] ❌ Greenfield port not available for session %s", sessionID)
 		return nil, fmt.Errorf("greenfield port not available")
+	}
+
+	if rw.storage == nil {
+		log.Printf("[ResearchWorker] ❌ Research storage not available for session %s", sessionID)
+		return nil, fmt.Errorf("research storage not available")
 	}
 
 	// Parse field metadata from JSON
@@ -54,7 +83,7 @@ func (rw *ResearchWorker) generateHypothesesWithContext(ctx context.Context, ses
 			Description:  getString(fmMap, "description"),
 		})
 	}
-	log.Printf("[ResearchWorker] ✅ Converted %d field metadata items for session %s", len(fieldMetadata), sessionID)
+	log.Printf("[ResearchWorker] Processing %d fields for hypothesis generation", len(fieldMetadata))
 
 	// Extract discovery briefs and stats artifacts from context data
 	var discoveryBriefs interface{}
@@ -70,22 +99,47 @@ func (rw *ResearchWorker) generateHypothesesWithContext(ctx context.Context, ses
 			}
 		}
 	}
-	log.Printf("[ResearchWorker] 📊 Prepared %d statistical artifacts and discovery briefs for session %s", len(statsArtifacts), sessionID)
+	log.Printf("[ResearchWorker] Prepared %d statistical artifacts for hypothesis generation", len(statsArtifacts))
+
+	// Generate validated hypothesis summary for feedback learning
+	log.Printf("[ResearchWorker] 📊 Generating validated hypothesis summary for feedback learning (session %s)", sessionID)
+	var validatedHypothesisSummary interface{} = nil
+	if rw.hypothesisSummarizer != nil {
+		// Get user ID from session
+		session, err := rw.sessionMgr.GetSession(ctx, sessionID)
+		if err != nil {
+			log.Printf("[ResearchWorker] ⚠️ Failed to get session for user ID: %v", err)
+		} else {
+			userID := session.UserID
+			summary, err := rw.hypothesisSummarizer.GenerateSummary(ctx, userID, 1000) // Last 1000 validated hypotheses
+			if err != nil {
+				log.Printf("[ResearchWorker] ⚠️ Failed to generate hypothesis summary: %v", err)
+			} else if summary.TotalValidatedHypotheses > 0 {
+				validatedHypothesisSummary = summary
+				log.Printf("[ResearchWorker] ✅ Generated summary with %d validated hypotheses for feedback learning", summary.TotalValidatedHypotheses)
+			} else {
+				log.Printf("[ResearchWorker] ℹ️ No validated hypotheses found for feedback learning")
+			}
+		}
+	} else {
+		log.Printf("[ResearchWorker] ⚠️ Hypothesis summarizer not available for feedback learning")
+	}
 
 	// Call the port (which uses GreenfieldAdapter with Forensic Scout)
 	log.Printf("[ResearchWorker] 🚀 Calling Greenfield port for research directives (session %s)", sessionID)
 	req := ports.GreenfieldResearchRequest{
-		RunID:                core.RunID(sessionID),
-		SnapshotID:           core.SnapshotID(""), // Not used in UI flow
-		FieldMetadata:        fieldMetadata,
-		StatisticalArtifacts: statsArtifacts,
-		DiscoveryBriefs:      discoveryBriefs,
-		Directives:           3,
+		RunID:                   core.RunID(sessionID),
+		SnapshotID:              core.SnapshotID(""), // Not used in UI flow
+		FieldMetadata:           fieldMetadata,
+		StatisticalArtifacts:    statsArtifacts,
+		DiscoveryBriefs:         discoveryBriefs,
+		ValidatedHypothesisSummary: validatedHypothesisSummary,
+		Directives:              3,
 	}
 
 	// Emit Layer 1 start event
-	if sseHub, ok := rw.sseHub.(*api.SSEHub); ok {
-		sseHub.Broadcast(api.ResearchEvent{
+	if broadcaster := rw.getBroadcaster(); broadcaster != nil {
+		broadcaster.Broadcast(api.ResearchEvent{
 			SessionID: sessionID,
 			EventType: "layer1_start",
 			Progress:  25.0,
@@ -116,8 +170,8 @@ func (rw *ResearchWorker) generateHypothesesWithContext(ctx context.Context, ses
 		}
 
 		// Emit error event for UI (STATE_ERROR for JSON issues, API_ERROR for other issues)
-		if sseHub, ok := rw.sseHub.(*api.SSEHub); ok {
-			sseHub.Broadcast(api.ResearchEvent{
+		if broadcaster := rw.getBroadcaster(); broadcaster != nil {
+			broadcaster.Broadcast(api.ResearchEvent{
 				SessionID: sessionID,
 				EventType: eventType,
 				Data: map[string]interface{}{
@@ -132,21 +186,18 @@ func (rw *ResearchWorker) generateHypothesesWithContext(ctx context.Context, ses
 
 		return nil, fmt.Errorf("failed to generate research directives: %w", err)
 	}
-	log.Printf("[ResearchWorker] ✅ LLM call completed in %.2fs for session %s", llmDuration.Seconds(), sessionID)
+	log.Printf("[ResearchWorker] LLM call completed in %.2fs", llmDuration.Seconds())
 
 	// Save the rendered prompt (with industry context injection) for debugging
 	if portResponse.RenderedPrompt != "" {
-		log.Printf("[ResearchWorker] 💾 Saving prompt file for session %s", sessionID)
 		if err := rw.savePromptToFile(ctx, sessionID, portResponse.RenderedPrompt); err != nil {
-			log.Printf("[ResearchWorker] ⚠️ Failed to save prompt for session %s: %v", sessionID, err)
-			// Don't fail the entire process for this
+			log.Printf("[ResearchWorker] ERROR: Failed to save prompt for session %s: %v", sessionID, err)
 		}
 	}
 
 	// Use raw LLM response if available (contains BusinessHypothesis, ScienceHypothesis, etc.)
 	if portResponse.RawLLMResponse != nil {
 		if llmResp, ok := portResponse.RawLLMResponse.(*models.GreenfieldResearchOutput); ok {
-			log.Printf("[ResearchWorker] 🎯 Using raw LLM response for session %s", sessionID)
 
 			// 🔥 IMMEDIATE HYPOTHESIS RENDERING: Create pending hypotheses for UI display
 			if err := rw.createPendingHypothesesForUI(ctx, sessionID, llmResp); err != nil {
@@ -248,13 +299,47 @@ func getString(m map[string]interface{}, key string) string {
 
 // createPendingHypothesesForUI creates hypotheses with pending referee results for immediate UI display
 func (rw *ResearchWorker) createPendingHypothesesForUI(ctx context.Context, sessionID string, llmResponse *models.GreenfieldResearchOutput) error {
+	if ctx == nil {
+		return fmt.Errorf("context cannot be nil")
+	}
+
+	if sessionID == "" {
+		return fmt.Errorf("sessionID cannot be empty")
+	}
+
+	if llmResponse == nil {
+		return fmt.Errorf("llmResponse cannot be nil")
+	}
+
+	if len(llmResponse.ResearchDirectives) == 0 {
+		log.Printf("[ResearchWorker] ⚠️ No research directives in LLM response for session %s", sessionID)
+		return nil // Not an error, just no hypotheses to create
+	}
+
 	log.Printf("[ResearchWorker] 🎨 Creating pending hypotheses for immediate UI display (%d hypotheses)", len(llmResponse.ResearchDirectives))
 
 	for i, directive := range llmResponse.ResearchDirectives {
+		// Validate directive data
+		if directive.ID == "" {
+			log.Printf("[ResearchWorker] ⚠️ Skipping directive with empty ID at index %d", i)
+			continue
+		}
+
+		if directive.BusinessHypothesis == "" {
+			log.Printf("[ResearchWorker] ⚠️ Directive %s has empty business hypothesis", directive.ID)
+		}
+
 		// Create pending referee results (gray checkmarks)
-		pendingRefereeResults := make([]refereePkg.RefereeResult, len(directive.RefereeGates.SelectedReferees))
+		refereeCount := len(directive.RefereeGates.SelectedReferees)
+		pendingRefereeResults := make([]models.RefereeResult, refereeCount)
+
 		for j, refereeName := range directive.RefereeGates.SelectedReferees {
-			pendingRefereeResults[j] = refereePkg.RefereeResult{
+			if refereeName == "" {
+				log.Printf("[ResearchWorker] ⚠️ Directive %s has empty referee name at index %d", directive.ID, j)
+				continue
+			}
+
+			pendingRefereeResults[j] = models.RefereeResult{
 				GateName:      refereeName,
 				Passed:        false, // Will be updated to true/false as referees complete
 				Statistic:     0.0,
@@ -266,53 +351,47 @@ func (rw *ResearchWorker) createPendingHypothesesForUI(ctx context.Context, sess
 
 		// Create pending hypothesis result
 		pendingHypothesis := &models.HypothesisResult{
-			ID:                 directive.ID,
-			SessionID:          sessionID,
-			BusinessHypothesis: directive.BusinessHypothesis,
-			ScienceHypothesis:  directive.ScienceHypothesis,
-			NullCase:           directive.NullCase,
-			RefereeResults:     pendingRefereeResults,
-			TriGateResult: refereePkg.TriGateResult{
-				RefereeResults: pendingRefereeResults,
-				OverallPassed:  false, // Pending
-				Confidence:     0.0,   // Will be calculated after all referees complete
-				Rationale:      "Tri-Gate validation in progress...",
-			},
+			ID:                  directive.ID,
+			SessionID:           sessionID,
+			BusinessHypothesis:  directive.BusinessHypothesis,
+			ScienceHypothesis:   directive.ScienceHypothesis,
+			NullCase:            directive.NullCase,
+			RefereeResults:      pendingRefereeResults,
 			Passed:              false, // Pending
 			ValidationTimestamp: time.Now(),
 			StandardsVersion:    "1.0.0",
 			ExecutionMetadata: map[string]interface{}{
 				"referee_selection_rationale": directive.RefereeGates.Rationale,
-				"confidence_target":           directive.RefereeGates.ConfidenceTarget,
+				"confidence_target":           0.95, // Default confidence target
 				"session_id":                  sessionID,
 				"validation_status":           "pending", // Special status for UI
+				"sample_size":                 0,         // Will be updated during validation
 			},
+			// Initialize required fields to prevent database errors
+			PhaseEValues:     []float64{0.0, 0.0, 0.0}, // Initialize as array, not nil
+			FeasibilityScore: 0.0,
+			RiskLevel:        "low",
+			DataTopology:     map[string]interface{}{},
+			CurrentEValue:    0.0,
+			NormalizedEValue: 0.0,
+			Confidence:       0.0,
+			Status:           "pending",
 		}
 
 		// Save pending hypothesis to database for immediate UI display
 		if err := rw.storage.SaveHypothesis(ctx, pendingHypothesis); err != nil {
-			log.Printf("[ResearchWorker] ❌ Failed to save pending hypothesis %s: %v", directive.ID, err)
-			continue // Continue with other hypotheses
+			log.Printf("[ResearchWorker] ERROR: Failed to save pending hypothesis %s: %v", directive.ID, err)
+		} else {
+			log.Printf("[ResearchWorker] Hypothesis %s generated and saved to database", directive.ID)
 		}
 
-		log.Printf("[ResearchWorker] ✅ Created pending hypothesis %s (%d/%d) for UI display",
-			directive.ID, i+1, len(llmResponse.ResearchDirectives))
+		log.Printf("[ResearchWorker] Hypothesis %s card created for UI display", directive.ID)
 
-		// Emit SSE event for immediate UI update
-		if sseHub, ok := rw.sseHub.(*api.SSEHub); ok {
-			sseHub.Broadcast(api.ResearchEvent{
-				SessionID:    sessionID,
-				EventType:    "hypothesis_created",
-				HypothesisID: directive.ID,
-				Progress:     float64(i+1) / float64(len(llmResponse.ResearchDirectives)) * 25.0, // 0-25% for hypothesis creation
-				Data: map[string]interface{}{
-					"hypothesis_id":       directive.ID,
-					"business_hypothesis": directive.BusinessHypothesis,
-					"referee_count":       len(directive.RefereeGates.SelectedReferees),
-					"status":              "pending_validation",
-				},
-				Timestamp: time.Now(),
-			})
+		// Emit HTML fragment for immediate UI update via UI broadcaster
+		if rw.uiBroadcaster != nil {
+			if err := rw.uiBroadcaster.BroadcastHypothesisPending(sessionID, &directive); err != nil {
+				log.Printf("[ResearchWorker] Failed to broadcast hypothesis pending: %v", err)
+			}
 		}
 	}
 

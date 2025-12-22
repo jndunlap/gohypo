@@ -1,7 +1,7 @@
 # GoHypo Development Environment - Database Management
 # Note: Use 'air' to run the Go application with live reload
 
-.PHONY: help init-db db-up db-down db-logs db-reset db-admin db-status migrate test build clean dev
+.PHONY: help init-db db-up db-down db-logs db-reset db-admin db-status migrate test build clean dev css-build css-watch css-install
 
 help: ## Show this help message
 	@echo "GoHypo Database Commands:"
@@ -48,3 +48,12 @@ clean: ## Clean build artifacts
 dev: ## Start database for development (use 'air' separately to run the app)
 	docker-compose up -d postgres
 	@echo "Database started. Now run 'air' in another terminal to start the application."
+
+css-install: ## Install CSS build dependencies (Node.js/npm required)
+	npm install
+
+css-build: ## Build CSS with Tailwind (requires npm install first)
+	npm run build-css
+
+css-watch: ## Watch CSS files and rebuild on changes (requires npm install first)
+	npm run watch-css

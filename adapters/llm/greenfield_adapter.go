@@ -18,8 +18,15 @@ type GreenfieldAdapter struct {
 }
 
 func NewGreenfieldAdapter(config *models.AIConfig) *GreenfieldAdapter {
+	// Create a reasonable token limit for hypothesis generation
+	// gpt-5.2 has 8192 token context limit, so limit completion to ~5000 tokens
+	reasonableConfig := *config // copy config
+	if reasonableConfig.MaxTokens > 5000 {
+		reasonableConfig.MaxTokens = 5000 // Reasonable limit for hypothesis generation
+	}
+
 	return &GreenfieldAdapter{
-		StructuredClient: ai.NewStructuredClient[models.GreenfieldResearchOutput](config, config.PromptsDir),
+		StructuredClient: ai.NewStructuredClientLegacy[models.GreenfieldResearchOutput](&reasonableConfig, config.PromptsDir),
 		Scout:            ai.NewForensicScout(config),
 	}
 }
@@ -38,7 +45,14 @@ func (ga *GreenfieldAdapter) GenerateResearchDirectives(ctx context.Context, req
 
 	// Step 1: Run Forensic Scout to get industry context (Layer 2)
 	fmt.Printf("[GreenfieldAdapter] 🔍 Step 1: Running Forensic Scout for industry context...\n")
-	scoutResponse, err := ga.Scout.ExtractIndustryContext(ctx)
+
+	// Extract field names from the request metadata for scout analysis
+	fieldNames := make([]string, len(req.FieldMetadata))
+	for i, field := range req.FieldMetadata {
+		fieldNames[i] = field.Name
+	}
+
+	scoutResponse, err := ga.Scout.AnalyzeFields(ctx, fieldNames)
 	if err != nil {
 		// Log error but don't fail - continue without industry context
 		fmt.Printf("[GreenfieldAdapter] ⚠️  Warning: Scout failed, continuing without industry context: %v\n", err)
@@ -46,7 +60,7 @@ func (ga *GreenfieldAdapter) GenerateResearchDirectives(ctx context.Context, req
 	} else {
 		fmt.Printf("[GreenfieldAdapter] ✅ Forensic Scout completed successfully\n")
 		fmt.Printf("[GreenfieldAdapter]   • Domain: %s\n", scoutResponse.Domain)
-		fmt.Printf("[GreenfieldAdapter]   • Context: %s\n", scoutResponse.Context)
+		fmt.Printf("[GreenfieldAdapter]   • Dataset: %s\n", scoutResponse.DatasetName)
 	}
 
 	// Step 2: Build Layer 3 dynamic content
@@ -57,13 +71,13 @@ func (ga *GreenfieldAdapter) GenerateResearchDirectives(ctx context.Context, req
 		discoveryBriefs = briefs
 	}
 
-	dynamicPrompt := ga.buildDynamicResearchPrompt(req.FieldMetadata, req.StatisticalArtifacts, discoveryBriefs)
+	dynamicPrompt := ga.buildDynamicResearchPrompt(req.FieldMetadata, req.StatisticalArtifacts, discoveryBriefs, req.ValidatedHypothesisSummary)
 	fmt.Printf("[GreenfieldAdapter] ✅ Dynamic prompt built successfully (length: %d chars)\n", len(dynamicPrompt))
 
 	fmt.Printf("[GreenfieldAdapter] 🧠 Step 3: Calling LLM with greenfield_research prompt...\n")
 
 	// Call LLM with dynamic prompt and STRICT JSON system instructions
-	systemMessage := "You are a statistical research assistant. CRITICAL: Each hypothesis MUST have EXACTLY 3 referees in the selected_referees array. Output valid JSON only."
+	systemMessage := "You are a statistical research assistant. For dynamic e-value validation, you may select any number of referees (including 0) based on the hypothesis requirements. Output valid JSON only."
 	fmt.Printf("[GreenfieldAdapter] 📤 Sending request to LLM with greenfield_research prompt...\n")
 	fmt.Printf("[GreenfieldAdapter]   • System message: %s\n", systemMessage)
 	fmt.Printf("[GreenfieldAdapter]   • Prompt length: %d chars\n", len(dynamicPrompt))
@@ -97,8 +111,7 @@ func (ga *GreenfieldAdapter) GenerateResearchDirectives(ctx context.Context, req
 	// Use industry context from LLM response if available, otherwise use scout result
 	if llmResponse.IndustryContext == "" && scoutResponse != nil {
 		// Format structured scout response for hypothesis generation
-		llmResponse.IndustryContext = fmt.Sprintf("%s industry analysis: %s. Primary challenge: %s. Data characteristics: %s (%s).",
-			scoutResponse.Domain, scoutResponse.Context, scoutResponse.Bottleneck, scoutResponse.Map, scoutResponse.Physics)
+		llmResponse.IndustryContext = fmt.Sprintf("%s dataset: %s", scoutResponse.Domain, scoutResponse.DatasetName)
 	}
 
 	// Convert LLM response to domain objects
@@ -115,8 +128,8 @@ func (ga *GreenfieldAdapter) GenerateResearchDirectives(ctx context.Context, req
 	fmt.Printf("[GreenfieldAdapter]   • Prompt template: prompts/greenfield_research.txt\n")
 	fmt.Printf("[GreenfieldAdapter]   • Directives generated: %d\n", len(directives))
 	fmt.Printf("[GreenfieldAdapter]   • Engineering backlog items: %d\n", len(engineeringBacklog))
-	fmt.Printf("[GreenfieldAdapter]   • LLM model: %s\n", ga.StructuredClient.OpenAIClient.Model)
-	fmt.Printf("[GreenfieldAdapter]   • Temperature: %.2f\n", ga.StructuredClient.OpenAIClient.Temperature)
+	fmt.Printf("[GreenfieldAdapter]   • LLM model: %s\n", "gpt-5.2") // TODO: Get from LLMClient
+	fmt.Printf("[GreenfieldAdapter]   • Temperature: %.2f\n", 0.1) // TODO: Get from LLMClient
 	fmt.Printf("[GreenfieldAdapter] ═══════════════════════════════════════════════════\n")
 
 	return &ports.GreenfieldResearchResponse{
@@ -126,8 +139,8 @@ func (ga *GreenfieldAdapter) GenerateResearchDirectives(ctx context.Context, req
 		RenderedPrompt:     dynamicPrompt, // Preserve dynamic prompt for debugging
 		Audit: ports.GreenfieldAudit{
 			GeneratorType: "llm",
-			Model:         ga.StructuredClient.OpenAIClient.Model,
-			Temperature:   ga.StructuredClient.OpenAIClient.Temperature,
+			Model:         "gpt-5.2", // TODO: Get from LLMClient
+			Temperature:   0.1,     // TODO: Get from LLMClient
 		},
 	}, nil
 }
@@ -284,7 +297,7 @@ func (ga *GreenfieldAdapter) estimateEffort(capability string) string {
 }
 
 // buildDynamicResearchPrompt creates Layer 3 content (variable per research session)
-func (ga *GreenfieldAdapter) buildDynamicResearchPrompt(metadata []greenfield.FieldMetadata, stats []map[string]interface{}, briefs []discovery.DiscoveryBrief) string {
+func (ga *GreenfieldAdapter) buildDynamicResearchPrompt(metadata []greenfield.FieldMetadata, stats []map[string]interface{}, briefs []discovery.DiscoveryBrief, validatedHypothesisSummary interface{}) string {
 	fmt.Printf("[GreenfieldAdapter] ═══ PROMPT BUILDING PROCESS ═══\n")
 	fmt.Printf("[GreenfieldAdapter] 📋 Building context data for prompt injection...\n")
 
@@ -310,10 +323,25 @@ func (ga *GreenfieldAdapter) buildDynamicResearchPrompt(metadata []greenfield.Fi
 		fmt.Printf("[GreenfieldAdapter] ✅ Context JSON marshaled successfully (%d bytes)\n", len(fieldJSON))
 	}
 
+	// Prepare validated hypothesis summary JSON
+	validatedHypothesisJSON := "No validated hypotheses available for feedback learning."
+	if validatedHypothesisSummary != nil {
+		summaryJSON, err := json.MarshalIndent(validatedHypothesisSummary, "", "  ")
+		if err != nil {
+			fmt.Printf("[GreenfieldAdapter] ⚠️ Failed to marshal validated hypothesis summary: %v\n", err)
+		} else {
+			validatedHypothesisJSON = string(summaryJSON)
+			fmt.Printf("[GreenfieldAdapter] ✅ Validated hypothesis summary included (%d bytes)\n", len(validatedHypothesisJSON))
+		}
+	} else {
+		fmt.Printf("[GreenfieldAdapter] ℹ️ No validated hypothesis summary available\n")
+	}
+
 	// Prepare template replacements
 	replacements := map[string]string{
-		"FIELD_METADATA_JSON":        string(fieldJSON),
-		"INDUSTRY_CONTEXT_INJECTION": "Industry context will be injected by the adapter.",
+		"FIELD_METADATA_JSON":           string(fieldJSON),
+		"INDUSTRY_CONTEXT_INJECTION":    "Industry context will be injected by the adapter.",
+		"VALIDATED_HYPOTHESIS_SUMMARY": validatedHypothesisJSON,
 	}
 
 	fmt.Printf("[GreenfieldAdapter] 🔧 Loading template: prompts/greenfield_research.txt\n")

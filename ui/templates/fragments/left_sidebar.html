@@ -1,0 +1,434 @@
+{{define "left_sidebar"}}
+<!-- Right Sidebar - DataSpace Blocks -->
+<div id="left-sidebar" class="w-72 flex flex-col bg-white ">
+
+    <!-- Header -->
+    <div class="flex-shrink-0 border-b border-gray-200 bg-gray-100 p-3 h-12">
+        <div class="flex items-center justify-start gap-2">
+            <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Datasets</h3>
+        </div>
+    </div>
+
+    <!-- Dataset Blocks Container -->
+    <div class="flex-1 overflow-y-auto border-r border-gray-200">
+        <div class="space-y-0">
+
+            <!-- Add Dataset Block (Top Priority) -->
+            <div class="dataset-block bg-white border-b  border-gray-200  hover:bg-gray-50 cursor-pointer group"
+                 onclick="addNewData()">
+                <div class="text-center py-8 px-6">
+                    <div class="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center mx-auto mb-3 group-hover:bg-gray-300">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                    </div>
+                    <p class="text-sm font-semibold text-gray-700">Add Dataset</p>
+                    <p class="text-xs text-gray-500 mt-1">Upload CSV, Excel, or connect data source</p>
+                </div>
+            </div>
+
+            <!-- Merge Datasets Block -->
+            {{if gt (len .Datasets) 1}}
+            <div class="dataset-block bg-white border-b border-gray-200  hover:bg-gray-50 cursor-pointer group"
+                 onclick="window.showMergeModal()">
+                <div class="text-center py-6 px-6">
+                    <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-3 group-hover:bg-gray-200">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"></path>
+                        </svg>
+                    </div>
+                    <p class="text-sm font-semibold text-gray-700">Merge Datasets</p>
+                    <p class="text-xs text-gray-500 mt-1">Combine multiple datasets into one</p>
+                </div>
+            </div>
+            {{end}}
+
+            <!-- Knowledge Graph Block -->
+            {{if gt (len .Datasets) 2}}
+            <div class="dataset-block bg-white border-b border-gray-200  hover:bg-gray-50 cursor-pointer group"
+                 onclick="window.showWorkspaceGraph()">
+                <div class="text-center py-6 px-6">
+                    <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-3 group-hover:bg-gray-200">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"></path>
+                        </svg>
+                    </div>
+                    <p class="text-sm font-semibold text-gray-700">Knowledge Graph</p>
+                    <p class="text-xs text-gray-500 mt-1">Explore dataset relationships</p>
+                </div>
+            </div>
+            {{end}}
+
+            <!-- Dataset Blocks -->
+            {{range .Datasets}}
+            <div class="dataset-block bg-white border-b border-gray-200 last:border-b-0"
+                 data-dataset-id="{{.ID}}">
+
+                <!-- Dataset Header Block -->
+                <div class="dataset-header px-6 py-4 bg-white border-b border-gray-200 cursor-pointer hover:bg-gray-50  group select-none"
+                     data-dataset-id="{{.ID}}">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3 flex-1 min-w-0">
+                            <!-- Dataset Status Indicator -->
+                            <div class="w-2.5 h-2.5 rounded-full
+                                {{if eq .Status "ready"}}bg-gray-500 group-hover:bg-gray-700{{else if eq .Status "processing"}}bg-gray-400 group-hover:bg-gray-600{{else if eq .Status "error"}}bg-gray-600 group-hover:bg-gray-800{{else}}bg-gray-300 group-hover:bg-gray-500{{end}}"
+                                title="Status: {{if .Status}}{{.Status}}{{else}}unknown{{end}}"></div>
+                            <!-- Dataset Name -->
+                            <div class="flex-1 min-w-0">
+                                <span class="font-semibold text-gray-900 text-sm truncate block" title="{{.Name}}">{{.Name}}</span>
+                                <span class="text-xs text-gray-600 block">{{if .RecordCount}}{{.RecordCount}} records{{else}}— records{{end}}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <!-- Field Count Badge -->
+                            <span class="text-xs font-semibold text-gray-900 bg-white px-2 py-1 rounded border border-gray-200 group-">{{if .Fields}}{{len .Fields}}{{else}}0{{end}} fields</span>
+                            <!-- Expand/Collapse Arrow -->
+                            <svg class="w-4 h-4 text-gray-600 group-hover:text-gray-900 dataset-arrow transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fields Content Block (Initially Collapsed) -->
+                <div class="dataset-fields hidden border-t border-gray-200">
+                    {{if .Fields}}
+                    <div class="divide-y divide-gray-100">
+                        {{range .Fields}}
+                        <!-- Field Item Block - Full Width -->
+                        <div class="field-item bg-white hover:bg-gray-50 cursor-pointer group relative"
+                             data-field-name="{{.Name}}"
+                             data-field-type="{{.Type}}"
+                             data-dataset-id="{{$.ID}}"
+                             onclick="selectField('{{.Name}}', '{{$.ID}}')">
+                            <div class="px-6 py-4">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-3 flex-1 min-w-0">
+                                        <!-- Quality Indicator -->
+                                        <div class="w-2 h-2 rounded-full bg-gray-400 group-hover:bg-gray-600"
+                                             title="Quality indicator"></div>
+                                        <!-- Field Name -->
+                                        <span class="font-mono text-gray-700 text-sm font-semibold truncate flex-1 group-hover:text-gray-900" title="{{.Name}}">{{.Name}}</span>
+                                    </div>
+                                    <!-- Type Badge -->
+                                    <div class="flex items-center space-x-3">
+                                        <!-- Sample Size -->
+                                        <span class="text-xs text-gray-700 bg-gray-50 px-2 py-1 rounded border border-gray-200 group- font-medium">{{.SampleSize}}</span>
+                                        <!-- Type Badge -->
+                                        <span class="inline-flex items-center px-2 py-1 rounded border text-xs font-bold bg-gray-100 text-gray-800 border-gray-300">
+                                            {{if eq .Type "numeric"}}NUM{{else}}CAT{{end}}
+                                        </span>
+                                    </div>
+                                </div>
+                                <!-- Field Metadata Row -->
+                                <div class="mt-2 flex items-center justify-between text-xs text-gray-500 group-hover:text-gray-600">
+                                    <span>Updated recently</span>
+                                    <span>{{if gt .InRelationships 0}}{{.InRelationships}} relationships{{else}}No relationships{{end}}</span>
+                                </div>
+                            </div>
+                            <!-- Selection Indicator -->
+                            <div class="absolute inset-0 border border-transparent group-hover:border-gray-200 pointer-events-none"></div>
+                        </div>
+                        {{end}}
+                    </div>
+                    {{else}}
+                    <!-- No Fields State -->
+                    <div class="text-center py-12 px-6 text-gray-500 bg-white border-t border-gray-200">
+                        <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-2">
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                        </div>
+                        <div class="text-sm font-semibold text-gray-700">No fields available</div>
+                        <div class="text-xs mt-1 text-gray-500">This dataset appears to be empty</div>
+                    </div>
+                    {{end}}
+                </div>
+            </div>
+            {{end}}
+
+        </div>
+    </div>
+
+    <!-- DataSpace Blocks JavaScript -->
+    <script>
+        // Ensure modal control functions are available (in case base.html isn't loaded)
+        if (typeof window.showUploadModal === 'undefined') {
+            window.showUploadModal = function() {
+                const modal = document.getElementById('upload-modal');
+                if (modal) {
+                    modal.style.display = 'block';
+                    document.body.classList.add('overflow-hidden');
+                } else {
+                    console.error('Upload modal not found');
+                }
+            };
+        }
+        
+        if (typeof window.showMergeModal === 'undefined') {
+            window.showMergeModal = function() {
+                const modal = document.getElementById('merge-modal');
+                if (modal) {
+                    modal.style.display = 'block';
+                    document.body.classList.add('overflow-hidden');
+                } else {
+                    console.error('Merge modal not found');
+                }
+            };
+        }
+        
+        if (typeof window.showWorkspaceGraph === 'undefined') {
+            window.showWorkspaceGraph = function(workspaceId) {
+                console.log('showWorkspaceGraph called with workspace ID:', workspaceId);
+                // This will be overridden by workspace graph template if available
+            };
+        }
+
+        let expandedDatasets = new Set();
+        let selectedFields = new Map(); // fieldName -> {element, datasetId, fieldType}
+
+        function addNewData() {
+            console.log('Add new dataset clicked');
+            // Open the professional upload modal
+            window.showUploadModal();
+        }
+
+        function toggleDatasetBlock(datasetId) {
+            console.log('toggleDatasetBlock called with:', datasetId);
+
+            const block = document.querySelector(`[data-dataset-id="${datasetId}"]`);
+            console.log('Found block:', block);
+
+            if (!block) {
+                console.error('No block found for dataset ID:', datasetId);
+                return;
+            }
+
+            const fieldsContainer = block.querySelector('.dataset-fields');
+            const arrow = block.querySelector('.dataset-arrow');
+
+            console.log('Fields container:', fieldsContainer);
+            console.log('Arrow element:', arrow);
+            console.log('Currently expanded:', expandedDatasets.has(datasetId));
+
+            if (expandedDatasets.has(datasetId)) {
+                // Collapse
+                if (fieldsContainer) fieldsContainer.classList.add('hidden');
+                if (arrow) arrow.style.transform = 'rotate(0deg)';
+                expandedDatasets.delete(datasetId);
+                console.log('Collapsed dataset:', datasetId);
+            } else {
+                // Expand
+                if (fieldsContainer) fieldsContainer.classList.remove('hidden');
+                if (arrow) arrow.style.transform = 'rotate(180deg)';
+                expandedDatasets.add(datasetId);
+                console.log('Expanded dataset:', datasetId);
+            }
+        }
+
+        function selectField(fieldName, datasetId) {
+            const fieldElement = event.currentTarget;
+            const fieldKey = `${datasetId}:${fieldName}`;
+            const isCurrentlySelected = selectedFields.has(fieldKey);
+
+            if (isCurrentlySelected) {
+                // Deselect the field
+                const fieldData = selectedFields.get(fieldKey);
+                fieldData.element.classList.remove('bg-gray-100', 'ring-1', 'ring-gray-300');
+                fieldData.element.classList.add('bg-white', 'hover:bg-gray-50');
+                // Reset text colors in child elements
+                const fieldName = fieldData.element.querySelector('.font-mono');
+                const metadataRow = fieldData.element.querySelector('.mt-2');
+                const sampleSize = fieldData.element.querySelector('.text-xs.bg-gray-50');
+                if (fieldName) {
+                    fieldName.classList.remove('text-gray-900');
+                    fieldName.classList.add('text-gray-700');
+                }
+                if (metadataRow) {
+                    metadataRow.classList.remove('text-gray-700');
+                    metadataRow.classList.add('text-gray-500');
+                    metadataRow.querySelectorAll('span').forEach(s => {
+                        s.classList.remove('text-gray-700');
+                        s.classList.add('text-gray-500');
+                    });
+                }
+                if (sampleSize) {
+                    sampleSize.classList.remove('text-gray-900');
+                    sampleSize.classList.add('text-gray-700');
+                }
+                selectedFields.delete(fieldKey);
+
+                // Dispatch field deselection event
+                window.dispatchEvent(new CustomEvent('fieldDeselected', {
+                    detail: {
+                        fieldName: fieldName,
+                        datasetId: datasetId,
+                        fieldType: fieldData.fieldType
+                    }
+                }));
+
+                console.log('Deselected field:', fieldName, 'from dataset:', datasetId);
+            } else {
+                // Select the field
+                const fieldType = fieldElement.dataset.fieldType;
+                fieldElement.classList.remove('bg-white', 'hover:bg-gray-50');
+                fieldElement.classList.add('bg-gray-100', 'ring-1', 'ring-gray-300');
+                // Update text colors in child elements for contrast
+                const fieldName = fieldElement.querySelector('.font-mono');
+                const metadataRow = fieldElement.querySelector('.mt-2');
+                const sampleSize = fieldElement.querySelector('.text-xs.bg-gray-50');
+                if (fieldName) {
+                    fieldName.classList.remove('text-gray-700');
+                    fieldName.classList.add('text-gray-900');
+                }
+                if (metadataRow) {
+                    metadataRow.classList.remove('text-gray-500');
+                    metadataRow.classList.add('text-gray-700');
+                    metadataRow.querySelectorAll('span').forEach(s => {
+                        s.classList.remove('text-gray-500');
+                        s.classList.add('text-gray-700');
+                    });
+                }
+                if (sampleSize) {
+                    sampleSize.classList.remove('text-gray-700');
+                    sampleSize.classList.add('text-gray-900');
+                }
+
+                selectedFields.set(fieldKey, {
+                    element: fieldElement,
+                    datasetId: datasetId,
+                    fieldType: fieldType
+                });
+
+                // Dispatch field selection event
+                window.dispatchEvent(new CustomEvent('fieldSelected', {
+                    detail: {
+                        fieldName: fieldName,
+                        datasetId: datasetId,
+                        fieldType: fieldType
+                    }
+                }));
+
+                console.log('Selected field:', fieldName, 'from dataset:', datasetId);
+            }
+
+            // Update selection count display
+            updateSelectionCount();
+        }
+
+        function updateSelectionCount() {
+            const count = selectedFields.size;
+            const counter = document.getElementById('selected-count');
+            const number = document.getElementById('selected-number');
+
+            if (count > 0) {
+                number.textContent = count;
+                counter.classList.remove('hidden');
+            } else {
+                counter.classList.add('hidden');
+            }
+
+            console.log('Total selected fields:', count);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DataSpace Blocks initialized');
+
+            // Add event listeners for dataset headers
+            document.querySelectorAll('.dataset-header').forEach(header => {
+                header.addEventListener('click', function(e) {
+                    // Check if click is on the arrow area (expand/collapse) or main area (open modal)
+                    const arrow = this.querySelector('.dataset-arrow');
+                    const rect = this.getBoundingClientRect();
+                    const clickX = e.clientX - rect.left;
+                    const arrowArea = rect.width - 40; // Last 40px is arrow area
+
+                    if (clickX >= arrowArea && arrow) {
+                        // Clicked on arrow area - toggle expand/collapse
+                        e.preventDefault();
+                        e.stopPropagation();
+
+                        const datasetBlock = this.closest('.dataset-block');
+                        if (datasetBlock && datasetBlock.dataset.datasetId) {
+                            toggleDatasetBlock(datasetBlock.dataset.datasetId);
+                        }
+                    } else {
+                        // Clicked on main area - open data modal
+                        const datasetBlock = this.closest('.dataset-block');
+                        if (datasetBlock && datasetBlock.dataset.datasetId && datasetBlock.dataset.datasetId !== 'add-dataset') {
+                            const datasetName = this.querySelector('.truncate')?.textContent || 'Dataset';
+                            openDataModal('current', datasetName.trim());
+                        }
+                    }
+                });
+            });
+
+            // Auto-expand the first dataset for better UX
+            const firstDataset = document.querySelector('.dataset-block[data-dataset-id]');
+            if (firstDataset) {
+                const datasetId = firstDataset.dataset.datasetId;
+                if (datasetId) {
+                    setTimeout(() => toggleDatasetBlock(datasetId), 100);
+                }
+            }
+
+            // Restore any pre-selected field states from localStorage or other persistence
+            restoreFieldSelections();
+        });
+
+        function restoreFieldSelections() {
+            // This could be enhanced to restore selections from localStorage or URL params
+            // For now, just ensure visual consistency
+            selectedFields.forEach((fieldData, fieldKey) => {
+                if (fieldData.element) {
+                    fieldData.element.classList.remove('bg-white', 'hover:bg-gray-50');
+                    fieldData.element.classList.add('bg-gray-100', 'ring-1', 'ring-gray-300');
+                    // Update text colors for contrast
+                    const fieldName = fieldData.element.querySelector('.font-mono');
+                    const metadataRow = fieldData.element.querySelector('.mt-2');
+                    const sampleSize = fieldData.element.querySelector('.text-xs.bg-gray-50');
+                    if (fieldName) {
+                        fieldName.classList.remove('text-gray-700');
+                        fieldName.classList.add('text-gray-900');
+                    }
+                    if (metadataRow) {
+                        metadataRow.classList.remove('text-gray-500');
+                        metadataRow.classList.add('text-gray-700');
+                        metadataRow.querySelectorAll('span').forEach(s => {
+                            s.classList.remove('text-gray-500');
+                            s.classList.add('text-gray-700');
+                        });
+                    }
+                    if (sampleSize) {
+                        sampleSize.classList.remove('text-gray-700');
+                        sampleSize.classList.add('text-gray-900');
+                    }
+                }
+            });
+        }
+
+
+        // Close modal when clicking outside
+        document.addEventListener('DOMContentLoaded', function() {
+            const modal = document.getElementById('data-modal');
+            if (modal) {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) {
+                        closeDataModal();
+                    }
+                });
+            }
+
+            // Close modal on Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeDataModal();
+                }
+            });
+        });
+
+    </script>
+</div>
+{{end}}
+

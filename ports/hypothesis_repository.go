@@ -27,4 +27,7 @@ type HypothesisRepository interface {
 
 	// ListByValidationState returns hypotheses filtered by validation state
 	ListByValidationState(ctx context.Context, userID uuid.UUID, validated bool, limit int) ([]*models.HypothesisResult, error)
+
+	// ListByWorkspace returns hypotheses for a specific workspace
+	ListByWorkspace(ctx context.Context, userID uuid.UUID, workspaceID string, limit int) ([]*models.HypothesisResult, error)
 }

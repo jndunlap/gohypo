@@ -60,38 +60,50 @@ func NewDataReadinessOrchestrator(deps ReadinessOrchestratorDeps) (*DataReadines
 		return nil, fmt.Errorf("gate dependency is required")
 	}
 
+	fmt.Printf("Data readiness orchestrator initialized with profiler, coercer, synthesizer, and gate\n")
+
 	return &DataReadinessOrchestrator{
 		deps: deps,
 	}, nil
 }
 
 // ProcessSource processes a complete source through the readiness pipeline
-func (o *DataReadinessOrchestrator) ProcessSource(ctx context.Context, sourceName string, rawData interface{}) (*ReadinessResult, error) {
+func (o *DataReadinessOrchestrator) ProcessSource(ctx context.Context, sourceName string, rawData interface{}) (ReadinessResult, error) {
 	startTime := time.Now()
 
 	// Step 1: Ingest and normalize to canonical events
-	events, ingestErrors, err := o.ingestSource(rawData)
+	ingestionResult, events, err := o.ingestSource(sourceName, rawData)
 	if err != nil {
-		return nil, fmt.Errorf("ingestion failed: %w", err)
+		return ReadinessResult{}, fmt.Errorf("ingestion failed: %w", err)
 	}
 
-	ingestResult := ingestion.IngestionResult{
-		SourceName:     sourceName,
-		EventsIngested: len(events),
-		Errors:         ingestErrors,
-		DurationMs:     time.Since(startTime).Milliseconds(),
+	// Log ingestion results
+	if len(ingestionResult.Errors) > 0 {
+		fmt.Printf("Warning: %d ingestion errors for source %s\n", len(ingestionResult.Errors), sourceName)
+	}
+
+	// Early return if no events were ingested
+	if ingestionResult.EventsIngested == 0 {
+		return ReadinessResult{}, fmt.Errorf("no events could be ingested from source %s", sourceName)
 	}
 
 	// Step 2: Profile all field_keys
 	profilingResult, err := o.deps.Profiler.ProfileSource(ctx, sourceName, events, profiling.DefaultProfilingConfig())
 	if err != nil {
-		return nil, fmt.Errorf("profiling failed: %w", err)
+		return ReadinessResult{}, fmt.Errorf("profiling failed: %w", err)
 	}
 
-	// Step 3: Synthesize contract drafts
-	contractDrafts, err := o.deps.Synthesizer.SynthesizeContracts(profilingResult.Profiles)
-	if err != nil {
-		return nil, fmt.Errorf("contract synthesis failed: %w", err)
+	// Step 3: Synthesize contract drafts (if synthesizer is available)
+	var contractDrafts []synthesizer.ContractDraft
+	if o.deps.Synthesizer != nil && len(profilingResult.Profiles) > 0 {
+		contractDrafts, err = o.deps.Synthesizer.SynthesizeContracts(profilingResult.Profiles)
+		if err != nil {
+			// Log warning but continue - contract synthesis is optional
+			fmt.Printf("Warning: Contract synthesis failed for source %s: %v\n", sourceName, err)
+		} else {
+			fmt.Printf("Synthesized %d contract drafts for source %s\n",
+				len(contractDrafts), sourceName)
+		}
 	}
 
 	// Step 4: Apply readiness gates
@@ -102,61 +114,162 @@ func (o *DataReadinessOrchestrator) ProcessSource(ctx context.Context, sourceNam
 		readinessResult.ReadyVariables[i] = o.deps.Gate.ApplyRemediation(evaluation)
 	}
 
-	// Step 6: Create final result (for future use)
-	_ = &DataReadinessResult{
-		SourceName:       sourceName,
-		IngestionResult:  ingestResult,
-		ProfilingResult:  *profilingResult,
-		ContractDrafts:   contractDrafts,
-		ReadinessResult:  readinessResult,
-		ProcessingTimeMs: time.Since(startTime).Milliseconds(),
-	}
+	// Log final results
+	fmt.Printf("Data readiness completed for %s: %d events ingested, %d variables profiled, %d ready, %d rejected (%.2fs)\n",
+		sourceName, ingestionResult.EventsIngested, len(profilingResult.Profiles), readinessResult.ReadyCount,
+		readinessResult.RejectedCount, time.Since(startTime).Seconds())
 
-	return &readinessResult, nil
+	return readinessResult, nil
 }
 
-// ingestSource converts raw data to canonical events (mock implementation)
-func (o *DataReadinessOrchestrator) ingestSource(rawData interface{}) ([]ingestion.CanonicalEvent, []ingestion.IngestionError, error) {
-	// This is a placeholder - in reality, you'd have source-specific normalizers
-	// that convert CSV, JSON, database tables, etc. to canonical events
-
+// ingestSource converts raw data to canonical events
+func (o *DataReadinessOrchestrator) ingestSource(sourceName string, rawData interface{}) (ingestion.IngestionResult, []ingestion.CanonicalEvent, error) {
+	startTime := time.Now()
 	events := []ingestion.CanonicalEvent{}
 	errors := []ingestion.IngestionError{}
 
-	// Mock implementation for demonstration - handle both single object and array
-	if data, ok := rawData.(map[string]interface{}); ok {
-		// Single object - create one event with raw payload
-		event := ingestion.CanonicalEvent{
-			EntityID:   core.NewID(),
-			ObservedAt: core.Now(),
-			Source:     "test_source",
-			FieldKey:   "test_data",
-			Value:      o.deps.Coercer.CoerceValue(data["test"]),
-			RawPayload: data, // Include raw data for profiling
+	if rawData == nil {
+		result := ingestion.IngestionResult{
+			SourceName:     sourceName,
+			EventsIngested: 0,
+			Errors:         errors,
+			DurationMs:     time.Since(startTime).Milliseconds(),
 		}
-		events = append(events, event)
-	} else if dataArray, ok := rawData.([]interface{}); ok {
-		// Array of objects
-		for _, item := range dataArray {
-			if itemData, ok := item.(map[string]interface{}); ok {
-				event := ingestion.CanonicalEvent{
-					EntityID:   core.NewID(),
-					ObservedAt: core.Now(),
-					Source:     "test_source",
-					FieldKey:   "test_data",
-					Value:      o.deps.Coercer.CoerceValue(itemData["test"]),
-					RawPayload: itemData,
+		return result, events, fmt.Errorf("raw data cannot be nil")
+	}
+
+	// Handle different data types
+	switch data := rawData.(type) {
+	case map[string]interface{}:
+		// Single object - create one event
+		event, err := o.createEventFromObject(sourceName, data)
+		if err != nil {
+			ingestionErr := ingestion.IngestionError{
+				RowIndex:  0,
+				Field:     "unknown",
+				Value:     fmt.Sprintf("%v", data),
+				ErrorType: "event_creation_failed",
+				Message:   fmt.Sprintf("Failed to create event from object: %v", err),
+			}
+			errors = append(errors, ingestionErr)
+		} else {
+			events = append(events, *event)
+		}
+
+	case []interface{}:
+		// Array of objects - create one event per object
+		for i, item := range data {
+			if itemMap, ok := item.(map[string]interface{}); ok {
+				event, err := o.createEventFromObject(sourceName, itemMap)
+				if err != nil {
+					ingestionErr := ingestion.IngestionError{
+						RowIndex:  i,
+						Field:     fmt.Sprintf("item_%d", i),
+						Value:     fmt.Sprintf("%v", item),
+						ErrorType: "event_creation_failed",
+						Message:   fmt.Sprintf("Failed to create event from array item %d: %v", i, err),
+					}
+					errors = append(errors, ingestionErr)
+				} else {
+					events = append(events, *event)
 				}
-				events = append(events, event)
+			} else {
+				ingestionErr := ingestion.IngestionError{
+					RowIndex:  i,
+					Field:     fmt.Sprintf("item_%d", i),
+					Value:     fmt.Sprintf("%v", item),
+					ErrorType: "invalid_data_type",
+					Message:   "Array item is not a map/object",
+				}
+				errors = append(errors, ingestionErr)
+			}
+		}
+
+	case []map[string]interface{}:
+		// Array of maps - create one event per map
+		for i, itemMap := range data {
+			event, err := o.createEventFromObject(sourceName, itemMap)
+			if err != nil {
+				ingestionErr := ingestion.IngestionError{
+					RowIndex:  i,
+					Field:     fmt.Sprintf("item_%d", i),
+					Value:     fmt.Sprintf("%v", itemMap),
+					ErrorType: "event_creation_failed",
+					Message:   fmt.Sprintf("Failed to create event from map item %d: %v", i, err),
+				}
+				errors = append(errors, ingestionErr)
+			} else {
+				events = append(events, *event)
+			}
+		}
+
+	default:
+		result := ingestion.IngestionResult{
+			SourceName:     sourceName,
+			EventsIngested: 0,
+			Errors:         errors,
+			DurationMs:     time.Since(startTime).Milliseconds(),
+		}
+		return result, events, fmt.Errorf("unsupported data type: %T", rawData)
+	}
+
+	result := ingestion.IngestionResult{
+		SourceName:     sourceName,
+		EventsIngested: len(events),
+		Errors:         errors,
+		DurationMs:     time.Since(startTime).Milliseconds(),
+	}
+	return result, events, nil
+}
+
+// createEventFromObject creates a canonical event from a single data object
+func (o *DataReadinessOrchestrator) createEventFromObject(sourceName string, data map[string]interface{}) (*ingestion.CanonicalEvent, error) {
+	if len(data) == 0 {
+		return nil, fmt.Errorf("empty data object")
+	}
+
+	// Use a default field key for the entire object
+	fieldKey := "raw_data"
+
+	// Try to find an ID field for entity identification
+	entityID := core.NewID()
+	if idValue, exists := data["id"]; exists {
+		if idStr, ok := idValue.(string); ok && idStr != "" {
+			entityID = core.ID(idStr)
+		}
+	}
+
+	// Try to find a timestamp field
+	observedAt := core.Now()
+	if timestampValue, exists := data["timestamp"]; exists {
+		if tsStr, ok := timestampValue.(string); ok && tsStr != "" {
+			if parsed, err := time.Parse(time.RFC3339, tsStr); err == nil {
+				observedAt = core.Timestamp(parsed)
 			}
 		}
 	}
 
-	return events, errors, nil
+	// Coerce the entire data object as the value
+	coercedValue := o.deps.Coercer.CoerceValue(data)
+
+	event := &ingestion.CanonicalEvent{
+		EntityID:   entityID,
+		ObservedAt: observedAt,
+		Source:     sourceName,
+		FieldKey:   fieldKey,
+		Value:      coercedValue,
+		RawPayload: data,
+	}
+
+	return event, nil
 }
 
 // GetReadyContracts returns the contracts for variables that passed readiness gates
 func (o *DataReadinessOrchestrator) GetReadyContracts(result *ReadinessResult, contractDrafts []synthesizer.ContractDraft) ([]*dataset.VariableContract, error) {
+	if result == nil {
+		return nil, fmt.Errorf("readiness result cannot be nil")
+	}
+
 	contracts := make([]*dataset.VariableContract, 0, result.ReadyCount)
 
 	for _, evaluation := range result.ReadyVariables {
@@ -169,17 +282,37 @@ func (o *DataReadinessOrchestrator) GetReadyContracts(result *ReadinessResult, c
 			}
 		}
 
-		if draft != nil && draft.Confidence >= 0.7 { // Only high-confidence contracts
-			contract := draft.ToVariableContract()
-			contracts = append(contracts, contract)
+		if draft != nil {
+			// Only include high-confidence contracts
+			if draft.Confidence >= 0.7 {
+				contract := draft.ToVariableContract()
+				if contract != nil {
+					contracts = append(contracts, contract)
+				}
+			}
+		} else {
+			// Create a basic contract if no draft is available
+			basicContract := &dataset.VariableContract{
+				VarKey:           core.VariableKey(evaluation.VariableKey),
+				AsOfMode:         dataset.AsOfMode("latest"),         // Default mode
+				StatisticalType:  dataset.StatisticalType("numeric"), // Default to numeric
+				ImputationPolicy: dataset.ImputationPolicy("drop"),   // Default policy
+				ScalarGuarantee:  true,
+			}
+			contracts = append(contracts, basicContract)
 		}
 	}
 
+	fmt.Printf("Generated %d variable contracts from %d ready variables\n", len(contracts), result.ReadyCount)
 	return contracts, nil
 }
 
 // GetAdmissibleVariables returns the list of variables ready for statistical analysis
 func (o *DataReadinessOrchestrator) GetAdmissibleVariables(result *ReadinessResult) []AdmissibleVariable {
+	if result == nil || len(result.ReadyVariables) == 0 {
+		return []AdmissibleVariable{}
+	}
+
 	variables := make([]AdmissibleVariable, 0, result.ReadyCount)
 
 	for _, evaluation := range result.ReadyVariables {
@@ -194,6 +327,7 @@ func (o *DataReadinessOrchestrator) GetAdmissibleVariables(result *ReadinessResu
 		variables = append(variables, variable)
 	}
 
+	fmt.Printf("Prepared %d admissible variables for statistical analysis\n", len(variables))
 	return variables
 }
 

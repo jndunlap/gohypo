@@ -68,15 +68,12 @@ func (h *IndustryHandler) HandleIndustryContext() gin.HandlerFunc {
 			return
 		}
 
-		log.Printf("[IndustryContext] Successfully extracted intelligence: Domain='%s', Context='%s'",
-			scoutResponse.Domain, scoutResponse.Context)
+		log.Printf("[IndustryContext] Successfully extracted intelligence: Domain='%s', Dataset='%s'",
+			scoutResponse.Domain, scoutResponse.DatasetName)
 
 		c.JSON(http.StatusOK, gin.H{
-			"domain":     scoutResponse.Domain,
-			"context":    scoutResponse.Context,
-			"bottleneck": scoutResponse.Bottleneck,
-			"physics":    scoutResponse.Physics,
-			"map":        scoutResponse.Map,
+			"domain":       scoutResponse.Domain,
+			"dataset_name": scoutResponse.DatasetName,
 		})
 	}
 }

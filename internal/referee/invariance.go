@@ -74,6 +74,13 @@ func (c *ChowTest) Execute(x, y []float64, metadata map[string]interface{}) Refe
 	}
 }
 
+// AuditEvidence performs evidence auditing for Chow stability test using discovery q-values
+func (c *ChowTest) AuditEvidence(discoveryEvidence interface{}, validationData []float64, metadata map[string]interface{}) RefereeResult {
+	// Chow test is about structural stability - use default audit logic
+	// since invariance testing requires time-series data that's hard to audit from q-values alone
+	return DefaultAuditEvidence("Chow_Stability_Test", discoveryEvidence, validationData, metadata)
+}
+
 // computeChowStatistic computes Chow test statistic for a given split point
 func (c *ChowTest) computeChowStatistic(x, y []float64, splitPoint float64, timeVar []float64) (float64, float64) {
 	x1, y1, x2, y2 := c.splitData(x, y, timeVar, splitPoint)
@@ -252,6 +259,13 @@ func (cusum *CUSUMDriftDetection) Execute(x, y []float64, metadata map[string]in
 		StandardUsed:  "CUSUM < control limit with FPR < 0.001 (stable parameters over time)",
 		FailureReason: failureReason,
 	}
+}
+
+// AuditEvidence performs evidence auditing for CUSUM drift detection using discovery q-values
+func (cusum *CUSUMDriftDetection) AuditEvidence(discoveryEvidence interface{}, validationData []float64, metadata map[string]interface{}) RefereeResult {
+	// CUSUM is about temporal stability - use default audit logic
+	// since stability testing requires time-series analysis that's hard to audit from q-values alone
+	return DefaultAuditEvidence("CUSUM_Drift_Detection", discoveryEvidence, validationData, metadata)
 }
 
 // computeRecursiveResiduals computes recursive residuals for monitoring

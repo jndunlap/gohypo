@@ -1,0 +1,5 @@
+{{define "test_status_update"}}
+<div id="test-{{.TestName}}-{{.HypothesisID}}" class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium {{if .Passed}}bg-green-50 text-green-700 border border-green-200{{else if .Completed}}bg-red-50 text-red-700 border border-red-200{{else}}bg-blue-50 text-blue-700 border border-blue-200{{end}}" hx-swap-oob="outerHTML:#test-{{.TestName}}-{{.HypothesisID}}">
+    {{if .Passed}}✓{{else if .Completed}}✗{{else}}⟳{{end}} {{.ShortName}}
+</div>
+{{end}}

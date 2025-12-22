@@ -6,7 +6,7 @@
 # 1. Set environment variables
 export GENERATOR_MODE=llm  # or "heuristic"
 export LLM_PROVIDER=openai
-export LLM_MODEL=gpt-4
+export LLM_MODEL=gpt-5.2
 export LLM_API_KEY=sk-...
 
 # 2. Run sweep on mock shopping data
@@ -67,7 +67,7 @@ import (
 // Config holds LLM adapter configuration
 type Config struct {
 	Provider           string        // "openai", "anthropic", "local"
-	Model              string        // e.g., "gpt-4", "claude-3-opus"
+	Model              string        // e.g., "gpt-5.2", "claude-3-opus"
 	APIKey             string        // API key for provider
 	BaseURL            string        // For local models (e.g., "http://localhost:11434")
 	Temperature        float64       // 0.0-1.0, lower = more deterministic

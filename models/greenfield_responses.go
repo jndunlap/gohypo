@@ -3,8 +3,6 @@ package models
 import (
 	"fmt"
 	"time"
-
-	"gohypo/internal/referee"
 )
 
 // GreenfieldResearchOutput - Exact match for your JSON schema
@@ -48,7 +46,7 @@ type ValidationStrategy struct {
 }
 
 type RefereeGates struct {
-	SelectedReferees []string `json:"selected_referees" description:"Exactly 3 referees selected for Tri-Gate validation"`
+	SelectedReferees []string `json:"selected_referees" description:"Referees selected for dynamic e-value validation"`
 	ConfidenceTarget float64  `json:"confidence_target" description:"Target confidence level (e.g., 0.999)"`
 	Rationale        string   `json:"rationale" description:"Explanation of why these 3 referees were selected"`
 	// Legacy fields for backward compatibility
@@ -60,9 +58,8 @@ type RefereeGates struct {
 
 // Validate ensures the RefereeGates structure contains valid referee selections
 func (rg *RefereeGates) Validate() error {
-	if len(rg.SelectedReferees) != 3 {
-		return fmt.Errorf("exactly 3 referees must be selected, got %d", len(rg.SelectedReferees))
-	}
+	// Dynamic e-value validation allows any number of referees (including 0)
+	// No validation required for referee count
 
 	// Check for duplicates
 	seen := make(map[string]bool)
@@ -103,29 +100,53 @@ func (rg *RefereeGates) Validate() error {
 	return nil
 }
 
-// HypothesisResult represents the complete result of hypothesis validation
-type HypothesisResult struct {
-	ID                  string                  `json:"id"`
-	SessionID           string                  `json:"session_id,omitempty"` // Added for database storage
-	BusinessHypothesis  string                  `json:"business_hypothesis"`
-	ScienceHypothesis   string                  `json:"science_hypothesis"`
-	NullCase            string                  `json:"null_case"`
-	RefereeResults      []referee.RefereeResult `json:"referee_results"`
-	TriGateResult       referee.TriGateResult   `json:"tri_gate_result"`
-	Passed              bool                    `json:"passed"`
-	ValidationTimestamp time.Time               `json:"validation_timestamp"`
-	StandardsVersion    string                  `json:"standards_version"`
-	ExecutionMetadata   map[string]interface{}  `json:"execution_metadata"`
-	// Legacy fields for backward compatibility
-	Validated bool      `json:"validated,omitempty"`  // maps to Passed
-	Rejected  bool      `json:"rejected,omitempty"`   // maps to !Passed
-	CreatedAt time.Time `json:"created_at,omitempty"` // maps to ValidationTimestamp
+// RefereeResult represents the result of a single referee validation
+type RefereeResult struct {
+	GateName      string  `json:"gate_name"`
+	Passed        bool    `json:"passed"`
+	Statistic     float64 `json:"statistic"`
+	PValue        float64 `json:"p_value"`
+	EValue        float64 `json:"e_value"` // E-value from evidence auditing
+	StandardUsed  string  `json:"standard_used"`
+	FailureReason string  `json:"failure_reason,omitempty"`
 }
 
 // TriGateResult represents the aggregated result of Tri-Gate validation
 type TriGateResult struct {
-	RefereeResults []referee.RefereeResult `json:"referee_results"`
-	OverallPassed  bool                    `json:"overall_passed"`
-	Confidence     float64                 `json:"confidence"`
-	Rationale      string                  `json:"rationale"`
+	RefereeResults   []RefereeResult `json:"referee_results"`
+	OverallPassed    bool            `json:"overall_passed"`
+	Confidence       float64         `json:"confidence"`
+	NormalizedEValue float64         `json:"normalized_e_value"` // 0-1 scale for UX
+	QualityRating    string          `json:"quality_rating"`     // Hypothesis quality rating
+	Rationale        string          `json:"rationale"`
+}
+
+// HypothesisResult represents the complete result of hypothesis validation
+type HypothesisResult struct {
+	ID                  string                 `json:"id"`
+	SessionID           string                 `json:"session_id,omitempty"`   // Added for database storage
+	WorkspaceID         string                 `json:"workspace_id,omitempty"` // Added for workspace scoping
+	BusinessHypothesis  string                 `json:"business_hypothesis"`
+	ScienceHypothesis   string                 `json:"science_hypothesis"`
+	NullCase            string                 `json:"null_case"`
+	RefereeResults      []RefereeResult        `json:"referee_results"`
+	Passed              bool                   `json:"passed"`
+	ValidationTimestamp time.Time              `json:"validation_timestamp"`
+	StandardsVersion    string                 `json:"standards_version"`
+	ExecutionMetadata   map[string]interface{} `json:"execution_metadata"`
+
+	// New research ledger fields
+	PhaseEValues     []float64              `json:"phase_e_values"`
+	FeasibilityScore float64                `json:"feasibility_score"`
+	RiskLevel        string                 `json:"risk_level"`
+	DataTopology     map[string]interface{} `json:"data_topology"`
+	CurrentEValue    float64                `json:"current_e_value"`
+	NormalizedEValue float64                `json:"normalized_e_value"`
+	Confidence       float64                `json:"confidence"`
+	Status           string                 `json:"status"`
+
+	// Legacy fields for backward compatibility
+	Validated bool      `json:"validated,omitempty"`  // maps to Passed
+	Rejected  bool      `json:"rejected,omitempty"`   // maps to !Passed
+	CreatedAt time.Time `json:"created_at,omitempty"` // maps to ValidationTimestamp
 }

@@ -1,0 +1,256 @@
+DYNAMIC E-VALUE VALIDATION: Select referees based on hypothesis requirements. You may select 0 or more referees as appropriate for the statistical validation needed.
+
+---
+
+You are the Lead Research Architect for the GoHypo Engine. Generate 3 hypotheses in valid JSON format.
+
+Industry context will be injected by the adapter.
+
+INPUT DATA:
+{
+  "discovery_briefs": null,
+  "field_metadata": [
+    {
+      "name": "ShippingCost",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "OrderStatus",
+      "semantic_type": "",
+      "data_type": "text"
+    },
+    {
+      "name": "OrderDate",
+      "semantic_type": "",
+      "data_type": "date"
+    },
+    {
+      "name": "ProductName",
+      "semantic_type": "",
+      "data_type": "text"
+    },
+    {
+      "name": "Brand",
+      "semantic_type": "",
+      "data_type": "text"
+    },
+    {
+      "name": "Discount",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "OrderID",
+      "semantic_type": "",
+      "data_type": "text"
+    },
+    {
+      "name": "CustomerID",
+      "semantic_type": "",
+      "data_type": "text"
+    },
+    {
+      "name": "Tax",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "TotalAmount",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "State",
+      "semantic_type": "",
+      "data_type": "text"
+    },
+    {
+      "name": "CustomerName",
+      "semantic_type": "",
+      "data_type": "text"
+    },
+    {
+      "name": "ProductID",
+      "semantic_type": "",
+      "data_type": "text"
+    },
+    {
+      "name": "PaymentMethod",
+      "semantic_type": "",
+      "data_type": "text"
+    },
+    {
+      "name": "City",
+      "semantic_type": "",
+      "data_type": "text"
+    },
+    {
+      "name": "Country",
+      "semantic_type": "",
+      "data_type": "text"
+    },
+    {
+      "name": "SellerID",
+      "semantic_type": "",
+      "data_type": "text"
+    },
+    {
+      "name": "Category",
+      "semantic_type": "",
+      "data_type": "text"
+    },
+    {
+      "name": "Quantity",
+      "semantic_type": "",
+      "data_type": "numeric"
+    },
+    {
+      "name": "UnitPrice",
+      "semantic_type": "",
+      "data_type": "numeric"
+    }
+  ],
+  "statistical_artifacts": [
+    {
+      "created_at": "2025-12-20T13:41:32.225563-05:00",
+      "id": "sweep-manifest-placeholder",
+      "kind": "sweep_manifest",
+      "payload": {
+        "status": "placeholder"
+      }
+    }
+  ],
+  "total_fields": 20,
+  "total_stats_artifacts": 1
+}
+
+STATISTICAL EVIDENCE QUALITY:
+{STATISTICAL_EVIDENCE_JSON}
+
+CRITICAL STATISTICAL GUIDANCE:
+- Relationships with q-value > 0.10 are likely statistical noise and should NOT generate hypotheses
+- q-value represents False Discovery Rate (FDR) corrected significance after accounting for multiple testing
+- Only generate hypotheses for relationships with strong statistical evidence (q ≤ 0.05)
+- If q-value > 0.10, explain in the null_case that this relationship appears to be spurious correlation
+- Prioritize hypotheses where q-value ≤ 0.01 (strong statistical evidence)
+
+---
+
+VARIABLE SELECTION RULES:
+- cause_key: Must be an exact column name from the field_metadata (e.g., "HTP", "HTGD", "HTWinStreak3")
+- effect_key: Must be the outcome variable you're trying to predict (usually "FTR" for match results)
+- Do NOT use generic names - use the EXACT field names from the dataset
+
+VALIDATION EXAMPLES:
+✓ GOOD: "cause_key": "HTP", "effect_key": "FTR"
+✗ BAD:  "cause_key": "", "effect_key": ""  ← Will be REJECTED
+✗ BAD:  "cause_key": "team_points", "effect_key": "outcome"  ← Field names don't exist
+
+---
+
+REQUIRED OUTPUT FORMAT (COPY THIS STRUCTURE EXACTLY):
+
+{
+  "industry_context": "Two-sentence summary from the Forensic Scout.",
+  "meta_analysis_meta": {
+    "system_entropy_grade": "A-F based on signal-to-noise ratio.",
+    "causal_topology": "Chaotic | Linear | Feedback-Dominant | Latent-Heavy"
+  },
+  "research_directives": [
+    {
+      "id": "1",
+      "business_hypothesis": "Simple sentence describing human behavior",
+      "science_hypothesis": "Precise technical description of the data interaction",
+      "null_case": "Description of what the data looks like if your idea is WRONG",
+      "cause_key": "HTP",
+      "effect_key": "FTR",
+      "opportunity_analysis": {
+        "strategic_value": "Advantage of knowing this pattern",
+        "risk_of_inaction": "Cost of ignoring this pattern",
+        "leverage_score": "High | Medium | Low"
+      },
+      "referee_gates": {
+        "selected_referees": [
+          "Permutation_Shredder",
+          "Chow_Stability_Test",
+          "Transfer_Entropy"
+        ],
+        "confidence_target": 0.999,
+        "rationale": "Why these 3 specific referees provide comprehensive validation"
+      }
+    },
+    {
+      "id": "2",
+      "business_hypothesis": "...",
+      "science_hypothesis": "...",
+      "null_case": "...",
+      "opportunity_analysis": {
+        "strategic_value": "...",
+        "risk_of_inaction": "...",
+        "leverage_score": "..."
+      },
+      "referee_gates": {
+        "selected_referees": [
+          "Permutation_Shredder",
+          "Conditional_MI",
+          "LOO_Cross_Validation"
+        ],
+        "confidence_target": 0.999,
+        "rationale": "..."
+      }
+    },
+    {
+      "id": "3",
+      "business_hypothesis": "...",
+      "science_hypothesis": "...",
+      "null_case": "...",
+      "opportunity_analysis": {
+        "strategic_value": "...",
+        "risk_of_inaction": "...",
+        "leverage_score": "..."
+      },
+      "referee_gates": {
+        "selected_referees": [
+          "Chow_Stability_Test",
+          "Transfer_Entropy",
+          "Persistent_Homology"
+        ],
+        "confidence_target": 0.999,
+        "rationale": "..."
+      }
+    }
+  ]
+}
+
+---
+
+AVAILABLE REFEREES (choose EXACTLY 3 from 3 DIFFERENT categories):
+
+SHREDDER: Permutation_Shredder
+DIRECTIONAL: Transfer_Entropy, Convergent_Cross_Mapping
+INVARIANCE: Chow_Stability_Test
+ANTI_CONFOUNDER: Conditional_MI
+MECHANISM: Isotonic_Mechanism_Check
+SENSITIVITY: LOO_Cross_Validation
+TOPOLOGICAL: Persistent_Homology
+THERMODYNAMIC: Algorithmic_Complexity
+COUNTERFACTUAL: Synthetic_Intervention
+SPECTRAL: Wavelet_Coherence
+
+VALIDATION RULES:
+1. Each hypothesis MUST have EXACTLY 3 referees (not 2, not 4, exactly 3)
+2. The 3 referees MUST be from 3 DIFFERENT categories
+3. Use exact spelling from the list above
+
+EXAMPLES OF VALID 3-REFEREE SELECTIONS:
+✓ ["Permutation_Shredder", "Chow_Stability_Test", "Transfer_Entropy"] - 3 referees from SHREDDER, INVARIANCE, DIRECTIONAL
+✓ ["Permutation_Shredder", "Conditional_MI", "LOO_Cross_Validation"] - 3 referees from SHREDDER, ANTI_CONFOUNDER, SENSITIVITY
+✓ ["Chow_Stability_Test", "Transfer_Entropy", "Persistent_Homology"] - 3 referees from INVARIANCE, DIRECTIONAL, TOPOLOGICAL
+
+EXAMPLES OF INVALID SELECTIONS (WILL BE REJECTED):
+✗ ["Permutation_Shredder", "Chow_Stability_Test"] - Only 2 referees (REJECTED)
+✗ ["Transfer_Entropy", "Convergent_Cross_Mapping", "Chow_Stability_Test", "Conditional_MI"] - 4 referees (REJECTED)
+✗ ["Transfer_Entropy", "Convergent_Cross_Mapping", "Persistent_Homology"] - 2 from same category DIRECTIONAL (REJECTED)
+
+Output ONLY valid JSON. No markdown, no explanatory text.

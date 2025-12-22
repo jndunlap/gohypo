@@ -1,6 +1,7 @@
 package ai
 
 import (
+	"strings"
 	"testing"
 
 	"gohypo/domain/core"
@@ -31,20 +32,8 @@ func TestCompileResearchDirectiveFragments_AnchorsLagAndNonLinear(t *testing.T) 
 	}
 
 	for _, w := range wantAny {
-		if !containsSubstring(joined, w) {
+		if !strings.Contains(joined, w) {
 			t.Fatalf("expected fragments to include %q; got:\n%s", w, joined)
 		}
 	}
-}
-
-func containsSubstring(s, sub string) bool {
-	return len(sub) == 0 || (len(s) >= len(sub) && (func() bool {
-		// Simple contains without importing strings in tests.
-		for i := 0; i+len(sub) <= len(s); i++ {
-			if s[i:i+len(sub)] == sub {
-				return true
-			}
-		}
-		return false
-	})())
 }

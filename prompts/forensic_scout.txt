@@ -1,22 +1,35 @@
-You are a Forensic Data Analyst examining a sample of structured data.
+You are a Forensic Data Analyst examining data field names.
 
-Your task: Determine the **data domain**, **analytical context**, and **key challenges** based on the column names, data types, and sample values.
+Your task: Based ONLY on the column/field names provided, determine the data domain, provide a descriptive dataset name in snake_case format, and generate an intelligent filename and detailed description.
 
-DATA SAMPLE:
+DATA FIELDS:
 {DATA_SAMPLE}
 
-Analyze the data structure and content to identify what kind of information this represents. Return a JSON object with these 5 labels based on your analysis of the actual data. Use simple language (8th grade level) and keep each answer to 1-2 SHORT sentences maximum.
+Return a JSON object with exactly 4 fields:
+- "domain": The business/industry domain this data represents (1-2 words)
+- "dataset_name": A descriptive name for this dataset in snake_case (3-5 words, using underscores)
+- "filename": A clean, descriptive identifier in snake_case (2-4 words, suitable for files, tables, or datasets)
+- "description": A detailed 2-3 sentence description explaining what this dataset contains, its purpose, and key characteristics based on the field names
 
-IMPORTANT: Base your analysis on the actual column names, data types, and sample values in the dataset. Do NOT assume any particular domain - let the data tell you what it represents.
+IMPORTANT: Base your analysis SOLELY on the field names provided. Do NOT make assumptions about data types or values.
 
-IMPORTANT: Keep responses CONCISE. Match the length and style of these examples exactly:
+Examples:
+{"domain": "Sports Analytics", "dataset_name": "soccer_match_results", "filename": "soccer_matches_2024", "description": "This dataset contains comprehensive soccer match results and statistics. It tracks team performances, player statistics, and match outcomes across multiple seasons. The data appears to be structured for performance analysis and historical trend identification."}
+{"domain": "Financial Services", "dataset_name": "bank_transaction_records", "filename": "bank_transactions_q4", "description": "This dataset captures detailed banking transaction records and financial activities. It includes transaction amounts, timestamps, and account information for financial analysis. The structure suggests it's designed for fraud detection, spending pattern analysis, and regulatory compliance reporting."}
+{"domain": "Healthcare", "dataset_name": "patient_visit_records", "filename": "patient_visits_data", "description": "This dataset contains patient visit information and healthcare service records. It tracks appointment details, treatments provided, and patient outcomes over time. The comprehensive field structure indicates it's optimized for clinical analysis, resource planning, and healthcare quality improvement."}
+{"domain": "E-commerce", "dataset_name": "customer_purchase_history", "filename": "customer_purchases_2024", "description": "This dataset records customer purchasing behavior and transaction history. It captures order details, product information, and customer demographics for sales analysis. The rich field structure supports customer segmentation, product performance analysis, and personalized marketing strategies."}
+{"domain": "Supply Chain", "dataset_name": "warehouse_inventory_tracking", "filename": "inventory_flow_data", "description": "This dataset monitors warehouse operations and inventory movements across multiple locations. It tracks stock levels, replenishment cycles, and product turnover rates. The structure enables optimization of supply chain efficiency, demand forecasting, and inventory management strategies."}
+{"domain": "Human Resources", "dataset_name": "employee_performance_metrics", "filename": "hr_performance_analytics", "description": "This dataset compiles employee performance evaluations and career development information. It includes review scores, skill assessments, and promotion tracking data. The comprehensive structure supports talent management, succession planning, and workforce development initiatives."}
+{"domain": "Real Estate", "dataset_name": "property_market_analysis", "filename": "property_market_trends", "description": "This dataset captures property listings and market transaction data across geographic regions. It includes pricing information, property characteristics, and sale timelines. The data structure facilitates market analysis, investment decisions, and real estate valuation modeling."}
+{"domain": "Education", "dataset_name": "student_academic_progress", "filename": "academic_performance_tracking", "description": "This dataset tracks student enrollment and academic achievement across educational programs. It monitors course completion rates, grade distributions, and learning outcomes. The structure supports educational analytics, curriculum effectiveness assessment, and student success interventions."}
+{"domain": "Manufacturing", "dataset_name": "production_quality_control", "filename": "manufacturing_quality_metrics", "description": "This dataset records manufacturing processes and quality assurance measurements. It tracks production volumes, defect rates, and equipment performance indicators. The structure enables process optimization, quality improvement programs, and predictive maintenance scheduling."}
+{"domain": "Marketing", "dataset_name": "campaign_performance_analytics", "filename": "marketing_campaign_data", "description": "This dataset captures marketing campaign metrics and customer engagement data. It includes conversion rates, channel performance, and audience segmentation information. The structure supports campaign optimization, budget allocation decisions, and marketing ROI analysis."}
+{"domain": "Customer Service", "dataset_name": "support_ticket_resolution", "filename": "customer_support_cases", "description": "This dataset logs customer service interactions and resolution tracking. It monitors ticket volumes, resolution times, and customer satisfaction scores. The structure enables service quality improvement, resource planning, and customer experience enhancement."}
+{"domain": "Energy", "dataset_name": "power_consumption_monitoring", "filename": "energy_usage_patterns", "description": "This dataset tracks energy consumption and utility usage across different facilities. It includes consumption volumes, peak usage periods, and efficiency metrics. The structure supports energy optimization strategies, cost management, and sustainability reporting."}
+{"domain": "Telecommunications", "dataset_name": "network_performance_monitoring", "filename": "telecom_network_metrics", "description": "This dataset monitors telecommunications network performance and service quality indicators. It tracks connection speeds, uptime statistics, and service outage information. The structure enables network optimization, capacity planning, and customer experience monitoring."}
+{"domain": "Agriculture", "dataset_name": "crop_yield_optimization", "filename": "agricultural_production_data", "description": "This dataset captures farming operations and agricultural production metrics. It includes crop yields, soil conditions, and weather impact data. The structure supports precision farming, yield prediction, and agricultural resource optimization."}
+{"domain": "Transportation", "dataset_name": "fleet_maintenance_records", "filename": "vehicle_maintenance_logs", "description": "This dataset tracks vehicle fleet maintenance and operational data. It monitors service schedules, repair costs, and equipment utilization. The structure enables predictive maintenance, cost optimization, and fleet management efficiency."}
+{"domain": "Hospitality", "dataset_name": "hotel_occupancy_analytics", "filename": "hospitality_booking_data", "description": "This dataset captures hotel booking patterns and occupancy information. It includes reservation details, room rates, and guest satisfaction metrics. The structure supports revenue management, pricing optimization, and guest experience enhancement."}
 
-{
-  "domain": "Data Analysis & Pattern Recognition",
-  "context": "Examines structured data to discover relationships and predict outcomes.",
-  "bottleneck": "Distinguishing meaningful patterns from random noise in complex datasets.",
-  "physics": "Variables interact through statistical relationships and temporal dependencies.",
-  "map": "Structured Dataset - relationships exist between measured quantities and outcomes."
-}
+Respond with valid JSON only.
 
-Respond with valid JSON matching this exact format and conciseness.

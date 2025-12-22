@@ -1,0 +1,308 @@
+// ===== FORM HELPERS MODULE =====
+// Progressive form enhancements and validation
+
+(function() {
+    'use strict';
+
+    // Initialize when DOM is ready
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('[Form Helpers] Initializing form enhancements...');
+        initializeFormValidation();
+        initializeAutoSave();
+        initializeFormEnhancements();
+    });
+
+    // ===== FORM VALIDATION =====
+    function initializeFormValidation() {
+        // Progressive validation - enhances but doesn't break server-side validation
+        document.addEventListener('blur', function(e) {
+            if (e.target.matches('input, textarea, select')) {
+                validateField(e.target);
+            }
+        }, true);
+
+        document.addEventListener('input', function(e) {
+            if (e.target.matches('input, textarea')) {
+                clearFieldError(e.target);
+            }
+        });
+    }
+
+    function validateField(field) {
+        const value = field.value.trim();
+        const fieldName = field.name || field.id;
+        let isValid = true;
+        let errorMessage = '';
+
+        // Required field validation
+        if (field.hasAttribute('required') && !value) {
+            isValid = false;
+            errorMessage = `${fieldName || 'This field'} is required`;
+        }
+
+        // Email validation
+        else if (field.type === 'email' && value) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(value)) {
+                isValid = false;
+                errorMessage = 'Please enter a valid email address';
+            }
+        }
+
+        // URL validation
+        else if (field.type === 'url' && value) {
+            try {
+                new URL(value);
+            } catch {
+                isValid = false;
+                errorMessage = 'Please enter a valid URL';
+            }
+        }
+
+        // Min/max length validation
+        else if (field.hasAttribute('minlength') && value.length < parseInt(field.getAttribute('minlength'))) {
+            isValid = false;
+            errorMessage = `Minimum ${field.getAttribute('minlength')} characters required`;
+        }
+
+        else if (field.hasAttribute('maxlength') && value.length > parseInt(field.getAttribute('maxlength'))) {
+            isValid = false;
+            errorMessage = `Maximum ${field.getAttribute('maxlength')} characters allowed`;
+        }
+
+        // Pattern validation
+        else if (field.hasAttribute('pattern') && value) {
+            const pattern = new RegExp(field.getAttribute('pattern'));
+            if (!pattern.test(value)) {
+                isValid = false;
+                errorMessage = field.getAttribute('title') || 'Invalid format';
+            }
+        }
+
+        if (!isValid) {
+            showFieldError(field, errorMessage);
+        } else {
+            clearFieldError(field);
+        }
+
+        return isValid;
+    }
+
+    function showFieldError(field, message) {
+        clearFieldError(field); // Remove existing error
+
+        field.classList.add('border-red-500', 'focus:border-red-500', 'focus:ring-red-500');
+
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'field-error text-red-600 text-sm mt-1';
+        errorDiv.textContent = message;
+
+        field.parentNode.insertBefore(errorDiv, field.nextSibling);
+    }
+
+    function clearFieldError(field) {
+        field.classList.remove('border-red-500', 'focus:border-red-500', 'focus:ring-red-500');
+
+        const existingError = field.parentNode.querySelector('.field-error');
+        if (existingError) {
+            existingError.remove();
+        }
+    }
+
+    // ===== AUTO-SAVE FUNCTIONALITY =====
+    function initializeAutoSave() {
+        // Auto-save for forms with data-auto-save attribute
+        document.addEventListener('input', UIEnhancements.debounce(function(e) {
+            const form = e.target.closest('form[data-auto-save]');
+            if (form && e.target.matches('input, textarea, select')) {
+                autoSaveForm(form);
+            }
+        }, 1000));
+    }
+
+    function autoSaveForm(form) {
+        const autoSaveIndicator = form.querySelector('.auto-save-indicator');
+        if (!autoSaveIndicator) return;
+
+        // Show saving state
+        autoSaveIndicator.textContent = 'Saving...';
+        autoSaveIndicator.className = 'auto-save-indicator text-yellow-600 text-sm';
+
+        // Simulate save (replace with actual HTMX request)
+        setTimeout(() => {
+            autoSaveIndicator.textContent = 'Saved';
+            autoSaveIndicator.className = 'auto-save-indicator text-green-600 text-sm';
+
+            // Reset after 2 seconds
+            setTimeout(() => {
+                autoSaveIndicator.textContent = '';
+            }, 2000);
+        }, 500);
+    }
+
+    // ===== FORM ENHANCEMENTS =====
+    function initializeFormEnhancements() {
+        // Enhanced select dropdowns
+        enhanceSelectElements();
+
+        // Enhanced file inputs
+        enhanceFileInputs();
+
+        // Form submission enhancements
+        enhanceFormSubmissions();
+    }
+
+    function enhanceSelectElements() {
+        document.querySelectorAll('select[data-searchable]').forEach(select => {
+            makeSelectSearchable(select);
+        });
+    }
+
+    function makeSelectSearchable(select) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'relative';
+        select.parentNode.insertBefore(wrapper, select);
+        wrapper.appendChild(select);
+
+        const searchInput = document.createElement('input');
+        searchInput.type = 'text';
+        searchInput.className = 'form-input w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500';
+        searchInput.placeholder = 'Search...';
+
+        const dropdown = document.createElement('div');
+        dropdown.className = 'absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto hidden';
+
+        wrapper.appendChild(searchInput);
+        wrapper.appendChild(dropdown);
+
+        // Hide original select
+        select.style.display = 'none';
+
+        // Populate dropdown options
+        updateSearchableOptions(select, dropdown, '');
+
+        // Search functionality
+        searchInput.addEventListener('input', function() {
+            updateSearchableOptions(select, dropdown, this.value);
+            dropdown.classList.remove('hidden');
+        });
+
+        searchInput.addEventListener('focus', function() {
+            updateSearchableOptions(select, dropdown, this.value);
+            dropdown.classList.remove('hidden');
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!wrapper.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+    }
+
+    function updateSearchableOptions(select, dropdown, searchTerm) {
+        const options = Array.from(select.options);
+        const filteredOptions = options.filter(option =>
+            option.text.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+
+        dropdown.innerHTML = '';
+
+        filteredOptions.forEach(option => {
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'px-3 py-2 hover:bg-gray-100 cursor-pointer';
+            optionDiv.textContent = option.text;
+            optionDiv.addEventListener('click', function() {
+                select.value = option.value;
+                select.dispatchEvent(new Event('change'));
+                dropdown.classList.add('hidden');
+                // Update search input to show selected value
+                const searchInput = dropdown.previousElementSibling;
+                searchInput.value = option.text;
+            });
+            dropdown.appendChild(optionDiv);
+        });
+    }
+
+    function enhanceFileInputs() {
+        document.querySelectorAll('input[type="file"]').forEach(input => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'file-input-wrapper';
+
+            const label = document.createElement('label');
+            label.className = 'file-input-label cursor-pointer inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500';
+            label.innerHTML = `
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                </svg>
+                Choose File
+            `;
+
+            const fileName = document.createElement('span');
+            fileName.className = 'file-name ml-2 text-gray-500';
+
+            wrapper.appendChild(label);
+            wrapper.appendChild(fileName);
+
+            input.parentNode.insertBefore(wrapper, input);
+            input.style.display = 'none';
+
+            label.appendChild(input);
+
+            input.addEventListener('change', function() {
+                const file = this.files[0];
+                fileName.textContent = file ? file.name : '';
+            });
+        });
+    }
+
+    function enhanceFormSubmissions() {
+        document.addEventListener('submit', function(e) {
+            const form = e.target;
+            const submitBtn = form.querySelector('button[type="submit"], input[type="submit"]');
+
+            if (submitBtn) {
+                // Add loading state
+                const originalText = submitBtn.textContent || submitBtn.value;
+                submitBtn.disabled = true;
+                submitBtn.textContent = submitBtn.value = 'Submitting...';
+
+                // Re-enable after HTMX completes (or fallback timeout)
+                setTimeout(() => {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = submitBtn.value = originalText;
+                }, 5000);
+            }
+        });
+    }
+
+    // ===== UTILITY FUNCTIONS =====
+    function serializeForm(form) {
+        const data = new FormData(form);
+        const result = {};
+
+        for (let [key, value] of data.entries()) {
+            if (result[key]) {
+                if (Array.isArray(result[key])) {
+                    result[key].push(value);
+                } else {
+                    result[key] = [result[key], value];
+                }
+            } else {
+                result[key] = value;
+            }
+        }
+
+        return result;
+    }
+
+    // ===== GLOBAL EXPORTS =====
+    window.FormHelpers = {
+        validateField: validateField,
+        showFieldError: showFieldError,
+        clearFieldError: clearFieldError,
+        serializeForm: serializeForm,
+        autoSaveForm: autoSaveForm
+    };
+
+})();

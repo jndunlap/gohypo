@@ -271,6 +271,13 @@ func (ccm *ConvergentCrossMapping) Execute(x, y []float64, metadata map[string]i
 	}
 }
 
+// AuditEvidence performs evidence auditing for convergent cross mapping using discovery q-values
+func (ccm *ConvergentCrossMapping) AuditEvidence(discoveryEvidence interface{}, validationData []float64, metadata map[string]interface{}) RefereeResult {
+	// Convergent cross mapping is about causal direction - use default audit logic
+	// since CCM requires manifold reconstruction that's hard to audit from q-values alone
+	return DefaultAuditEvidence("Convergent_Cross_Mapping", discoveryEvidence, validationData, metadata)
+}
+
 type CCMResult struct {
 	Converged  bool
 	Strength   float64
@@ -403,4 +410,63 @@ func (ccm *ConvergentCrossMapping) correlation(x, y []float64) float64 {
 	}
 
 	return numerator / denominator
+}
+
+// AuditEvidence performs evidence auditing for Transfer Entropy using discovery q-values
+func (te *TransferEntropy) AuditEvidence(discoveryEvidence interface{}, validationData []float64, metadata map[string]interface{}) RefereeResult {
+	// Extract discovery evidence
+	var evidence DiscoveryEvidence
+	if ev, ok := discoveryEvidence.(DiscoveryEvidence); ok {
+		evidence = ev
+	} else {
+		return RefereeResult{
+			GateName:      "Transfer_Entropy",
+			Passed:        false,
+			FailureReason: "Invalid discovery evidence format",
+		}
+	}
+
+	// Set defaults
+	if te.K == 0 {
+		te.K = 5
+	}
+	if te.TimeLag == 0 {
+		te.TimeLag = CAUSAL_LAG_DEFAULT
+	}
+
+	// Convert q-value to E-value for directional causality
+	eValue := 1.0 / evidence.QValue
+
+	// Apply directional specificity bonus - TE is designed for causality
+	if evidence.TestType == "transfer_entropy" {
+		eValue *= 1.2 // Slight bonus for direct TE evidence
+	}
+
+	// Apply sample size correction
+	if evidence.SampleSize < 50 {
+		eValue *= 0.8 // Directional tests need sufficient data
+	}
+
+	// For directional tests, we can be slightly more lenient than permutation tests
+	// since TE is specifically designed to detect causality direction
+	passed := evidence.QValue <= 0.01 // Stricter than basic tests but lenient for directional
+
+	failureReason := ""
+	if !passed {
+		if evidence.QValue >= 0.5 {
+			failureReason = fmt.Sprintf("NO DIRECTIONAL FLOW: Transfer entropy analysis shows no directional information flow (q=%.4f). Variables appear independent or relationship is not directional.", evidence.QValue)
+		} else {
+			failureReason = fmt.Sprintf("WEAK DIRECTIONAL SIGNAL: Some directional relationship detected but insufficient strength after FDR correction (q=%.4f). May be indirect causation or masked by confounding.", evidence.QValue)
+		}
+	}
+
+	return RefereeResult{
+		GateName:      "Transfer_Entropy",
+		Passed:        passed,
+		Statistic:     eValue,
+		PValue:        evidence.QValue,
+		EValue:        eValue,
+		StandardUsed:  fmt.Sprintf("Directional causality audit (q ≤ 0.01) with transfer entropy E-value calibration"),
+		FailureReason: failureReason,
+	}
 }

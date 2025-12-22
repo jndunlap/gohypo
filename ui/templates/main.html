@@ -1,0 +1,188 @@
+{{define "main.html"}}
+<!DOCTYPE html>
+<html lang="en" class="h-screen">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>{{.Title}}</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10/dist/ext/ws.js"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10/dist/ext/sse.js"></script>
+    <link rel="stylesheet" href="/static/css/dist/main.css">
+    <link rel="stylesheet" href="/static/css/research.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/1db1170e-452a-479c-8fab-50abd9603c45',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ui/templates/base.html:17',message:'Page loading started',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'initial',hypothesisId:'H3'})}).catch(()=>{});
+        // #endregion
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Sleek White Mode CSS Variables */
+        :root {
+            --color-background: #FFFFFF;
+            --color-surface: #FFFFFF;
+            --color-surface-secondary: #F8F9FA;
+            --color-text-primary: #1A1A1B;
+            --color-text-secondary: #6B7280;
+            --color-text-accent: #2563EB;
+            --color-border: #E5E7EB;
+            --color-border-hover: #D1D5DB;
+            --color-success: #10B981;
+            --color-warning: #F59E0B;
+            --color-error: #EF4444;
+            --line-height-relaxed: 1.6;
+        }
+
+        /* Global Resets for Clean Light Mode */
+        * {
+            text-rendering: optimizeLegibility;
+        }
+
+        /* Dynamic Panel Layout Styles */
+
+        #main-layout > * {
+            /* All panels should be able to flex */
+            flex-shrink: 0;
+            /* Only center panel should grow */
+        }
+
+        #center-panel {
+            /* Center panel should take all available space */
+            flex: 1 1 auto;
+            min-width: 0; /* Allow flex item to shrink below content size */
+            max-width: none; /* Allow unlimited expansion */
+        }
+
+        /* Smooth transitions for panel visibility changes */
+        #main-layout > *.hidden {
+            display: none !important;
+        }
+</style>
+</head>
+<body class="bg-white text-gray-900 font-sans selection:bg-blue-500 selection:text-white h-screen">
+    <!-- Unified Header -->
+    {{template "unified_header" .}}
+
+    <!-- Content -->
+    <div id="main-layout" class="h-screen bg-white flex overflow-hidden pt-14 transition-all duration-300 ease-in-out">
+        <!-- Far Left Panel - Workspace Panel -->
+        {{template "workspace_sidebar" .}}
+
+        <!-- left Panel - DataSpace Blocks -->
+        {{template "left_sidebar" .}}
+
+        <!-- Center Panel - Research Workspace -->
+        {{template "center_panel" .}}
+
+        <!-- Left Panel - Hypothesis Panel -->
+        {{template "hypothesis_panel_left" .}}
+
+    </div>
+
+
+    <!-- Clean Layout - No Registration Marks Needed -->
+
+
+    <!-- Research UI Scripts - HTMX Progressive Enhancement -->
+    <script src="/static/js/ui-enhancements.js"></script>
+    <script src="/static/js/form-helpers.js"></script>
+    <script src="/static/js/research-progressive.js"></script>
+    
+    <!-- HTMX Configuration -->
+    <script>
+        // Global HTMX config
+        htmx.config.globalViewTransitions = true;
+        htmx.config.useTemplateFragments = true;
+
+        // Obsidian Terminal Behaviors
+        document.addEventListener('DOMContentLoaded', function() {
+            // Redacted Reveal Effect for Loading Data
+            const dataElements = document.querySelectorAll('.neo-data');
+            dataElements.forEach(el => {
+                el.classList.add('redacted-reveal');
+            });
+        });
+
+        // Loading indicators with Redacted Effect
+        document.body.addEventListener('htmx:beforeRequest', function(evt) {
+            const btn = evt.target.querySelector('button[type="submit"], button[aria-busy]');
+            if (btn) {
+                btn.setAttribute('aria-busy', 'true');
+                btn.innerHTML = '<span class="redacted-block">██████████</span>';
+            }
+            // Add loading class to target
+            let target;
+            if (typeof evt.detail.target === 'string') {
+                target = document.querySelector(evt.detail.target);
+            } else if (evt.detail.target instanceof Element) {
+                target = evt.detail.target;
+            }
+            if (target) {
+                target.classList.add('htmx-loading');
+                target.innerHTML = '<div class="redacted-block">█████████████████████████████████████████████</div>';
+            }
+        });
+
+        document.body.addEventListener('htmx:afterRequest', function(evt) {
+            const btn = evt.target.querySelector('button[aria-busy]');
+            if (btn) {
+                btn.removeAttribute('aria-busy');
+            }
+            // Remove loading class from target
+            let target;
+            if (typeof evt.detail.target === 'string') {
+                target = document.querySelector(evt.detail.target);
+            } else if (evt.detail.target instanceof Element) {
+                target = evt.detail.target;
+            }
+            if (target) {
+                target.classList.remove('htmx-loading');
+            }
+
+            // Trigger Impact Shake on successful validation
+            if (evt.detail.successful) {
+                triggerImpactShake();
+            }
+        });
+
+        // Error handling
+        document.body.addEventListener('htmx:responseError', function(evt) {
+            console.error('HTMX Error:', evt.detail);
+            // Could show toast notification here
+        });
+
+        // Dynamic Cursor Crosshair Expansion
+        document.addEventListener('mousemove', function(e) {
+            const cursorCrosshair = document.querySelector('.cursor-crosshair');
+            if (cursorCrosshair) {
+                const rect = cursorCrosshair.getBoundingClientRect();
+                const distance = Math.sqrt(
+                    Math.pow(e.clientX - (rect.left + rect.width / 2), 2) +
+                    Math.pow(e.clientY - (rect.top + rect.height / 2), 2)
+                );
+                const maxDistance = 200;
+                const scale = Math.max(0.5, Math.min(1.5, 1 - (distance / maxDistance)));
+                document.documentElement.style.setProperty('--cursor-scale', scale);
+            }
+        });
+
+        // Define missing functions
+        function triggerImpactShake() {
+            // Simple visual feedback - could be enhanced with CSS animations
+            console.log('[UI] Impact shake triggered (placeholder)');
+        }
+
+        // Removed terminal-specific effects for clean light mode
+    </script>
+
+    <!-- Global Components -->
+    {{template "data_modal" .}}
+    {{template "upload_modal" .}}
+    {{template "merge_modal" .}}
+</body>
+</html>
+{{end}}

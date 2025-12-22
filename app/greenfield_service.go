@@ -3,20 +3,24 @@ package app
 import (
 	"context"
 	"fmt"
+	"gohypo/ai"
 	"gohypo/domain/core"
 	"gohypo/domain/greenfield"
+	"gohypo/models"
 	"gohypo/ports"
 )
 
 type GreenfieldService struct {
-	greenfieldPort ports.GreenfieldResearchPort
-	ledgerPort     ports.LedgerPort
+	greenfieldPort     ports.GreenfieldResearchPort
+	ledgerPort         ports.LedgerPort
+	hypothesisAnalyzer *ai.HypothesisAnalysisAgent
 }
 
-func NewGreenfieldService(greenfieldPort ports.GreenfieldResearchPort, ledgerPort ports.LedgerPort) *GreenfieldService {
+func NewGreenfieldService(greenfieldPort ports.GreenfieldResearchPort, ledgerPort ports.LedgerPort, hypothesisAnalyzer *ai.HypothesisAnalysisAgent) *GreenfieldService {
 	return &GreenfieldService{
-		greenfieldPort: greenfieldPort,
-		ledgerPort:     ledgerPort,
+		greenfieldPort:     greenfieldPort,
+		ledgerPort:         ledgerPort,
+		hypothesisAnalyzer: hypothesisAnalyzer,
 	}
 }
 
@@ -60,6 +64,24 @@ func (s *GreenfieldService) ExecuteGreenfieldFlow(
 	for _, artifact := range backlogArtifacts {
 		if err := s.ledgerPort.StoreArtifact(ctx, string(runID), artifact); err != nil {
 			storeErrors = append(storeErrors, fmt.Errorf("failed to store backlog artifact %s: %w", artifact.ID, err))
+		}
+	}
+
+	// 4. Analyze hypotheses for risk assessment (if AI analyzer is available)
+	var riskProfiles []interface{}
+	if s.hypothesisAnalyzer != nil {
+		riskProfiles, err = s.analyzeHypothesisRisk(ctx, response.Directives, fieldMetadata)
+		if err != nil {
+			// Log but don't fail the entire flow
+			fmt.Printf("Warning: Hypothesis risk analysis failed: %v\n", err)
+		} else {
+			// Store risk analysis artifacts
+			riskArtifacts := s.convertRiskProfilesToArtifacts(riskProfiles, runID)
+			for _, artifact := range riskArtifacts {
+				if err := s.ledgerPort.StoreArtifact(ctx, string(runID), artifact); err != nil {
+					storeErrors = append(storeErrors, fmt.Errorf("failed to store risk artifact %s: %w", artifact.ID, err))
+				}
+			}
 		}
 	}
 
@@ -117,6 +139,93 @@ func (s *GreenfieldService) convertBacklogToArtifacts(backlog []greenfield.Engin
 				"created_at":       item.CreatedAt,
 			},
 			CreatedAt: item.CreatedAt,
+		}
+	}
+
+	return artifacts
+}
+
+// analyzeHypothesisRisk performs AI-powered risk assessment on generated hypotheses
+func (s *GreenfieldService) analyzeHypothesisRisk(
+	ctx context.Context,
+	directives []greenfield.ResearchDirective,
+	fieldMetadata []greenfield.FieldMetadata,
+) ([]interface{}, error) {
+
+	riskProfiles := make([]interface{}, 0, len(directives))
+
+	// Create data topology snapshot from field metadata
+	dataSnapshot := ai.DataTopologySnapshot{
+		SampleSize:         1000,       // TODO: Get actual sample size from data
+		SparsityRatio:      0.05,       // TODO: Calculate from actual data
+		CardinalityCause:   50,         // TODO: Get from field analysis
+		CardinalityEffect:  50,         // TODO: Get from field analysis
+		SkewnessCause:      0.0,        // TODO: Calculate from actual data
+		SkewnessEffect:     0.0,        // TODO: Calculate from actual data
+		TemporalCoverage:   1.0,        // TODO: Calculate from actual data
+		ConfoundingSignals: []string{}, // TODO: Analyze from field metadata
+		AvailableFields:    make([]string, len(fieldMetadata)),
+	}
+
+	for i, field := range fieldMetadata {
+		dataSnapshot.AvailableFields[i] = string(field.Name)
+	}
+
+	// Analyze each hypothesis
+	for _, directive := range directives {
+		// Convert directive to ResearchDirectiveResponse format
+		directiveResponse := s.convertDirectiveToResponse(directive)
+
+		// Perform risk analysis
+		riskProfile, err := s.hypothesisAnalyzer.AnalyzeHypothesis(ctx, directiveResponse, dataSnapshot)
+		if err != nil {
+			return nil, fmt.Errorf("failed to analyze hypothesis %s: %w", directive.ID, err)
+		}
+
+		riskProfiles = append(riskProfiles, riskProfile)
+	}
+
+	return riskProfiles, nil
+}
+
+// convertDirectiveToResponse converts a ResearchDirective to ResearchDirectiveResponse
+func (s *GreenfieldService) convertDirectiveToResponse(directive greenfield.ResearchDirective) models.ResearchDirectiveResponse {
+	// Generate default referees based on the directive's validation strategy
+	selectedReferees := []string{"Permutation_Shredder", "Chow_Stability_Test", "Transfer_Entropy"}
+
+	return models.ResearchDirectiveResponse{
+		ID: string(directive.ID),
+		BusinessHypothesis: fmt.Sprintf("Testing if %s influences %s",
+			directive.CauseKey, directive.EffectKey),
+		ScienceHypothesis: directive.Claim,
+		CauseKey:          string(directive.CauseKey),
+		EffectKey:         string(directive.EffectKey),
+		RefereeGates: models.RefereeGates{
+			SelectedReferees: selectedReferees,
+			ConfidenceTarget: 0.95, // Default confidence target
+			Rationale:        "Auto-selected referees based on validation strategy",
+			// Map legacy fields for compatibility
+			PValueThreshold: directive.RefereeGates.PValueThreshold,
+			StabilityScore:  directive.RefereeGates.StabilityScore,
+			PermutationRuns: directive.RefereeGates.PermutationRuns,
+		},
+	}
+}
+
+// convertRiskProfilesToArtifacts converts risk analysis results to artifacts
+func (s *GreenfieldService) convertRiskProfilesToArtifacts(riskProfiles []interface{}, runID core.RunID) []core.Artifact {
+	artifacts := make([]core.Artifact, len(riskProfiles))
+
+	for i, riskProfile := range riskProfiles {
+		artifacts[i] = core.Artifact{
+			ID:   core.ID(fmt.Sprintf("risk-%s-%d", runID, i)),
+			Kind: "hypothesis_risk_profile",
+			Payload: map[string]interface{}{
+				"run_id":       runID,
+				"risk_profile": riskProfile,
+				"created_at":   core.Now(),
+			},
+			CreatedAt: core.Now(),
 		}
 	}
 

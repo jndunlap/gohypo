@@ -1,0 +1,122 @@
+{{define "data_modal"}}
+<!-- Data Modal -->
+<div id="data-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4" style="display: none;">
+  <div class="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
+
+    <!-- Clean Header -->
+    <div class="flex items-center justify-between px-6 py-3 border-b border-gray-200">
+      <div class="flex flex-col">
+        <h2 id="modal-dataset-name" class="text-lg font-semibold text-gray-900">Dataset Details</h2>
+        <div class="flex items-center space-x-4 mt-1">
+          <span id="modal-dataset-summary" class="text-xs text-gray-500 font-mono">ID: —</span>
+          <span id="modal-dataset-domain" class="text-xs text-blue-600 font-medium hidden">Domain: —</span>
+        </div>
+        <span id="modal-dataset-description" class="text-xs text-gray-500 mt-1 hidden max-w-md truncate">—</span>
+      </div>
+      <button onclick="closeDataModal()" class="text-gray-400 hover:text-gray-600 p-2 rounded-md hover:bg-gray-100 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Modal Content -->
+    <div class="flex-1 overflow-y-auto">
+
+      <!-- Dataset Stats -->
+      <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="text-center">
+            <div class="text-2xl font-bold text-gray-900" id="modal-record-count">—</div>
+            <div class="text-xs font-medium text-gray-600 uppercase tracking-wider">Records</div>
+          </div>
+          <div class="text-center">
+            <div class="text-2xl font-bold text-gray-900" id="modal-field-count">—</div>
+            <div class="text-xs font-medium text-gray-600 uppercase tracking-wider">Fields</div>
+          </div>
+          <div class="text-center">
+            <div class="text-xl font-semibold text-gray-700" id="modal-missing-rate">—%</div>
+            <div class="text-xs font-medium text-gray-600 uppercase tracking-wider">Missing</div>
+          </div>
+          <div class="text-center">
+            <div class="text-xl font-semibold text-gray-700" id="modal-dataset-size">—</div>
+            <div class="text-xs font-medium text-gray-600 uppercase tracking-wider">Size</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Data Preview -->
+      <div class="px-6 py-4">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-gray-900">Data Preview</h3>
+          <button onclick="exportDataset()" class="text-sm font-medium text-gray-600 hover:text-gray-900 px-3 py-1.5 border border-gray-300 rounded hover:bg-gray-50 transition-colors">
+            Export CSV
+          </button>
+        </div>
+
+        <!-- Data Table -->
+        <div class="border border-gray-200 rounded-lg overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-50 border-b border-gray-200">
+                <tr id="modal-table-header">
+                  <!-- Headers populated by JavaScript -->
+                </tr>
+              </thead>
+              <tbody id="modal-table-body" class="divide-y divide-gray-200 bg-white">
+                <!-- Data rows populated by JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="modal-loading" class="text-center py-12 hidden">
+          <div class="w-6 h-6 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin mx-auto mb-3"></div>
+          <p class="text-sm text-gray-600">Loading dataset...</p>
+        </div>
+
+        <!-- Empty State -->
+        <div id="modal-empty" class="text-center py-12 hidden">
+          <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+            <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+            </svg>
+          </div>
+          <p class="text-base font-semibold text-gray-900 mb-1">No data available</p>
+          <p class="text-sm text-gray-600">This dataset appears to be empty</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="border-t border-gray-200 bg-gray-50 px-6 py-3">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+          <span class="text-sm text-gray-600" id="modal-row-range">Rows 1-50 of 1000</span>
+          <div class="flex items-center space-x-2">
+            <label class="text-sm text-gray-700">Rows:</label>
+            <select id="modal-limit-select" onchange="changePageSize()" class="text-sm border border-gray-300 rounded px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-gray-400">
+              <option value="25">25</option>
+              <option value="50" selected>50</option>
+              <option value="100">100</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex items-center space-x-3">
+          <button id="modal-prev-btn" onclick="changePage('prev')" class="px-3 py-1.5 text-sm text-gray-600 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+            ← Prev
+          </button>
+          <span class="text-sm text-gray-700">
+            <span id="modal-current-page">1</span> of <span id="modal-total-pages">1</span>
+          </span>
+          <button id="modal-next-btn" onclick="changePage('next')" class="px-3 py-1.5 text-sm text-gray-600 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+            Next →
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{{end}} 

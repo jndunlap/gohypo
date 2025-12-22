@@ -1,0 +1,262 @@
+{{define "unified_header"}}
+<!-- Unified Header - Fixed at top of page -->
+<style>
+    /* Enhanced Tooltip Styles */
+    .tooltip-container .tooltip-text {
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        font-weight: 500;
+        letter-spacing: 0.025em;
+    }
+
+    .tooltip-container:hover .tooltip-text {
+        transform: translateX(-50%) translateY(2px);
+    }
+
+    /* Smooth hover transitions for buttons */
+    .sidebar-toggle-btn {
+        position: relative;
+        transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .sidebar-toggle-btn:hover {
+        transform: scale(1.05);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .sidebar-toggle-btn:active {
+        transform: scale(0.95);
+    }
+</style>
+<header id="unified-header" class="fixed top-0 left-0 right-0 z-50 bg-gray-100 border-b border-gray-200 shadow-sm">
+    <div class="flex items-center justify-between px-6 py-3 h-12">
+        <!-- Left Section - Sidebar Toggles -->
+        <div class="flex items-center space-x-2">
+            <!-- Workspace Sidebar Toggle -->
+            <div class="relative tooltip-container">
+                <button id="toggle-workspace-sidebar"
+                        class="sidebar-toggle-btn p-1 rounded-md hover:bg-gray-200 transition-colors duration-150"
+                        data-tooltip="Toggle Workspace Panel"
+                        data-target="workspace-panel">
+                    <svg class="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                    </svg>
+                </button>
+                <div class="tooltip-text opacity-0 invisible absolute -bottom-8 left-1/2 transform -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap transition-all duration-200 z-50">
+                    Toggle Workspace Panel
+                </div>
+            </div>
+
+            <!-- Left Sidebar Toggle -->
+            <div class="relative tooltip-container">
+                <button id="toggle-left-sidebar"
+                        class="sidebar-toggle-btn p-1 rounded-md hover:bg-gray-200 transition-colors duration-150"
+                        data-tooltip="Toggle Data Panel"
+                        data-target="left-sidebar">
+                    <svg class="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 0 1-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 0 1 4.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0 1 12 15a9.065 9.065 0 0 0-6.23-.693L5 14.5m14.8.8 1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0 1 12 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5"/>
+                    </svg>
+                </button>
+                <div class="tooltip-text opacity-0 invisible absolute -bottom-8 left-1/2 transform -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap transition-all duration-200 z-50">
+                    Toggle Data Panel
+                </div>
+            </div>
+        </div>
+
+        <!-- Center Section - Page Title/Context -->
+        <div class="flex-1 text-center">
+            <h1 class="text-sm font-bold text-gray-900 uppercase tracking-wide">{{if .Title}}{{.Title}}{{else}}Hypothesis Engine{{end}}</h1>
+        </div>
+
+        <!-- Right Section - Actions -->
+        <div class="flex items-center space-x-2">
+            <!-- Hypothesis Panel Toggle -->
+            <div class="relative tooltip-container">
+                <button id="toggle-hypothesis-panel"
+                        class="sidebar-toggle-btn p-1 rounded-md hover:bg-gray-200 transition-colors duration-150"
+                        data-tooltip="Toggle Hypothesis Panel"
+                        data-target="hypothesis-panel">
+                    <svg class="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                </button>
+                <div class="tooltip-text opacity-0 invisible absolute -bottom-8 left-1/2 transform -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap transition-all duration-200 z-50">
+                    Toggle Hypothesis Panel
+                </div>
+            </div>
+
+            <!-- Right Sidebar Toggle -->
+            <div class="relative tooltip-container">
+                <button id="toggle-right-sidebar"
+                        class="sidebar-toggle-btn p-1 rounded-md hover:bg-gray-200 transition-colors duration-150"
+                        data-tooltip="Toggle Analysis Panel"
+                        data-target="right-sidebar">
+                    <svg class="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125"/>
+                    </svg>
+                </button>
+                <div class="tooltip-text opacity-0 invisible absolute -bottom-8 left-1/2 transform -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap transition-all duration-200 z-50">
+                    Toggle Analysis Panel
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Unified Header JavaScript -->
+    <script>
+        (function() {
+            'use strict';
+
+            class UnifiedHeaderController {
+                constructor() {
+                    this.sidebarStates = {
+                        'workspace-panel': true,
+                        'left-sidebar': true,
+                        'right-sidebar': true,
+                        'hypothesis-panel': true
+                    };
+                    this.init();
+                }
+
+                init() {
+                    console.log('[Unified Header] Initializing...');
+
+                    // Initialize toggle buttons
+                    document.querySelectorAll('.sidebar-toggle-btn').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            const targetId = e.currentTarget.dataset.target;
+                            this.toggleSidebar(targetId);
+                        });
+                    });
+
+                    // Initialize tooltips
+                    this.initTooltips();
+
+                    // Load initial states from localStorage
+                    this.loadSidebarStates();
+
+                    // Update button states
+                    this.updateToggleButtons();
+
+                    console.log('[Unified Header] Initialized successfully');
+                }
+
+                toggleSidebar(panelId) {
+                    const panel = document.getElementById(panelId);
+                    if (!panel) {
+                        console.error(`[Unified Header] Panel ${panelId} not found`);
+                        return;
+                    }
+
+                    const isHidden = panel.classList.contains('hidden');
+
+                    if (isHidden) {
+                        this.showSidebar(panelId);
+                    } else {
+                        this.hideSidebar(panelId);
+                    }
+
+                    // Save state
+                    this.saveSidebarStates();
+                    this.updateToggleButtons();
+                }
+
+                showSidebar(panelId) {
+                    const panel = document.getElementById(panelId);
+                    panel.classList.remove('hidden');
+                    this.sidebarStates[panelId] = true;
+
+                    console.log(`[Unified Header] Showed ${panelId}`);
+                }
+
+                hideSidebar(panelId) {
+                    const panel = document.getElementById(panelId);
+                    panel.classList.add('hidden');
+                    this.sidebarStates[panelId] = false;
+
+                    console.log(`[Unified Header] Hid ${panelId}`);
+                }
+
+                updateToggleButtons() {
+                    document.querySelectorAll('.sidebar-toggle-btn').forEach(btn => {
+                        const targetId = btn.dataset.target;
+                        const isActive = this.sidebarStates[targetId];
+
+                        // Update visual state
+                        if (isActive) {
+                            btn.classList.add('bg-gray-200');
+                            btn.classList.remove('bg-gray-100');
+                        } else {
+                            btn.classList.add('bg-gray-100');
+                            btn.classList.remove('bg-gray-200');
+                        }
+                    });
+                }
+
+                saveSidebarStates() {
+                    try {
+                        localStorage.setItem('sidebarStates', JSON.stringify(this.sidebarStates));
+                    } catch (e) {
+                        console.warn('[Unified Header] Could not save sidebar states:', e);
+                    }
+                }
+
+                initTooltips() {
+                    // Add hover listeners to tooltip containers
+                    document.querySelectorAll('.tooltip-container').forEach(container => {
+                        const tooltipText = container.querySelector('.tooltip-text');
+
+                        container.addEventListener('mouseenter', () => {
+                            if (tooltipText) {
+                                tooltipText.classList.remove('opacity-0', 'invisible');
+                                tooltipText.classList.add('opacity-100', 'visible');
+                            }
+                        });
+
+                        container.addEventListener('mouseleave', () => {
+                            if (tooltipText) {
+                                tooltipText.classList.remove('opacity-100', 'visible');
+                                tooltipText.classList.add('opacity-0', 'invisible');
+                            }
+                        });
+                    });
+                }
+
+                loadSidebarStates() {
+                    try {
+                        const saved = localStorage.getItem('sidebarStates');
+                        if (saved) {
+                            const parsedStates = JSON.parse(saved);
+                            this.sidebarStates = { ...this.sidebarStates, ...parsedStates };
+
+                            // Apply saved states
+                            Object.entries(this.sidebarStates).forEach(([panelId, isVisible]) => {
+                                const panel = document.getElementById(panelId);
+                                if (panel) {
+                                    if (isVisible) {
+                                        panel.classList.remove('hidden');
+                                    } else {
+                                        panel.classList.add('hidden');
+                                    }
+                                }
+                            });
+
+                            console.log('[Unified Header] Loaded saved states:', this.sidebarStates);
+                        }
+                    } catch (e) {
+                        console.warn('[Unified Header] Could not load sidebar states:', e);
+                    }
+                }
+            }
+
+            // Initialize when DOM is ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => new UnifiedHeaderController());
+            } else {
+                new UnifiedHeaderController();
+            }
+        })();
+    </script>
+</header>
+{{end}}

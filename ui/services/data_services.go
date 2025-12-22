@@ -13,10 +13,13 @@ import (
 	"gohypo/domain/core"
 	"gohypo/domain/greenfield"
 	"gohypo/ports"
+
+	"github.com/google/uuid"
 )
 
 type DataService struct {
-	reader ports.LedgerReaderPort
+	reader           ports.LedgerReaderPort
+	datasetRepo      ports.DatasetRepository
 
 	// Excel cache fields
 	excelDataCache      *excel.ExcelData
@@ -26,12 +29,48 @@ type DataService struct {
 	excelCacheTimestamp time.Time
 }
 
-func NewDataService(reader ports.LedgerReaderPort) *DataService {
+func NewDataService(reader ports.LedgerReaderPort, datasetRepo ports.DatasetRepository) *DataService {
 	return &DataService{
 		reader:           reader,
+		datasetRepo:      datasetRepo,
 		excelDataCache:   nil,
 		excelColumnTypes: make(map[string]string),
 	}
+}
+
+// GetFieldMetadataByWorkspace returns field metadata for datasets in a specific workspace
+func (s *DataService) GetFieldMetadataByWorkspace(workspaceID uuid.UUID) ([]greenfield.FieldMetadata, error) {
+	// Query datasets directly for this workspace
+	datasets, err := s.datasetRepo.GetByWorkspace(context.Background(), core.ID(workspaceID.String()), 1000, 0)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get datasets for workspace: %w", err)
+	}
+
+	fieldMap := make(map[string]*greenfield.FieldMetadata)
+
+	for _, dataset := range datasets {
+		// Extract field metadata from dataset metadata structure
+		for _, field := range dataset.Metadata.Fields {
+			if field.Name != "" {
+				if _, exists := fieldMap[field.Name]; !exists {
+					fieldMap[field.Name] = &greenfield.FieldMetadata{
+						Name:     field.Name,
+						DataType: field.DataType,
+					}
+				}
+			}
+		}
+	}
+
+	var metadata []greenfield.FieldMetadata
+	for _, field := range fieldMap {
+		metadata = append(metadata, *field)
+	}
+
+	log.Printf("[API] 📊 Workspace %s field collection complete: %d fields from %d datasets",
+		workspaceID, len(metadata), len(datasets))
+
+	return metadata, nil
 }
 
 func (s *DataService) GetFieldMetadata() ([]greenfield.FieldMetadata, error) {
@@ -48,7 +87,7 @@ func (s *DataService) GetFieldMetadata() ([]greenfield.FieldMetadata, error) {
 
 	log.Printf("[API] 📊 Analyzing %d artifacts for field metadata", len(allArtifacts))
 
-	if excelData, columnTypes, err := s.getExcelFieldMetadata(); err == nil {
+	if excelData, columnTypes, err := s.getExcelFieldMetadata(); err == nil && excelData != nil {
 		for _, fieldName := range excelData.Headers {
 			// Skip empty or whitespace-only field names (phantom columns)
 			fieldName = strings.TrimSpace(fieldName)
@@ -135,6 +174,13 @@ func (s *DataService) GetFieldMetadata() ([]greenfield.FieldMetadata, error) {
 	return metadata, nil
 }
 
+// GetStatisticalArtifactsByWorkspace returns statistical artifacts for datasets in a specific workspace
+func (s *DataService) GetStatisticalArtifactsByWorkspace(workspaceID uuid.UUID) ([]map[string]interface{}, error) {
+	// For now, delegate to the general method - in future this should filter by workspace
+	// TODO: Implement workspace-specific artifact filtering
+	return s.GetStatisticalArtifacts()
+}
+
 func (s *DataService) GetStatisticalArtifacts() ([]map[string]interface{}, error) {
 	filters := ports.ArtifactFilters{Limit: 1000}
 	allArtifacts, err := s.reader.ListArtifacts(context.Background(), filters)
@@ -210,7 +256,8 @@ func (s *DataService) getExcelFieldMetadata() (*excel.ExcelData, map[string]stri
 	// Cache miss or expired - read from disk
 	excelFile := os.Getenv("EXCEL_FILE")
 	if excelFile == "" {
-		return nil, nil, fmt.Errorf("EXCEL_FILE environment variable not set")
+		// No Excel file configured - return nil to indicate no Excel data available
+		return nil, nil, nil
 	}
 
 	// Read Excel data
@@ -241,5 +288,3 @@ func (s *DataService) getExcelFieldMetadata() (*excel.ExcelData, map[string]stri
 
 	return data, columnTypes, nil
 }
-
-

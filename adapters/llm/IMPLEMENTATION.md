@@ -73,7 +73,7 @@ for _, audit := range auditArtifacts {
 // Create config
 config := llm.Config{
     Provider:            "mock", // or "openai", "anthropic", "local"
-    Model:               "gpt-4",
+    Model:               "gpt-5.2",
     APIKey:              os.Getenv("LLM_API_KEY"),
     Temperature:         0.3,
     MaxTokens:           2000,
@@ -117,6 +117,7 @@ All tests pass ✅
 4. **Implement real LLM providers** (OpenAI, Anthropic, Local)
 5. **Add integration tests** with golden fixtures
 6. **Wire via config flag** (`GENERATOR_MODE=llm|heuristic`)
+
 
 
 

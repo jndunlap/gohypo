@@ -1,0 +1,337 @@
+{{define "hypothesis_panel_left"}}
+<!-- Left Panel - Hypothesis Panel -->
+<div id="hypothesis-panel" class="w-80 flex flex-col bg-white border-r border-gray-200">
+
+    <!-- Header -->
+    <div class="flex-shrink-0 border-b border-gray-200 bg-gray-100 p-3 h-12">
+        <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Hypotheses</h3>
+
+        </div>
+    </div>
+
+    <!-- Hypothesis List Container -->
+    <div class="flex-1 overflow-y-auto">
+        <div id="hypothesis-list" class="space-y-0">
+            <!-- Hypotheses will be dynamically loaded here -->
+            <div id="hypothesis-empty-state" class="text-center py-12 px-6">
+                <div class="w-12 h-12 bg-gray-50 rounded-lg flex items-center justify-center mx-auto mb-3">
+                    <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                    </svg>
+                </div>
+                <p class="text-sm font-medium text-gray-700 mb-1">No Hypotheses Yet</p>
+                <p class="text-xs text-gray-500">Start research to generate hypotheses</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hypothesis Panel JavaScript -->
+    <script>
+        let expandedHypotheses = new Set();
+        let storedHypotheses = new Map(); // Store hypothesis data by ID
+
+        // Function to add hypothesis to the panel
+        function addHypothesisToPanel(hypothesis) {
+            const list = document.getElementById('hypothesis-list');
+            const emptyState = document.getElementById('hypothesis-empty-state');
+
+            // Hide empty state when first hypothesis is added
+            if (emptyState) {
+                emptyState.style.display = 'none';
+            }
+
+            // Deselect any currently selected hypothesis first
+            deselectCurrentHypothesis();
+
+            // Create hypothesis row element
+            const hypothesisRow = document.createElement('div');
+            hypothesisRow.className = 'hypothesis-row bg-white border-b border-gray-200 hover:bg-gray-50 cursor-pointer group select-none';
+            hypothesisRow.setAttribute('data-hypothesis-id', hypothesis.id);
+
+            hypothesisRow.innerHTML = `
+                <div class="px-4 py-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3 flex-1 min-w-0">
+                            <!-- Status Indicator -->
+                            <div class="w-2 h-2 rounded-full bg-gray-400 group-hover:bg-gray-600 flex-shrink-0" title="Hypothesis status"></div>
+
+                            <!-- Hypothesis Content -->
+                            <div class="flex-1 min-w-0">
+                                <div class="text-sm font-medium text-gray-900 leading-snug mb-1 truncate" title="${hypothesis.businessHypothesis || hypothesis.id}">
+                                    ${hypothesis.businessHypothesis || hypothesis.id}
+                                </div>
+                                <div class="flex items-center space-x-3 text-xs text-gray-500">
+                                    <span class="font-mono">${hypothesis.id}</span>
+                                    ${hypothesis.triGateResult ? `
+                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${
+                                            hypothesis.triGateResult.overallPassed ?
+                                            'bg-gray-100 text-gray-700' :
+                                            'bg-gray-200 text-gray-800'
+                                        }">
+                                            ${hypothesis.triGateResult.overallPassed ? 'PASSED' : 'FAILED'}
+                                        </span>
+                                    ` : ''}
+                                    ${hypothesis.triGateResult && hypothesis.triGateResult.overallPassed ? `
+                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-gray-50 text-gray-600 text-xs font-medium">
+                                            LAW
+                                        </span>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Expand/Collapse Arrow -->
+                        <div class="flex-shrink-0 ml-2">
+                            <svg class="w-4 h-4 text-gray-400 group-hover:text-gray-600 hypothesis-arrow transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Expanded Content (Initially Hidden) -->
+                <div class="hypothesis-details hidden">
+                    <div class="px-4 py-3">
+                        <div class="space-y-2">
+                            <!-- Full hypothesis text -->
+                            <div class="text-sm text-gray-700">
+                                <strong class="text-gray-900">Hypothesis:</strong>
+                                <div class="mt-1">${hypothesis.businessHypothesis || 'No business hypothesis available'}</div>
+                            </div>
+
+                            <!-- E-value Validation Results -->
+                            ${hypothesis.triGateResult ? `
+                                <div class="text-sm text-gray-700">
+                                    <strong class="text-gray-900">Validation:</strong>
+                                    <div class="mt-1">
+                                        <div class="grid grid-cols-3 gap-2 text-xs">
+                                            <div class="text-center">
+                                                <div class="font-medium ${hypothesis.triGateResult.statisticalPassed ? 'text-gray-700' : 'text-gray-500'}">
+                                                    ${hypothesis.triGateResult.statisticalPassed ? '✓' : '✗'} Statistical
+                                                </div>
+                                            </div>
+                                            <div class="text-center">
+                                                <div class="font-medium ${hypothesis.triGateResult.logicalPassed ? 'text-gray-700' : 'text-gray-500'}">
+                                                    ${hypothesis.triGateResult.logicalPassed ? '✓' : '✗'} Logical
+                                                </div>
+                                            </div>
+                                            <div class="text-center">
+                                                <div class="font-medium ${hypothesis.triGateResult.evidencePassed ? 'text-gray-700' : 'text-gray-500'}">
+                                                    ${hypothesis.triGateResult.evidencePassed ? '✓' : '✗'} Evidence
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ` : '<div class="text-sm text-gray-500 italic">Validation pending...</div>'}
+
+                            <!-- Evidence count -->
+                            <div class="text-xs text-gray-500">
+                                Evidence: ${hypothesis.evidenceCount || 0} items
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Add click handler for selection
+            hypothesisRow.addEventListener('click', function(e) {
+                // Prevent selection if clicking on a specific action button (if any)
+                if (e.target.closest('.hypothesis-action')) {
+                    return;
+                }
+
+                selectHypothesis(hypothesis.id);
+            });
+
+            // Add double-click handler for expansion
+            hypothesisRow.addEventListener('dblclick', function(e) {
+                toggleHypothesisRow(hypothesis.id);
+            });
+
+            // Store hypothesis data
+            storedHypotheses.set(hypothesis.id, hypothesis);
+
+            // Add to list
+            list.appendChild(hypothesisRow);
+
+            // Update counter
+            updateHypothesisCount();
+
+            console.log('Added hypothesis to panel:', hypothesis.id);
+        }
+
+        let selectedHypothesisId = null;
+
+        // Function to select a hypothesis
+        function selectHypothesis(hypothesisId) {
+            const row = document.querySelector(`[data-hypothesis-id="${hypothesisId}"]`);
+            if (!row) return;
+
+            // If already selected, deselect it
+            if (selectedHypothesisId === hypothesisId) {
+                deselectCurrentHypothesis();
+                return;
+            }
+
+            // Deselect current selection first
+            deselectCurrentHypothesis();
+
+            // Select new hypothesis
+            selectedHypothesisId = hypothesisId;
+            row.classList.add('bg-gray-50', 'ring-1', 'ring-gray-200');
+            const arrow = row.querySelector('.hypothesis-arrow');
+            if (arrow) arrow.classList.add('text-gray-600');
+            const statusDot = row.querySelector('.w-2.h-2');
+            if (statusDot) statusDot.classList.add('bg-gray-500');
+
+            // Dispatch selection event
+            const hypothesis = getHypothesisById(hypothesisId);
+            window.dispatchEvent(new CustomEvent('hypothesisSelected', {
+                detail: { hypothesis: hypothesis }
+            }));
+
+            console.log('Selected hypothesis:', hypothesisId);
+        }
+
+        // Function to deselect current hypothesis
+        function deselectCurrentHypothesis() {
+            if (!selectedHypothesisId) return;
+
+            const row = document.querySelector(`[data-hypothesis-id="${selectedHypothesisId}"]`);
+            if (row) {
+                row.classList.remove('bg-gray-50', 'ring-1', 'ring-gray-200');
+                const arrow = row.querySelector('.hypothesis-arrow');
+                if (arrow) arrow.classList.remove('text-gray-600');
+                const statusDot = row.querySelector('.w-2.h-2');
+                if (statusDot) statusDot.classList.remove('bg-gray-500');
+            }
+
+            const oldId = selectedHypothesisId;
+            selectedHypothesisId = null;
+
+            // Dispatch deselection event
+            window.dispatchEvent(new CustomEvent('hypothesisDeselected', {
+                detail: { hypothesisId: oldId }
+            }));
+
+            console.log('Deselected hypothesis:', oldId);
+        }
+
+        // Function to get hypothesis data by ID
+        function getHypothesisById(hypothesisId) {
+            return storedHypotheses.get(hypothesisId) || null;
+        }
+
+        // Function to toggle hypothesis row expansion
+        function toggleHypothesisRow(hypothesisId) {
+            const row = document.querySelector(`[data-hypothesis-id="${hypothesisId}"]`);
+            if (!row) return;
+
+            const details = row.querySelector('.hypothesis-details');
+            const arrow = row.querySelector('.hypothesis-arrow');
+
+            if (expandedHypotheses.has(hypothesisId)) {
+                // Collapse
+                if (details) details.classList.add('hidden');
+                if (arrow) arrow.style.transform = 'rotate(0deg)';
+                expandedHypotheses.delete(hypothesisId);
+                console.log('Collapsed hypothesis:', hypothesisId);
+            } else {
+                // Expand
+                if (details) details.classList.remove('hidden');
+                if (arrow) arrow.style.transform = 'rotate(180deg)';
+                expandedHypotheses.add(hypothesisId);
+                console.log('Expanded hypothesis:', hypothesisId);
+            }
+        }
+
+        // Function to update hypothesis count in header
+        function updateHypothesisCount() {
+            const count = document.querySelectorAll('.hypothesis-row').length;
+            const counter = document.getElementById('hypothesis-panel-count');
+
+            if (counter) {
+                counter.textContent = `${count} ${count === 1 ? 'hypothesis' : 'hypotheses'}`;
+            }
+        }
+
+        // Function to clear all hypotheses
+        function clearHypothesisPanel() {
+            const list = document.getElementById('hypothesis-list');
+            const emptyState = document.getElementById('hypothesis-empty-state');
+
+            // Deselect any selected hypothesis
+            deselectCurrentHypothesis();
+
+            // Remove all hypothesis rows
+            const rows = list.querySelectorAll('.hypothesis-row');
+            rows.forEach(row => row.remove());
+
+            // Show empty state
+            if (emptyState) {
+                emptyState.style.display = 'block';
+            }
+
+            // Clear expanded set and stored hypotheses
+            expandedHypotheses.clear();
+            storedHypotheses.clear();
+
+            // Update counter
+            updateHypothesisCount();
+
+            console.log('Cleared hypothesis panel');
+        }
+
+        // Initialize on DOM ready
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Hypothesis Panel initialized');
+
+            // Listen for hypothesis events from research system
+            window.addEventListener('hypothesisGenerated', function(e) {
+                if (e.detail && e.detail.hypothesis) {
+                    addHypothesisToPanel(e.detail.hypothesis);
+                }
+            });
+
+            window.addEventListener('hypothesesCleared', function() {
+                clearHypothesisPanel();
+            });
+
+            // Hypothesis sidebar toggle functionality
+            const hypothesisToggle = document.getElementById('hypothesis-toggle');
+            const hypothesisPanel = document.getElementById('hypothesis-panel');
+            const revealButton = document.getElementById('left-sidebar-reveal');
+
+            if (hypothesisToggle && hypothesisPanel && revealButton) {
+                hypothesisToggle.addEventListener('click', function() {
+                    const isHidden = hypothesisPanel.classList.contains('hidden');
+
+                    if (isHidden) {
+                        // Show sidebar
+                        hypothesisPanel.classList.remove('hidden');
+                        revealButton.style.display = 'none';
+                    } else {
+                        // Hide sidebar
+                        hypothesisPanel.classList.add('hidden');
+                        revealButton.style.display = 'block';
+                        // Trigger fade in animation
+                        setTimeout(() => {
+                            revealButton.classList.remove('opacity-0', 'invisible');
+                            revealButton.classList.add('opacity-100', 'visible');
+                        }, 10);
+                    }
+                });
+
+                // Reveal button click handler
+                revealButton.addEventListener('click', function() {
+                    hypothesisPanel.classList.remove('hidden');
+                    revealButton.style.display = 'none';
+                });
+            }
+        });
+    </script>
+
+</div>
+{{end}}

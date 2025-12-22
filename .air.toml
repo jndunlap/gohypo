@@ -7,3 +7,12 @@ tmp_dir = "tmp"
   delay = 1000
   exclude_dir = ["tmp", "vendor"]
   include_ext = ["go", "html"]
+  include_file = [".env"]
+  kill_delay = "5s"
+
+[log]
+  time = true
+
+[proxy]
+  enabled = true
+  app_port = 8080

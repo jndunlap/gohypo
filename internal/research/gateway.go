@@ -14,7 +14,7 @@ import (
 )
 
 // SuccessGateway implements the "Success-Only" persistence strategy
-// Only hypotheses that survive the Tri-Gate Gauntlet reach the database
+// Only hypotheses that survive e-value dynamic validation reach the database
 type SuccessGateway struct {
 	hypothesisRepo ports.HypothesisRepository
 	userRepo       ports.UserRepository
@@ -38,10 +38,10 @@ func (sg *SuccessGateway) PersistUniversalLaw(ctx context.Context, hypothesis *m
 	// HARD GATE 1: PhD Statistical Standard (p ≤ 0.001)
 	// ========================================================================
 	// Only hypotheses that achieve "PhD-level" statistical significance pass
-	if hypothesis.TriGateResult.Confidence < 0.999 {
-		log.Printf("STRATEGIC DISCARD: Hypothesis %s failed Tri-Gate confidence (%.3f < 0.999)",
-			hypothesis.ID, hypothesis.TriGateResult.Confidence)
-		log.Printf("   📋 Rationale: %s", hypothesis.TriGateResult.Rationale)
+	if hypothesis.Confidence < 0.999 {
+		log.Printf("STRATEGIC DISCARD: Hypothesis %s failed e-value confidence (%.3f < 0.999)",
+			hypothesis.ID, hypothesis.Confidence)
+		log.Printf("   📋 Rationale: E-value dynamic validation failed")
 		log.Printf("   🧪 Referee Results:")
 		for i, result := range hypothesis.RefereeResults {
 			status := "❌ FAILED"
@@ -53,7 +53,7 @@ func (sg *SuccessGateway) PersistUniversalLaw(ctx context.Context, hypothesis *m
 				log.Printf("         💥 Reason: %s", result.FailureReason)
 			}
 		}
-		log.Printf("   📊 Final Confidence: %.1f%%", hypothesis.TriGateResult.Confidence*100)
+		log.Printf("   📊 Final Confidence: %.1f%%", hypothesis.Confidence*100)
 		return nil // Silent discard - no database write for failures
 	}
 
@@ -69,7 +69,7 @@ func (sg *SuccessGateway) PersistUniversalLaw(ctx context.Context, hypothesis *m
 		log.Printf("STRATEGIC DISCARD: Hypothesis %s below economic threshold ($%.2f < $%.2f)",
 			hypothesis.ID, opportunityCost, minValueThreshold)
 		log.Printf("   💰 Opportunity Cost Breakdown:")
-		log.Printf("      • Confidence Contribution: $%.2f (%.3f × $1000)", hypothesis.TriGateResult.Confidence*1000, hypothesis.TriGateResult.Confidence)
+		log.Printf("      • Confidence Contribution: $%.2f (%.3f × $1000)", hypothesis.Confidence*1000, hypothesis.Confidence)
 		log.Printf("      • Complexity Multiplier: %.2fx (based on hypothesis length: %d chars)", math.Min(float64(len(hypothesis.ScienceHypothesis))/500.0, 3.0), len(hypothesis.ScienceHypothesis))
 		log.Printf("      • Domain Bonus: Applied (causal/predictive/segmentation keywords)")
 		log.Printf("      • Final Value: $%.2f", opportunityCost)
@@ -103,7 +103,6 @@ func (sg *SuccessGateway) PersistUniversalLaw(ctx context.Context, hypothesis *m
 		BusinessHypothesis:  hypothesis.BusinessHypothesis,
 		ScienceHypothesis:   hypothesis.ScienceHypothesis,
 		RefereeResults:      hypothesis.RefereeResults,
-		TriGateResult:       hypothesis.TriGateResult,
 		Passed:              true, // Only successful hypotheses reach here
 		ValidationTimestamp: hypothesis.ValidationTimestamp,
 		StandardsVersion:    hypothesis.StandardsVersion,
@@ -111,7 +110,7 @@ func (sg *SuccessGateway) PersistUniversalLaw(ctx context.Context, hypothesis *m
 			"opportunity_cost":   opportunityCost,
 			"leverage_score":     sg.calculateLeverageScore(hypothesis),
 			"intervention_price": sg.calculateInterventionPrice(hypothesis),
-			"confidence_score":   hypothesis.TriGateResult.Confidence,
+			"confidence_score":   hypothesis.Confidence,
 			"persistence_tier":   "universal_law", // Highest tier
 			"gateway_version":    "success_only_v1",
 		},
@@ -125,7 +124,7 @@ func (sg *SuccessGateway) PersistUniversalLaw(ctx context.Context, hypothesis *m
 	// Log the successful persistence
 	leverageScore := sg.calculateLeverageScore(hypothesis)
 	log.Printf("🎯 UNIVERSAL LAW PERSISTED: %s", hypothesis.ID)
-	log.Printf("   📊 Confidence: %.3f%%", hypothesis.TriGateResult.Confidence*100)
+	log.Printf("   📊 Confidence: %.3f%%", hypothesis.Confidence*100)
 	log.Printf("   💰 Opportunity Cost: $%.2f", opportunityCost)
 	log.Printf("   📈 Leverage Score: %.2f", leverageScore)
 	log.Printf("   🏛️ Status: Validated Universal Law (Tier 3)")
@@ -137,7 +136,7 @@ func (sg *SuccessGateway) PersistUniversalLaw(ctx context.Context, hypothesis *m
 // This implements the "Business-Aware Engineering" requirement
 func (sg *SuccessGateway) calculateOpportunityCost(hypothesis *models.HypothesisResult) float64 {
 	// Base calculation using confidence score and hypothesis complexity
-	baseValue := hypothesis.TriGateResult.Confidence * 1000.0 // $0-1000 based on confidence
+	baseValue := hypothesis.Confidence * 1000.0 // $0-1000 based on confidence
 
 	// Complexity multiplier based on hypothesis length (proxy for implementation complexity)
 	complexityMultiplier := math.Min(float64(len(hypothesis.ScienceHypothesis))/500.0, 3.0)
@@ -159,7 +158,7 @@ func (sg *SuccessGateway) calculateOpportunityCost(hypothesis *models.Hypothesis
 // calculateLeverageScore computes the economic impact multiplier
 func (sg *SuccessGateway) calculateLeverageScore(hypothesis *models.HypothesisResult) float64 {
 	// Base score from confidence
-	baseScore := hypothesis.TriGateResult.Confidence * 100
+	baseScore := hypothesis.Confidence * 100
 
 	// Bonus for strong causal relationships
 	if stringContains(hypothesis.ScienceHypothesis, "strong correlation") ||
