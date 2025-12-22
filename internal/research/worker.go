@@ -14,6 +14,7 @@ import (
 	"gohypo/internal/api"
 	refereePkg "gohypo/internal/referee"
 	"gohypo/internal/testkit"
+	"gohypo/internal/validation"
 	"gohypo/models"
 	"gohypo/ports"
 )
@@ -43,10 +44,13 @@ type ResearchWorker struct {
 
 	// Validated hypothesis summarizer for feedback learning
 	hypothesisSummarizer *app.ValidatedHypothesisSummarizer // Summarizes validated hypotheses for prompt feedback
+
+	// Industrial-grade validation components
+	validationOrchestrator *validation.ValidationOrchestrator // Advanced validation orchestrator
 }
 
 // NewResearchWorker creates a new research worker
-func NewResearchWorker(sessionMgr *SessionManager, storage *ResearchStorage, promptRepo interface{}, greenfieldSvc interface{}, llmConfig *models.AIConfig, statsSweepSvc statsSweepRunner, kitAny interface{}, sseHub interface{}, uiBroadcaster *ResearchUIBroadcaster, hypothesisAnalyzer *ai.HypothesisAnalysisAgent, validationEngine interface{}, dynamicSelector interface{}, hypothesisRepo ports.HypothesisRepository) *ResearchWorker {
+func NewResearchWorker(sessionMgr *SessionManager, storage *ResearchStorage, promptRepo interface{}, greenfieldSvc interface{}, llmConfig *models.AIConfig, statsSweepSvc statsSweepRunner, kitAny interface{}, sseHub interface{}, uiBroadcaster *ResearchUIBroadcaster, hypothesisAnalyzer *ai.HypothesisAnalysisAgent, validationEngine interface{}, dynamicSelector interface{}, hypothesisRepo ports.HypothesisRepository, validationOrchestrator *validation.ValidationOrchestrator) *ResearchWorker {
 	// Extract the port from the greenfield service
 	var greenfieldPort ports.GreenfieldResearchPort
 	if gs, ok := greenfieldSvc.(*app.GreenfieldService); ok {
@@ -86,7 +90,13 @@ func NewResearchWorker(sessionMgr *SessionManager, storage *ResearchStorage, pro
 		validationEngine:      validationEngine,
 		dynamicSelector:       dynamicSelector,
 		hypothesisSummarizer:  hypothesisSummarizer,
+		validationOrchestrator: validationOrchestrator,
 	}
+}
+
+// RunStatsSweep executes statistical analysis and returns artifacts
+func (rw *ResearchWorker) RunStatsSweep(ctx context.Context, sessionID string, fieldMetadata []greenfield.FieldMetadata) ([]map[string]interface{}, error) {
+	return rw.runStatsSweep(ctx, sessionID, fieldMetadata)
 }
 
 // ProcessResearch initiates and manages the research generation workflow
@@ -127,29 +137,12 @@ func (rw *ResearchWorker) ProcessResearch(ctx context.Context, sessionID string,
 		return
 	}
 
-	// Run stats sweep if no statistical artifacts are available
-	phaseStart = time.Now()
+	// Handle statistical artifacts - skip stats sweep for UI-uploaded datasets
 	if len(statsArtifacts) == 0 {
-		log.Printf("[ResearchWorker] 📈 Phase 2/4: Statistical Analysis - Running stats sweep for session %s", sessionID)
-		log.Printf("[ResearchWorker] 🔍 Analyzing %d fields for statistical relationships", len(fieldMetadata))
-
-		// Try stats sweep with fallback to empty artifacts if it fails
-		ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
-		defer cancel()
-
-		var err error
-		sweepArtifacts, err := rw.runStatsSweep(ctx, sessionID, fieldMetadata)
-		phaseDuration := time.Since(phaseStart)
-
-		if err != nil {
-			log.Printf("[ResearchWorker] ⚠️ WARNING: Stats sweep failed after %.2fs: %v", phaseDuration.Seconds(), err)
-			log.Printf("[ResearchWorker] 🔄 Continuing with empty artifacts (graceful degradation)")
-			// Continue with empty artifacts instead of failing completely
-			statsArtifacts = []map[string]interface{}{}
-		} else {
-			statsArtifacts = sweepArtifacts
-			log.Printf("[ResearchWorker] ✅ Stats sweep completed in %.2fs - discovered %d statistical relationships", phaseDuration.Seconds(), len(statsArtifacts))
-		}
+		log.Printf("[ResearchWorker] 📊 Phase 2/4: Statistical Analysis - No pre-computed artifacts available for session %s", sessionID)
+		log.Printf("[ResearchWorker] ℹ️ Note: UI-uploaded datasets don't generate statistical artifacts automatically")
+		log.Printf("[ResearchWorker] 🔄 Proceeding with field metadata only (hypotheses will be based on field names and types)")
+		statsArtifacts = []map[string]interface{}{} // Empty artifacts - LLM will work with field metadata only
 	} else {
 		log.Printf("[ResearchWorker] 📊 Phase 2/4: Statistical Analysis - Using %d existing artifacts for session %s", len(statsArtifacts), sessionID)
 		log.Printf("[ResearchWorker] ⏭️ Skipping stats sweep (artifacts already available)")

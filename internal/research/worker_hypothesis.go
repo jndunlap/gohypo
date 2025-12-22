@@ -356,6 +356,7 @@ func (rw *ResearchWorker) createPendingHypothesesForUI(ctx context.Context, sess
 			BusinessHypothesis:  directive.BusinessHypothesis,
 			ScienceHypothesis:   directive.ScienceHypothesis,
 			NullCase:            directive.NullCase,
+			ExplanationMarkdown: directive.ExplanationMarkdown,
 			RefereeResults:      pendingRefereeResults,
 			Passed:              false, // Pending
 			ValidationTimestamp: time.Now(),

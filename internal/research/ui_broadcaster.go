@@ -53,7 +53,7 @@ func (b *ResearchUIBroadcaster) BroadcastHypothesisPending(sessionID string, hyp
 		ScienceHypothesis:  hypothesis.ScienceHypothesis,
 	}
 
-	html, err := b.renderFragment("hypothesis_pending", data)
+	html, err := b.renderFragment("hypothesis/hypothesis_pending", data)
 	if err != nil {
 		return fmt.Errorf("failed to render hypothesis pending fragment: %w", err)
 	}
@@ -74,7 +74,7 @@ func (b *ResearchUIBroadcaster) BroadcastHypothesisRiskAssessed(sessionID, hypot
 		"ScienceHypothesis":  "Scientific analysis",
 	}
 
-	html, err := b.renderFragment("hypothesis_risk_assessed", data)
+	html, err := b.renderFragment("hypothesis/hypothesis_risk_assessed", data)
 	if err != nil {
 		return fmt.Errorf("failed to render risk assessment fragment: %w", err)
 	}
@@ -100,7 +100,7 @@ func (b *ResearchUIBroadcaster) BroadcastHypothesisValidating(sessionID, hypothe
 		Confidence:    confidence,
 	}
 
-	html, err := b.renderFragment("hypothesis_validating", data)
+	html, err := b.renderFragment("hypothesis/hypothesis_validating", data)
 	if err != nil {
 		return fmt.Errorf("failed to render validation fragment: %w", err)
 	}
@@ -128,7 +128,7 @@ func (b *ResearchUIBroadcaster) BroadcastHypothesisCompleted(sessionID, hypothes
 		TotalTests:     5,   // Would come from result
 	}
 
-	html, err := b.renderFragment("hypothesis_completed", data)
+	html, err := b.renderFragment("hypothesis/hypothesis_completed", data)
 	if err != nil {
 		return fmt.Errorf("failed to render completion fragment: %w", err)
 	}
@@ -152,7 +152,7 @@ func (b *ResearchUIBroadcaster) BroadcastTestStatusUpdate(sessionID, hypothesisI
 		Completed:    completed,
 	}
 
-	html, err := b.renderFragment("test_status_update", data)
+	html, err := b.renderFragment("status/test_status_update", data)
 	if err != nil {
 		return fmt.Errorf("failed to render test status fragment: %w", err)
 	}
@@ -170,7 +170,7 @@ func (b *ResearchUIBroadcaster) BroadcastEntityDetectionFailure(sessionID string
 		AvailableFields: availableFields,
 	}
 
-	html, err := b.renderFragment("entity_detection_failure", data)
+	html, err := b.renderFragment("modals/entity_detection_failure", data)
 	if err != nil {
 		return fmt.Errorf("failed to render entity detection failure fragment: %w", err)
 	}
@@ -192,7 +192,7 @@ func (b *ResearchUIBroadcaster) BroadcastProgressUpdate(sessionID, phase, messag
 		ActiveHypotheses: activeHypotheses,
 	}
 
-	html, err := b.renderFragment("progress_update", data)
+	html, err := b.renderFragment("status/progress_update", data)
 	if err != nil {
 		return fmt.Errorf("failed to render progress update fragment: %w", err)
 	}

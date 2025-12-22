@@ -46,6 +46,26 @@ func NewApp(config Config) (*App, error) {
 
 	// Parse templates (including fragments)
 	funcMap := template.FuncMap{
+		"dict": func(values ...interface{}) map[string]interface{} {
+			if len(values)%2 != 0 {
+				panic("dict: odd number of arguments")
+			}
+			dict := make(map[string]interface{})
+			for i := 0; i < len(values); i += 2 {
+				key, ok := values[i].(string)
+				if !ok {
+					panic("dict: keys must be strings")
+				}
+				dict[key] = values[i+1]
+			}
+			return dict
+		},
+		"or": func(a, b interface{}) interface{} {
+			if a != nil && a != false && a != "" {
+				return a
+			}
+			return b
+		},
 		"mul": func(a, b float64) float64 { return a * b },
 		// Back-compat: some templates use `multiply` rather than `mul`.
 		"multiply": func(a, b float64) float64 { return a * b },

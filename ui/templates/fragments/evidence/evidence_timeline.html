@@ -1,0 +1,62 @@
+<div class="evidence-timeline" id="evidence-timeline-{{.HypothesisID}}">
+  <div class="timeline-header">
+    <h4>Evidence Audit Trail</h4>
+    <span class="evidence-count">{{len .EvidenceBlocks}} entries</span>
+  </div>
+
+  <div class="timeline-container">
+    {{range .EvidenceBlocks}}
+    <div class="timeline-entry" data-timestamp="{{.ComputedAt}}">
+      <div class="timeline-marker {{if .Passed}}success{{else}}failure{{end}}">
+        {{if .Passed}}✓{{else}}✗{{end}}
+      </div>
+
+      <div class="timeline-content">
+        <div class="evidence-meta">
+          <span class="stage-name">{{.StageName}}</span>
+          <span class="method">{{.Method}}</span>
+          <time datetime="{{.ComputedAt}}">{{formatTime .ComputedAt}}</time>
+        </div>
+
+        <div class="evidence-details">
+          <div class="statistical-results">
+            <span class="p-value">p = {{printf "%.6f" .RawResults.p_value}}</span>
+            <span class="effect-size">effect = {{printf "%.3f" .RawResults.effect_size}}</span>
+          </div>
+
+          <div class="assumptions-checked">
+            {{range .SenseResults}}
+            <span class="sense-result {{if eq .Signal "weak"}}minor{{else if eq .Signal "moderate"}}moderate{{else}}strong{{end}}">
+              {{.SenseName}}: {{.Signal}} ({{printf "%.2f" .Confidence}})
+            </span>
+            {{end}}
+          </div>
+
+          {{if .Warnings}}
+          <div class="warnings">
+            {{range .Warnings}}
+            <span class="warning" title="{{.Description}}">{{.Code}}</span>
+            {{end}}
+          </div>
+          {{end}}
+        </div>
+
+        <div class="evidence-actions">
+          <button class="btn-link" onclick="showEvidenceDetails('{{.ID}}')">
+            View Details
+          </button>
+          <button class="btn-link" onclick="downloadEvidenceArtifact('{{.ID}}')">
+            Download Raw
+          </button>
+        </div>
+      </div>
+    </div>
+    {{end}}
+  </div>
+
+  <div class="timeline-footer">
+    <button class="btn-secondary" onclick="exportAuditTrail('{{.HypothesisID}}')">
+      Export Audit Log
+    </button>
+  </div>
+</div>

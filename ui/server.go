@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"embed"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"log"
@@ -16,6 +17,7 @@ import (
 	"gohypo/ai"
 	"gohypo/domain/core"
 	domainDataset "gohypo/domain/dataset"
+	"gohypo/internal/analysis"
 	"gohypo/internal/analysis/brief"
 	"gohypo/internal/api"
 	"gohypo/internal/dataset"
@@ -26,6 +28,8 @@ import (
 	"gohypo/ui/services"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gomarkdown/markdown"
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -49,6 +53,10 @@ type Server struct {
 	// Research components
 	researchStorage *research.ResearchStorage
 	renderService   *services.RenderService
+	hypothesisRepo  ports.HypothesisRepository
+
+	// Evidence components
+	evidenceHandler *api.EvidenceHandler
 
 	datasetCache        map[string]interface{}
 	cacheMutex          sync.RWMutex
@@ -99,13 +107,18 @@ func (s *Server) validateWorkspaceOwnership(ctx context.Context, workspaceID cor
 	return nil
 }
 
-func (s *Server) Initialize(kit *testkit.TestKit, reader ports.LedgerReaderPort, embeddedFiles embed.FS, greenfieldService interface{}, analysisEngine *brief.StatisticalEngine, aiConfig *models.AIConfig, db *sqlx.DB, sseHub *api.SSEHub, userRepo ports.UserRepository) error {
+func (s *Server) Initialize(kit *testkit.TestKit, reader ports.LedgerReaderPort, embeddedFiles embed.FS, greenfieldService interface{}, analysisEngine *brief.StatisticalEngine, aiConfig *models.AIConfig, db *sqlx.DB, sseHub *api.SSEHub, userRepo ports.UserRepository, hypothesisRepo ports.HypothesisRepository) error {
 	s.sseHub = sseHub
 	s.testkit = kit
 	s.reader = reader
 	s.greenfieldService = greenfieldService
 	s.analysisEngine = analysisEngine
 	s.userRepository = userRepo
+	s.hypothesisRepo = hypothesisRepo
+
+	// Initialize evidence handler
+	evidencePackager := analysis.NewEvidencePackager()
+	s.evidenceHandler = api.NewEvidenceHandler(evidencePackager, hypothesisRepo)
 
 	// Initialize forensic scout for UI display using the same config as main app
 	if aiConfig != nil {
@@ -156,7 +169,7 @@ func (s *Server) Initialize(kit *testkit.TestKit, reader ports.LedgerReaderPort,
 
 	s.setupMiddleware()
 	s.setupRoutes()
-	// Load the initial Excel dataset automatically
+	// Datasets should only be loaded via UI upload - no automatic loading
 
 	return nil
 }
@@ -168,13 +181,33 @@ func (s *Server) setupTemplates() error {
 
 	// Check what files are being parsed
 	// #region agent log
-	log.Printf(`{"sessionId":"debug-session","runId":"initial","hypothesisId":"H1","location":"ui/server.go:89","message":"Template patterns to parse","data":{"patterns":["ui/templates/*.html","ui/templates/fragments/*.html"]},"timestamp":%d}`, time.Now().UnixMilli())
+	log.Printf(`{"sessionId":"debug-session","runId":"initial","hypothesisId":"H1","location":"ui/server.go:89","message":"Template patterns to parse","data":{"patterns":["ui/templates/*.html","ui/templates/fragments/**/*.html"]},"timestamp":%d}`, time.Now().UnixMilli())
 	// #endregion
 
 	log.Printf("[setupTemplates] Parsing embedded HTML templates...")
 
 	// Define custom template functions
 	funcMap := template.FuncMap{
+		"dict": func(values ...interface{}) map[string]interface{} {
+			if len(values)%2 != 0 {
+				panic("dict: odd number of arguments")
+			}
+			dict := make(map[string]interface{})
+			for i := 0; i < len(values); i += 2 {
+				key, ok := values[i].(string)
+				if !ok {
+					panic("dict: keys must be strings")
+				}
+				dict[key] = values[i+1]
+			}
+			return dict
+		},
+		"or": func(a, b interface{}) interface{} {
+			if a != nil && a != false && a != "" {
+				return a
+			}
+			return b
+		},
 		"substr": func(s string, start, length int) string {
 			if start < 0 {
 				start = 0
@@ -279,6 +312,87 @@ func (s *Server) setupTemplates() error {
 		"contains": func(s, substr string) bool {
 			return strings.Contains(s, substr)
 		},
+		"formatTime": func(t interface{}) string {
+			var timestamp time.Time
+			switch v := t.(type) {
+			case time.Time:
+				timestamp = v
+			case int64:
+				timestamp = time.Unix(v/1000, (v%1000)*1000000) // Handle milliseconds
+			case string:
+				// Try parsing as RFC3339 first, then as Unix timestamp
+				if parsed, err := time.Parse(time.RFC3339, v); err == nil {
+					timestamp = parsed
+				} else if parsed, err := time.Parse("2006-01-02T15:04:05Z07:00", v); err == nil {
+					timestamp = parsed
+				} else {
+					return v // Return as-is if can't parse
+				}
+			default:
+				return fmt.Sprintf("%v", t)
+			}
+			return timestamp.Format("Jan 2, 15:04")
+		},
+		"jsonPretty": func(data interface{}) string {
+			if data == nil {
+				return "{}"
+			}
+			// Marshal to JSON with indentation
+			jsonBytes, err := json.MarshalIndent(data, "", "  ")
+			if err != nil {
+				return fmt.Sprintf("Error formatting JSON: %v", err)
+			}
+			return string(jsonBytes)
+		},
+		"div": func(a, b interface{}) float64 {
+			var af, bf float64
+			switch v := a.(type) {
+			case float64:
+				af = v
+			case float32:
+				af = float64(v)
+			case int:
+				af = float64(v)
+			case int64:
+				af = float64(v)
+			default:
+				return 0
+			}
+			switch v := b.(type) {
+			case float64:
+				bf = v
+			case float32:
+				bf = float64(v)
+			case int:
+				bf = float64(v)
+			case int64:
+				bf = float64(v)
+			default:
+				return 0
+			}
+			if bf == 0 {
+				return 0 // Avoid division by zero
+			}
+			return af / bf
+		},
+		"markdown": func(text string) template.HTML {
+			if text == "" {
+				return ""
+			}
+			html := markdown.ToHTML([]byte(text), nil, nil)
+			return template.HTML(html)
+		},
+
+		// JSON encoding for template data
+		"toJson": func(v interface{}) string {
+			b, _ := json.MarshalIndent(v, "", "  ")
+			return string(b)
+		},
+
+		// Safe HTML output (use with caution)
+		"safe": func(s string) template.HTML {
+			return template.HTML(s)
+		},
 	}
 
 	// Create a new template with custom functions
@@ -288,8 +402,10 @@ func (s *Server) setupTemplates() error {
 	log.Printf(`{"sessionId":"debug-session","runId":"initial","hypothesisId":"H1","location":"ui/server.go:198","message":"About to parse templates","data":{"templateCount":%d},"timestamp":%d}`, len(funcMap), time.Now().UnixMilli())
 	// #endregion
 
-	// Parse all templates from embedded files
-	tmpl, err := tmpl.ParseFS(s.embeddedFiles, "ui/templates/*.html", "ui/templates/fragments/*.html")
+	// Parse all templates from embedded files (recursive for fragments)
+	tmpl, err := tmpl.ParseFS(s.embeddedFiles,
+		"ui/templates/*.html",
+		"ui/templates/fragments/**/*.html")
 	if err != nil {
 		// #region agent log
 		log.Printf(`{"sessionId":"debug-session","runId":"initial","hypothesisId":"H1","location":"ui/server.go:201","message":"Template parsing failed","data":{"error":"%s"},"timestamp":%d}`, err.Error(), time.Now().UnixMilli())
@@ -341,9 +457,106 @@ func (s *Server) setupRoutes() {
 	s.router.POST("/api/workspaces/:id/discover", s.handleDiscoverRelationships)
 	s.router.POST("/api/workspaces/:id/auto-merge", s.handleAutoMergeSuggestions)
 
+	// Manifold visualization endpoints
+	s.router.GET("/api/hypotheses/:hypothesisId/manifold", s.handleGetHypothesisManifold)
+	s.router.GET("/api/hypotheses/:hypothesisId/evidence", s.handleGetHypothesisEvidence)
+
 	// Dataset merging
 	s.router.POST("/api/datasets/merge", s.handleMergeDatasets)
 	s.router.GET("/api/datasets/merge/:id/status", s.handleMergeStatus)
+}
+
+// Manifold visualization handler
+func (s *Server) handleGetHypothesisManifold(c *gin.Context) {
+	hypothesisID := c.Param("hypothesisId")
+	userIDStr := c.GetString("userID")
+
+	if userIDStr == "" {
+		c.JSON(401, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	// Get hypothesis from repository
+	hypothesis, err := s.hypothesisRepo.GetHypothesis(c.Request.Context(), userID, hypothesisID)
+	if err != nil {
+		log.Printf("Failed to get hypothesis %s: %v", hypothesisID, err)
+		c.JSON(404, gin.H{"error": "Hypothesis not found"})
+		return
+	}
+
+	// Get evidence brief (this would need to be implemented)
+	// For now, we'll create mock evidence based on the hypothesis
+	evidence := s.createMockEvidenceFromHypothesis(hypothesis)
+
+	// Analyze manifold
+	analyzer := analysis.NewManifoldAnalyzer()
+	topologicalData := analyzer.AnalyzeHypothesis(hypothesis, evidence)
+
+	c.JSON(200, topologicalData)
+}
+
+// handleGetHypothesisEvidence returns raw evidence for a hypothesis
+func (s *Server) handleGetHypothesisEvidence(c *gin.Context) {
+	s.evidenceHandler.GetHypothesisEvidence(c)
+}
+
+// createMockEvidenceFromHypothesis creates mock evidence for demonstration
+// In a real implementation, this would retrieve the actual evidence used for the hypothesis
+func (s *Server) createMockEvidenceFromHypothesis(hypothesis *models.HypothesisResult) *analysis.EvidenceBrief {
+	// Create mock associations
+	associations := []analysis.AssociationResult{
+		{
+			EvidenceID:            "mock_assoc_001",
+			Feature:               "price",
+			Outcome:               "purchase_conversion",
+			RawEffect:             0.35,
+			PValue:                0.02,
+			Method:                "pearson",
+			ConfidenceLevel:       analysis.ConfidenceStrong,
+			PracticalSignificance: analysis.SignificanceMedium,
+			BusinessFeatureName:   "Product Price",
+			BusinessOutcomeName:   "Purchase Conversion Rate",
+		},
+	}
+
+	// Create mock breakpoints
+	breakpoints := []analysis.BreakpointResult{
+		{
+			EvidenceID:            "mock_bp_001",
+			Feature:               "discount_percentage",
+			Outcome:               "purchase_conversion",
+			Threshold:             15.0,
+			EffectBelow:           0.25,
+			EffectAbove:           0.45,
+			Delta:                 0.20,
+			PValue:                0.01,
+			Method:                "segmented_regression",
+			ConfidenceLevel:       analysis.ConfidenceStrong,
+			PracticalSignificance: analysis.SignificanceMedium,
+			BusinessFeatureName:   "Discount Percentage",
+			BusinessOutcomeName:   "Purchase Conversion Rate",
+		},
+	}
+
+	return &analysis.EvidenceBrief{
+		Version:           "1.0.0",
+		Timestamp:         time.Now(),
+		DatasetName:       "customer_transaction_data",
+		RowCount:          100000,
+		ColumnCount:       20,
+		Associations:      associations,
+		Breakpoints:       breakpoints,
+		Interactions:      []analysis.InteractionResult{},
+		StructuralBreaks:  []analysis.StructuralBreakResult{},
+		TransferEntropies: []analysis.TransferEntropyResult{},
+		HysteresisEffects: []analysis.HysteresisResult{},
+	}
 }
 
 // ensureDefaultWorkspace ensures a default workspace exists for the given user

@@ -1,0 +1,109 @@
+{{define "hypothesis/hypothesis_expanded"}}
+<div id="hypothesis-{{.ID}}-expanded" class="hidden bg-gray-50 border-t border-gray-200 p-4">
+  <!-- Manifold Visualization Section -->
+  <div class="mb-6">
+    <h4 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+      <svg class="w-5 h-5 mr-2 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V8zm0 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2z" clip-rule="evenodd"/>
+      </svg>
+      Topological Manifold Analysis
+    </h4>
+
+    <!-- Visualization Controls -->
+    <div class="bg-white rounded-lg border border-gray-200 p-4 mb-4">
+      <div class="flex flex-wrap gap-2 mb-4">
+        <button class="manifold-view-btn px-3 py-2 text-sm bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200 transition-colors"
+                data-view="relationship-surface">
+          Relationship Surface
+        </button>
+        <button class="manifold-view-btn px-3 py-2 text-sm bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
+                data-view="dimensionality-projection">
+          Dimensionality Projection
+        </button>
+        <button class="manifold-view-btn px-3 py-2 text-sm bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-colors"
+                data-view="manifold-tears">
+          Manifold Tears
+        </button>
+        <button class="manifold-view-btn px-3 py-2 text-sm bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors"
+                data-view="homology-analysis">
+          Homology Analysis
+        </button>
+      </div>
+
+      <!-- Visualization Canvas -->
+      <div class="relative bg-gray-900 rounded-lg overflow-hidden" style="height: 400px;">
+        <canvas id="landscape-canvas-{{.ID}}" class="w-full h-full cursor-grab"></canvas>
+
+        <!-- Loading Overlay -->
+        <div class="absolute inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center manifold-loading">
+          <div class="text-white text-center">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
+            <p class="text-sm">Computing topological features...</p>
+          </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="absolute top-2 right-2 bg-black bg-opacity-75 text-white p-2 rounded text-xs">
+          <div class="flex items-center mb-1">
+            <div class="w-3 h-3 bg-red-500 rounded mr-2"></div>
+            <span>Manifold Tear</span>
+          </div>
+          <div class="flex items-center mb-1">
+            <div class="w-3 h-3 bg-yellow-500 rounded mr-2"></div>
+            <span>Phase Transition</span>
+          </div>
+          <div class="flex items-center">
+            <div class="w-3 h-3 bg-blue-500 rounded mr-2"></div>
+            <span>Homological Hole</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Topological Insights -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <!-- Manifold Tears Detected -->
+      <div class="bg-white rounded-lg border border-gray-200 p-4">
+        <h5 class="font-semibold text-gray-800 mb-2 flex items-center">
+          <div class="w-3 h-3 bg-red-500 rounded mr-2"></div>
+          Manifold Tears
+        </h5>
+        <div class="text-2xl font-bold text-red-600 mb-1" id="tears-count-{{.ID}}">0</div>
+        <p class="text-sm text-gray-600">Irreversible discontinuities detected</p>
+        <div class="mt-2 text-xs text-gray-500" id="tears-details-{{.ID}}">
+          No tears detected in current analysis
+        </div>
+      </div>
+
+      <!-- Dimensionality Collapse Risk -->
+      <div class="bg-white rounded-lg border border-gray-200 p-4">
+        <h5 class="font-semibold text-gray-800 mb-2 flex items-center">
+          <div class="w-3 h-3 bg-yellow-500 rounded mr-2"></div>
+          Collapse Risk
+        </h5>
+        <div class="text-2xl font-bold text-yellow-600 mb-1" id="collapse-risk-{{.ID}}">Low</div>
+        <p class="text-sm text-gray-600">Dangerous variable alignment</p>
+        <div class="mt-2 text-xs text-gray-500" id="collapse-details-{{.ID}}">
+          Variables remain well-separated
+        </div>
+      </div>
+
+      <!-- Homological Holes -->
+      <div class="bg-white rounded-lg border border-gray-200 p-4">
+        <h5 class="font-semibold text-gray-800 mb-2 flex items-center">
+          <div class="w-3 h-3 bg-blue-500 rounded mr-2"></div>
+          Homological Holes
+        </h5>
+        <div class="text-2xl font-bold text-blue-600 mb-1" id="holes-count-{{.ID}}">0</div>
+        <p class="text-sm text-gray-600">Missing expected relationships</p>
+        <div class="mt-2 text-xs text-gray-500" id="holes-details-{{.ID}}">
+          No significant holes detected
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Original expanded content continues... -->
+  {{template "hypothesis_explanation" dict "ExplanationMarkdown" .ExplanationMarkdown}}
+</div>
+{{end}}

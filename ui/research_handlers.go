@@ -5,24 +5,31 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"gohypo/internal/api"
 	"gohypo/internal/research"
+	"gohypo/models"
 	"gohypo/ui/services"
 
-	"github.com/google/uuid"
-
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type ResearchHandler struct {
-	dataService *services.DataService
+	dataService    *services.DataService
+	hypothesisRepo interface {
+		GetHypothesis(ctx context.Context, workspaceID uuid.UUID, hypothesisID string) (*models.HypothesisResult, error)
+	}
 }
 
-func NewResearchHandler(dataService *services.DataService) *ResearchHandler {
+func NewResearchHandler(dataService *services.DataService, hypothesisRepo interface {
+	GetHypothesis(ctx context.Context, workspaceID uuid.UUID, hypothesisID string) (*models.HypothesisResult, error)
+}) *ResearchHandler {
 	return &ResearchHandler{
-		dataService: dataService,
+		dataService:    dataService,
+		hypothesisRepo: hypothesisRepo,
 	}
 }
 
@@ -89,6 +96,23 @@ func (h *ResearchHandler) HandleInitiateResearch(sessionMgr *research.SessionMan
 				"error": "Failed to retrieve statistical artifacts for workspace",
 			})
 			return
+		}
+
+		// If no pre-computed statistical artifacts exist, run stats sweep now
+		if len(statsArtifacts) == 0 {
+			log.Printf("[API] 🔬 No pre-computed statistical artifacts found for workspace %s - running stats sweep", workspaceID)
+
+			// Create a temporary session for stats sweep (will be cleaned up)
+			tempSessionID := fmt.Sprintf("stats_sweep_%s_%d", workspaceID.String(), time.Now().Unix())
+			statsArtifactsFromSweep, err := worker.RunStatsSweep(c.Request.Context(), tempSessionID, fieldMetadata)
+			if err != nil {
+				log.Printf("[API] ❌ Stats sweep failed for workspace %s: %v", workspaceID, err)
+				// Continue with empty artifacts rather than failing completely
+				log.Printf("[API] 🔄 Continuing with empty statistical artifacts")
+			} else {
+				log.Printf("[API] ✅ Stats sweep completed for workspace %s: %d artifacts generated", workspaceID, len(statsArtifactsFromSweep))
+				statsArtifacts = statsArtifactsFromSweep
+			}
 		}
 
 		log.Printf("[API] 📊 Found %d fields and %d statistical artifacts for workspace %s research analysis", len(fieldMetadata), len(statsArtifacts), workspaceID)
@@ -228,4 +252,103 @@ func (h *ResearchHandler) HandleResearchStatus(sessionMgr *research.SessionManag
 
 		c.JSON(http.StatusOK, response)
 	}
+}
+
+// GetStabilityAnalysis returns detailed stability analysis for a hypothesis subsample
+func (h *ResearchHandler) GetStabilityAnalysis(c *gin.Context) {
+	hypothesisID := c.Param("hypothesisId")
+	subsampleIndexStr := c.Param("subsampleIndex")
+	refereeIndexStr := c.Param("refereeIndex")
+
+	subsampleIndex, err := strconv.Atoi(subsampleIndexStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid subsample index"})
+		return
+	}
+
+	refereeIndex, err := strconv.Atoi(refereeIndexStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid referee index"})
+		return
+	}
+
+	// Get hypothesis result to access stability data
+	// TODO: Get workspaceID from session/context
+	workspaceID := uuid.Nil // Placeholder - should get from session
+	hypothesisResult, err := h.hypothesisRepo.GetHypothesis(c.Request.Context(), workspaceID, hypothesisID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Hypothesis not found"})
+		return
+	}
+
+	// Check if stability data exists
+	if hypothesisResult.StabilityResult == nil ||
+	   subsampleIndex >= len(hypothesisResult.StabilityResult.SubsampleResults) ||
+	   refereeIndex >= len(hypothesisResult.StabilityResult.SubsampleResults[subsampleIndex].RefereeResults) {
+
+		c.JSON(http.StatusNotFound, gin.H{"error": "Stability data not available"})
+		return
+	}
+
+	subsampleData := hypothesisResult.StabilityResult.SubsampleResults[subsampleIndex]
+	refereeResult := subsampleData.RefereeResults[refereeIndex]
+	refereeName := hypothesisResult.StabilityResult.RefereeNames[refereeIndex]
+
+	// Generate detailed analysis
+	analysis := gin.H{
+		"hypothesis_id":    hypothesisID,
+		"subsample_index":  subsampleIndex,
+		"referee_index":    refereeIndex,
+		"referee_name":     refereeName,
+		"passed":          refereeResult.Passed,
+		"failure_reason":  refereeResult.FailureReason,
+		"execution_time":  refereeResult.ExecutionTime,
+		"evidence_count":  len(refereeResult.EvidenceBlocks),
+		"subsample_size":  len(subsampleData.RefereeResults),
+		"analysis": gin.H{
+			"statistical_power": getRefereeDescription(refereeName),
+			"confidence_level":  calculateConfidenceLevel(refereeResult),
+			"data_characteristics": gin.H{
+				"sample_size": "Based on subsample",
+				"distribution": "Preserved from original",
+				"relationships": "Subsampled relationships",
+			},
+		},
+	}
+
+	c.JSON(http.StatusOK, analysis)
+}
+
+// Helper function to get referee descriptions
+func getRefereeDescription(refereeName string) string {
+	descriptions := map[string]string{
+		"Permutation_Shredder": "Non-parametric test ensuring results aren't due to random chance",
+		"Transfer_Entropy": "Detects directional information flow between variables over time",
+		"Chow_Stability_Test": "Tests if relationships remain stable across different time periods",
+		"LOO_Cross_Validation": "Leave-one-out validation to test predictive stability",
+		"Conditional_MI": "Tests direct relationships while controlling for confounding variables",
+		"Isotonic_Mechanism_Check": "Validates functional form and monotonic relationships",
+		"Wavelet_Coherence": "Analyzes relationships in frequency domain across time",
+		"Persistent_Homology": "Tests topological features for complex relationship structures",
+		"Algorithmic_Complexity": "Measures information content and compressibility",
+		"Synthetic_Intervention": "Tests causal effects under simulated interventions",
+	}
+
+	if desc, exists := descriptions[refereeName]; exists {
+		return desc
+	}
+	return "Advanced statistical validation test"
+}
+
+// Helper function to calculate confidence level
+func calculateConfidenceLevel(result models.RefereeResult) string {
+	if result.Passed {
+		if len(result.EvidenceBlocks) > 5 {
+			return "High Confidence"
+		} else if len(result.EvidenceBlocks) > 2 {
+			return "Moderate Confidence"
+		}
+		return "Low Confidence"
+	}
+	return "Failed - Results not reliable"
 }

@@ -2,6 +2,7 @@ package greenfield
 
 import (
 	"gohypo/domain/core"
+	"gohypo/models"
 )
 
 // ResearchDirectiveID represents a unique identifier for a research directive
@@ -17,8 +18,10 @@ type ResearchDirective struct {
 	EffectKey          core.VariableKey    `json:"effect_key"`
 	LogicType          string              `json:"logic_type"`
 	ValidationStrategy ValidationStrategy  `json:"validation_strategy"`
-	RefereeGates       RefereeGates        `json:"referee_gates"`
-	CreatedAt          core.Timestamp      `json:"created_at"`
+	RefereeGates          RefereeGates          `json:"referee_gates"`
+	ExplanationMarkdown string              `json:"explanation_markdown"`
+	ExplanationStructure models.ExplanationStructure `json:"explanation_structure"` // Legacy
+	CreatedAt             core.Timestamp           `json:"created_at"`
 }
 
 // ValidationStrategy - The "Statistical Instruments" required

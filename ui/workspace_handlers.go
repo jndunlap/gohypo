@@ -626,6 +626,14 @@ func (s *Server) handleGetWorkspaceHypotheses(c *gin.Context) {
 	hypotheses, err := s.researchStorage.ListByWorkspace(c.Request.Context(), string(workspaceID), 50)
 	if err != nil {
 		log.Printf("[API] Failed to list hypotheses for workspace %s: %v", workspaceID, err)
+
+		if c.GetHeader("HX-Request") == "true" {
+			html := s.renderService.RenderHypothesisError("Failed to retrieve hypotheses for this workspace")
+			c.Header("Content-Type", "text/html")
+			c.String(http.StatusInternalServerError, html)
+			return
+		}
+
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve hypotheses"})
 		return
 	}

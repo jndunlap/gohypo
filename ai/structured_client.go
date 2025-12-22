@@ -27,10 +27,6 @@ type StructuredClient[T any] struct {
 	SessionID     *uuid.UUID // Optional session context for tracking
 }
 
-// ResponseFormat forces structured output from GPT models
-type ResponseFormat struct {
-	Type string `json:"type"` // "json_object" for structured output
-}
 
 // NewStructuredClient creates a new structured client with usage tracking
 func NewStructuredClient[T any](llmClient ports.LLMClient, usageService *usage.Service, promptsDir string, systemContext string) *StructuredClient[T] {
@@ -111,8 +107,8 @@ func (client *StructuredClient[T]) GetJsonResponseWithContext(ctx context.Contex
 	// Build the full prompt with system context
 	fullPrompt := fmt.Sprintf("%s\n\n%s", systemContent, prompt)
 
-	// Call LLM with usage tracking
-	response, err := client.LLMClient.ChatCompletionWithUsage(ctx, "gpt-5.2", fullPrompt, 2000) // Using default model for now
+	// Call LLM with usage tracking and JSON response format
+	response, err := client.LLMClient.ChatCompletionWithUsageAndFormat(ctx, "gpt-5.2", fullPrompt, 2000, &ports.ResponseFormat{Type: "json_object"}) // Using default model for now
 	if err != nil {
 		log.Printf("[StructuredClient] ERROR: LLM call failed: %v", err)
 		return nil, fmt.Errorf("LLM call failed: %w", err)
@@ -337,6 +333,10 @@ func containsAny(text string, substrings ...string) bool {
 }
 
 func (m *mockLLMClient) ChatCompletionWithUsage(ctx context.Context, model string, prompt string, maxTokens int) (*ports.LLMResponse, error) {
+	return m.ChatCompletionWithUsageAndFormat(ctx, model, prompt, maxTokens, nil)
+}
+
+func (m *mockLLMClient) ChatCompletionWithUsageAndFormat(ctx context.Context, model string, prompt string, maxTokens int, responseFormat *ports.ResponseFormat) (*ports.LLMResponse, error) {
 	content, _ := m.ChatCompletion(ctx, model, prompt, maxTokens)
 	return &ports.LLMResponse{
 		Content: content,
@@ -406,11 +406,12 @@ func (c *OpenAIClient) ChatCompletion(ctx context.Context, model string, prompt 
 		Content string `json:"content"`
 	}
 	type reqBody struct {
-		Model               string  `json:"model"`
-		Messages            []msg   `json:"messages"`
-		Temperature         float64 `json:"temperature,omitempty"`
-		MaxTokens           int     `json:"max_tokens,omitempty"`           // Legacy parameter
-		MaxCompletionTokens int     `json:"max_completion_tokens,omitempty"` // New parameter for newer models
+		Model               string         `json:"model"`
+		Messages            []msg          `json:"messages"`
+		ResponseFormat      *ports.ResponseFormat `json:"response_format,omitempty"`
+		Temperature         float64        `json:"temperature,omitempty"`
+		MaxTokens           int            `json:"max_tokens,omitempty"`           // Legacy parameter
+		MaxCompletionTokens int            `json:"max_completion_tokens,omitempty"` // New parameter for newer models
 	}
 	body := reqBody{
 		Model: model,
@@ -475,6 +476,10 @@ func (c *OpenAIClient) ChatCompletion(ctx context.Context, model string, prompt 
 }
 
 func (c *OpenAIClient) ChatCompletionWithUsage(ctx context.Context, model string, prompt string, maxTokens int) (*ports.LLMResponse, error) {
+	return c.ChatCompletionWithUsageAndFormat(ctx, model, prompt, maxTokens, nil)
+}
+
+func (c *OpenAIClient) ChatCompletionWithUsageAndFormat(ctx context.Context, model string, prompt string, maxTokens int, responseFormat *ports.ResponseFormat) (*ports.LLMResponse, error) {
 	if strings.TrimSpace(model) == "" {
 		model = c.Model // Use configured model if not specified
 	}
@@ -488,11 +493,12 @@ func (c *OpenAIClient) ChatCompletionWithUsage(ctx context.Context, model string
 		Content string `json:"content"`
 	}
 	type reqBody struct {
-		Model               string  `json:"model"`
-		Messages            []msg   `json:"messages"`
-		Temperature         float64 `json:"temperature,omitempty"`
-		MaxTokens           int     `json:"max_tokens,omitempty"`           // Legacy parameter
-		MaxCompletionTokens int     `json:"max_completion_tokens,omitempty"` // New parameter for newer models
+		Model               string         `json:"model"`
+		Messages            []msg          `json:"messages"`
+		ResponseFormat      *ports.ResponseFormat `json:"response_format,omitempty"`
+		Temperature         float64        `json:"temperature,omitempty"`
+		MaxTokens           int            `json:"max_tokens,omitempty"`           // Legacy parameter
+		MaxCompletionTokens int            `json:"max_completion_tokens,omitempty"` // New parameter for newer models
 	}
 	body := reqBody{
 		Model: model,
@@ -500,7 +506,8 @@ func (c *OpenAIClient) ChatCompletionWithUsage(ctx context.Context, model string
 			{Role: "system", Content: "You are a careful assistant. Output exactly what the user asks for."},
 			{Role: "user", Content: prompt},
 		},
-		Temperature: c.Temperature,
+		ResponseFormat: responseFormat,
+		Temperature:    c.Temperature,
 	}
 
 	// Use the appropriate parameter based on the model
@@ -610,6 +617,10 @@ func (c *legacyLLMClient) ChatCompletion(ctx context.Context, model string, prom
 }
 
 func (c *legacyLLMClient) ChatCompletionWithUsage(ctx context.Context, model string, prompt string, maxTokens int) (*ports.LLMResponse, error) {
+	return c.ChatCompletionWithUsageAndFormat(ctx, model, prompt, maxTokens, nil)
+}
+
+func (c *legacyLLMClient) ChatCompletionWithUsageAndFormat(ctx context.Context, model string, prompt string, maxTokens int, responseFormat *ports.ResponseFormat) (*ports.LLMResponse, error) {
 	content, err := c.ChatCompletion(ctx, model, prompt, maxTokens)
 	if err != nil {
 		return nil, err

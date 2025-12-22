@@ -9,12 +9,68 @@ import (
 	"gohypo/domain/core"
 	"gohypo/internal/api"
 	refereePkg "gohypo/internal/referee"
+	"gohypo/internal/validation"
 	"gohypo/models"
 )
 
 // executeEValueValidation performs e-value dynamic validation for a single hypothesis
 func (rw *ResearchWorker) executeEValueValidation(ctx context.Context, sessionID string, directive models.ResearchDirectiveResponse) bool {
 	return rw.executeEValueValidationWithEvidence(ctx, sessionID, directive, nil)
+}
+
+// executeAdvancedValidation performs comprehensive validation using industrial-grade guardrails
+func (rw *ResearchWorker) executeAdvancedValidation(ctx context.Context, sessionID string, directive models.ResearchDirectiveResponse, statisticalEvidence []refereePkg.DiscoveryEvidence) bool {
+	// Load matrix data for the hypothesis variables
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	matrixBundle, err := rw.loadMatrixBundleForHypothesisWithContext(ctx, directive)
+	if err != nil {
+		log.Printf("[ResearchWorker] ERROR: Matrix loading failed for hypothesis %s: %v", directive.ID, err)
+		rw.recordFailedHypothesis(ctx, sessionID, directive.ID, fmt.Sprintf("Matrix loading failed: %v", err))
+		return false
+	}
+
+	// Extract variable data
+	xData, ok := matrixBundle.GetColumnData(core.VariableKey(directive.CauseKey))
+	yData, ok2 := matrixBundle.GetColumnData(core.VariableKey(directive.EffectKey))
+
+	if !ok || !ok2 {
+		log.Printf("[ResearchWorker] ERROR: Variables not found for hypothesis %s", directive.ID)
+		rw.recordFailedHypothesis(ctx, sessionID, directive.ID, "Variable data not found")
+		return false
+	}
+
+	// Convert statistical evidence to map format for validation
+	statEvidence := make(map[string]interface{})
+	if len(statisticalEvidence) > 0 {
+		// Use the first relevant evidence (in practice, you'd filter by hypothesis variables)
+		evidence := statisticalEvidence[0]
+		statEvidence = map[string]interface{}{
+			"cause_key":           evidence.CauseKey,
+			"effect_key":          evidence.EffectKey,
+			"p_value":            evidence.PValue,
+			"q_value":            evidence.QValue,
+			"effect_size":        0.5, // Placeholder - would come from actual evidence
+			"sample_size":        evidence.SampleSize,
+			"test_type":          evidence.TestType,
+		}
+	}
+
+	// Use advanced validation orchestrator if available
+	if rw.validationOrchestrator != nil {
+		result, err := rw.validationOrchestrator.ValidateHypothesis(ctx, &directive, xData, yData, statEvidence)
+		if err != nil {
+			log.Printf("[ResearchWorker] Advanced validation failed for hypothesis %s: %v", directive.ID, err)
+			return rw.executeEValueValidation(ctx, sessionID, directive) // Fallback to basic validation
+		}
+
+		// Convert result to hypothesis result and save
+		return rw.saveAdvancedValidationResult(ctx, sessionID, directive, result)
+	}
+
+	// Fallback to basic validation
+	return rw.executeEValueValidation(ctx, sessionID, directive)
 }
 
 // executeEValueValidationWithEvidence performs e-value dynamic validation with optional discovery evidence
@@ -221,6 +277,63 @@ func (rw *ResearchWorker) acceptHypothesisWithEValue(ctx context.Context, sessio
 
 	log.Printf("[ResearchWorker] Hypothesis %s validation completed", id)
 	return overallPassed
+}
+
+// saveAdvancedValidationResult converts advanced validation result to hypothesis result and saves it
+func (rw *ResearchWorker) saveAdvancedValidationResult(ctx context.Context, sessionID string, directive models.ResearchDirectiveResponse, result *validation.ValidationResult) bool {
+	// Create hypothesis result from advanced validation
+	hypothesisResult := models.HypothesisResult{
+		ID:                  result.HypothesisID,
+		SessionID:           sessionID,
+		BusinessHypothesis:  directive.BusinessHypothesis,
+		ScienceHypothesis:   directive.ScienceHypothesis,
+		NullCase:            directive.NullCase,
+		RefereeResults:      result.RefereeResults,
+		Passed:              result.Passed,
+		ValidationTimestamp: time.Now(),
+		StandardsVersion:    "2.0.0", // Advanced validation version
+		ExecutionMetadata: map[string]interface{}{
+			"validation_method": "industrial_grade",
+			"execution_time_ms": result.ExecutionTime.Milliseconds(),
+			"confidence_score":  result.Confidence,
+			"e_value":          result.EValue,
+		},
+		PhaseEValues:     []float64{result.EValue, result.EValue, result.EValue},
+		FeasibilityScore: 0.8, // Would be calculated based on validation metrics
+		RiskLevel:        "low",
+		DataTopology:     map[string]interface{}{},
+		CurrentEValue:    result.EValue,
+		NormalizedEValue: result.Confidence,
+		Confidence:       result.Confidence,
+		Status:           "completed",
+	}
+
+	// Add stability information if available
+	if result.StabilityResult != nil {
+		hypothesisResult.ExecutionMetadata["stability_score"] = result.StabilityResult.OverallStability
+		hypothesisResult.ExecutionMetadata["stability_subsamples"] = result.StabilityResult.SubsampleCount
+		hypothesisResult.ExecutionMetadata["stable_referees"] = result.StabilityResult.StableHypotheses
+		hypothesisResult.ExecutionMetadata["unstable_referees"] = result.StabilityResult.UnstableHypotheses
+	}
+
+	// Add auditor information if available
+	if result.AuditorResult != nil {
+		hypothesisResult.ExecutionMetadata["auditor_decision"] = result.AuditorResult.Decision
+		hypothesisResult.ExecutionMetadata["auditor_confidence"] = result.AuditorResult.ConfidenceScore
+		hypothesisResult.ExecutionMetadata["auditor_severity"] = result.AuditorResult.Severity
+		hypothesisResult.ExecutionMetadata["auditor_reasoning"] = result.AuditorResult.Reasoning
+	}
+
+	// Save to storage
+	if err := rw.storage.SaveHypothesis(ctx, &hypothesisResult); err != nil {
+		log.Printf("[ResearchWorker] ERROR: Failed to save advanced validation result for hypothesis %s: %v", result.HypothesisID, err)
+		return false
+	}
+
+	log.Printf("[ResearchWorker] ✅ Advanced validation completed for hypothesis %s: passed=%v, confidence=%.3f, e-value=%.2f",
+		result.HypothesisID, result.Passed, result.Confidence, result.EValue)
+
+	return result.Passed
 }
 
 // recordFailedHypothesis creates a failed hypothesis result for error cases

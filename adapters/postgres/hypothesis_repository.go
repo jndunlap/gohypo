@@ -28,6 +28,7 @@ func (r *HypothesisRepositoryImpl) SaveHypothesis(ctx context.Context, userID, s
 	refereeResultsJSON, _ := json.Marshal(result.RefereeResults)
 	executionMetadataJSON, _ := json.Marshal(result.ExecutionMetadata)
 	dataTopologyJSON, _ := json.Marshal(result.DataTopology)
+	explanationMarkdownJSON, _ := json.Marshal(result.ExplanationMarkdown)
 
 	// PhaseEValues is now stored as JSONB
 	var phaseEValuesJSON []byte
@@ -47,14 +48,16 @@ func (r *HypothesisRepositoryImpl) SaveHypothesis(ctx context.Context, userID, s
 
 	_, err := r.db.ExecContext(ctx, `
 		INSERT INTO hypothesis_results (
-			id, session_id, user_id, workspace_id, business_hypothesis, science_hypothesis, null_case,
+			id, session_id, user_id, workspace_id, business_hypothesis, science_hypothesis, null_case, explanation_markdown,
 			referee_results, passed, validation_timestamp,
 			standards_version, execution_metadata, created_at,
 			phase_e_values, feasibility_score, risk_level, data_topology,
-			current_e_value, normalized_e_value, confidence, status
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), $13, $14, $15, $16, $17, $18, $19, $20)
+			current_e_value, normalized_e_value, confidence, status,
+			evidence_sid, hypothesis_sid
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
 		ON CONFLICT (id) DO UPDATE SET
 			workspace_id = EXCLUDED.workspace_id,
+			explanation_markdown = COALESCE(EXCLUDED.explanation_markdown, hypothesis_results.explanation_markdown),
 			referee_results = EXCLUDED.referee_results,
 			passed = EXCLUDED.passed,
 			validation_timestamp = EXCLUDED.validation_timestamp,
@@ -67,11 +70,14 @@ func (r *HypothesisRepositoryImpl) SaveHypothesis(ctx context.Context, userID, s
 			current_e_value = EXCLUDED.current_e_value,
 			normalized_e_value = EXCLUDED.normalized_e_value,
 			confidence = EXCLUDED.confidence,
-			status = EXCLUDED.status`, result.ID, sessionID, userID, workspaceID, result.BusinessHypothesis, result.ScienceHypothesis,
-		result.NullCase, refereeResultsJSON, result.Passed,
+			status = EXCLUDED.status,
+			evidence_sid = EXCLUDED.evidence_sid,
+			hypothesis_sid = EXCLUDED.hypothesis_sid`, result.ID, sessionID, userID, workspaceID, result.BusinessHypothesis, result.ScienceHypothesis,
+		result.NullCase, explanationMarkdownJSON, refereeResultsJSON, result.Passed,
 		result.ValidationTimestamp, result.StandardsVersion, executionMetadataJSON,
 		phaseEValuesJSON, result.FeasibilityScore, result.RiskLevel, dataTopologyJSON,
-		result.CurrentEValue, result.NormalizedEValue, result.Confidence, result.Status)
+		result.CurrentEValue, result.NormalizedEValue, result.Confidence, result.Status,
+		result.EvidenceSID, result.HypothesisSID)
 
 	return err
 }
@@ -79,11 +85,11 @@ func (r *HypothesisRepositoryImpl) SaveHypothesis(ctx context.Context, userID, s
 // GetHypothesis retrieves a hypothesis by user ID and hypothesis ID
 func (r *HypothesisRepositoryImpl) GetHypothesis(ctx context.Context, userID uuid.UUID, hypothesisID string) (*models.HypothesisResult, error) {
 	var result models.HypothesisResult
-	var refereeResultsJSON, executionMetadataJSON, dataTopologyJSON, phaseEValuesJSON []byte
+	var refereeResultsJSON, executionMetadataJSON, dataTopologyJSON, phaseEValuesJSON, explanationMarkdownJSON []byte
 	var workspaceID *uuid.UUID
 
 	err := r.db.QueryRowContext(ctx, `
-		SELECT id, session_id, workspace_id, business_hypothesis, science_hypothesis, null_case,
+		SELECT id, session_id, workspace_id, business_hypothesis, science_hypothesis, null_case, COALESCE(explanation_markdown, '') as explanation_markdown,
 			   referee_results, passed, validation_timestamp,
 			   standards_version, execution_metadata, created_at,
 			   phase_e_values, feasibility_score, risk_level, data_topology,
@@ -92,7 +98,7 @@ func (r *HypothesisRepositoryImpl) GetHypothesis(ctx context.Context, userID uui
 		WHERE user_id = $1 AND id = $2
 	`, userID, hypothesisID).Scan(
 		&result.ID, &result.SessionID, &workspaceID, &result.BusinessHypothesis, &result.ScienceHypothesis,
-		&result.NullCase, &refereeResultsJSON, &result.Passed,
+		&result.NullCase, &explanationMarkdownJSON, &refereeResultsJSON, &result.Passed,
 		&result.ValidationTimestamp, &result.StandardsVersion, &executionMetadataJSON, &result.CreatedAt,
 		&phaseEValuesJSON, &result.FeasibilityScore, &result.RiskLevel, &dataTopologyJSON,
 		&result.CurrentEValue, &result.NormalizedEValue, &result.Confidence, &result.Status,
@@ -118,6 +124,9 @@ func (r *HypothesisRepositoryImpl) GetHypothesis(ctx context.Context, userID uui
 	json.Unmarshal(refereeResultsJSON, &result.RefereeResults)
 	json.Unmarshal(executionMetadataJSON, &result.ExecutionMetadata)
 	json.Unmarshal(dataTopologyJSON, &result.DataTopology)
+	if len(explanationMarkdownJSON) > 0 {
+		json.Unmarshal(explanationMarkdownJSON, &result.ExplanationMarkdown)
+	}
 
 	// Unmarshal phase_e_values JSONB
 	if len(phaseEValuesJSON) > 0 {
@@ -130,7 +139,7 @@ func (r *HypothesisRepositoryImpl) GetHypothesis(ctx context.Context, userID uui
 // ListUserHypotheses returns hypotheses for a user, optionally limited
 func (r *HypothesisRepositoryImpl) ListUserHypotheses(ctx context.Context, userID uuid.UUID, limit int) ([]*models.HypothesisResult, error) {
 	query := `
-		SELECT id, session_id, workspace_id, business_hypothesis, science_hypothesis, null_case,
+		SELECT id, session_id, workspace_id, business_hypothesis, science_hypothesis, null_case, COALESCE(explanation_markdown, '') as explanation_markdown,
 			   referee_results, passed, validation_timestamp,
 			   standards_version, execution_metadata, created_at,
 			   phase_e_values, feasibility_score, risk_level, data_topology,
@@ -155,12 +164,12 @@ func (r *HypothesisRepositoryImpl) ListUserHypotheses(ctx context.Context, userI
 	var results []*models.HypothesisResult
 	for rows.Next() {
 		var result models.HypothesisResult
-		var refereeResultsJSON, executionMetadataJSON, dataTopologyJSON, phaseEValuesJSON []byte
+		var refereeResultsJSON, executionMetadataJSON, dataTopologyJSON, phaseEValuesJSON, explanationMarkdownJSON []byte
 		var workspaceID *uuid.UUID
 
 		err := rows.Scan(
 			&result.ID, &result.SessionID, &workspaceID, &result.BusinessHypothesis, &result.ScienceHypothesis,
-			&result.NullCase, &refereeResultsJSON, &result.Passed,
+			&result.NullCase, &explanationMarkdownJSON, &refereeResultsJSON, &result.Passed,
 			&result.ValidationTimestamp, &result.StandardsVersion, &executionMetadataJSON, &result.CreatedAt,
 			&phaseEValuesJSON, &result.FeasibilityScore, &result.RiskLevel, &dataTopologyJSON,
 			&result.CurrentEValue, &result.NormalizedEValue, &result.Confidence, &result.Status,
@@ -178,6 +187,9 @@ func (r *HypothesisRepositoryImpl) ListUserHypotheses(ctx context.Context, userI
 		json.Unmarshal(refereeResultsJSON, &result.RefereeResults)
 		json.Unmarshal(executionMetadataJSON, &result.ExecutionMetadata)
 		json.Unmarshal(dataTopologyJSON, &result.DataTopology)
+		if len(explanationMarkdownJSON) > 0 {
+			json.Unmarshal(explanationMarkdownJSON, &result.ExplanationMarkdown)
+		}
 
 		// Unmarshal phase_e_values JSONB
 		if len(phaseEValuesJSON) > 0 {
@@ -193,7 +205,7 @@ func (r *HypothesisRepositoryImpl) ListUserHypotheses(ctx context.Context, userI
 // ListSessionHypotheses returns all hypotheses for a specific session
 func (r *HypothesisRepositoryImpl) ListSessionHypotheses(ctx context.Context, userID, sessionID uuid.UUID) ([]*models.HypothesisResult, error) {
 	rows, err := r.db.QueryContext(ctx, `
-		SELECT id, session_id, business_hypothesis, science_hypothesis, null_case,
+		SELECT id, session_id, business_hypothesis, science_hypothesis, null_case, COALESCE(explanation_markdown, '') as explanation_markdown,
 			   referee_results, passed, validation_timestamp,
 			   standards_version, execution_metadata, created_at,
 			   phase_e_values, feasibility_score, risk_level, data_topology,
@@ -210,12 +222,12 @@ func (r *HypothesisRepositoryImpl) ListSessionHypotheses(ctx context.Context, us
 	var results []*models.HypothesisResult
 	for rows.Next() {
 		var result models.HypothesisResult
-		var refereeResultsJSON, executionMetadataJSON, dataTopologyJSON []byte
+		var refereeResultsJSON, executionMetadataJSON, dataTopologyJSON, explanationMarkdownJSON []byte
 		var phaseEValues []float64
 
 		err := rows.Scan(
 			&result.ID, &result.SessionID, &result.BusinessHypothesis, &result.ScienceHypothesis,
-			&result.NullCase, &refereeResultsJSON, &result.Passed,
+			&result.NullCase, &explanationMarkdownJSON, &refereeResultsJSON, &result.Passed,
 			&result.ValidationTimestamp, &result.StandardsVersion, &executionMetadataJSON, &result.CreatedAt,
 			&phaseEValues, &result.FeasibilityScore, &result.RiskLevel, &dataTopologyJSON,
 			&result.CurrentEValue, &result.NormalizedEValue, &result.Confidence, &result.Status,
@@ -228,6 +240,9 @@ func (r *HypothesisRepositoryImpl) ListSessionHypotheses(ctx context.Context, us
 		json.Unmarshal(refereeResultsJSON, &result.RefereeResults)
 		json.Unmarshal(executionMetadataJSON, &result.ExecutionMetadata)
 		json.Unmarshal(dataTopologyJSON, &result.DataTopology)
+		if len(explanationMarkdownJSON) > 0 {
+			json.Unmarshal(explanationMarkdownJSON, &result.ExplanationMarkdown)
+		}
 
 		// Set phase E-values
 		result.PhaseEValues = phaseEValues
@@ -275,7 +290,7 @@ func (r *HypothesisRepositoryImpl) GetUserStats(ctx context.Context, userID uuid
 // ListByValidationState returns hypotheses filtered by validation state
 func (r *HypothesisRepositoryImpl) ListByValidationState(ctx context.Context, userID uuid.UUID, validated bool, limit int) ([]*models.HypothesisResult, error) {
 	query := `
-		SELECT id, session_id, business_hypothesis, science_hypothesis, null_case,
+		SELECT id, session_id, business_hypothesis, science_hypothesis, null_case, COALESCE(explanation_markdown, '') as explanation_markdown,
 			   referee_results, passed, validation_timestamp,
 			   standards_version, execution_metadata, created_at,
 			   phase_e_values, feasibility_score, risk_level, data_topology,
@@ -300,12 +315,12 @@ func (r *HypothesisRepositoryImpl) ListByValidationState(ctx context.Context, us
 	var results []*models.HypothesisResult
 	for rows.Next() {
 		var result models.HypothesisResult
-		var refereeResultsJSON, executionMetadataJSON, dataTopologyJSON []byte
+		var refereeResultsJSON, executionMetadataJSON, dataTopologyJSON, explanationMarkdownJSON []byte
 		var phaseEValues []float64
 
 		err := rows.Scan(
 			&result.ID, &result.SessionID, &result.BusinessHypothesis, &result.ScienceHypothesis,
-			&result.NullCase, &refereeResultsJSON, &result.Passed,
+			&result.NullCase, &explanationMarkdownJSON, &refereeResultsJSON, &result.Passed,
 			&result.ValidationTimestamp, &result.StandardsVersion, &executionMetadataJSON, &result.CreatedAt,
 			&phaseEValues, &result.FeasibilityScore, &result.RiskLevel, &dataTopologyJSON,
 			&result.CurrentEValue, &result.NormalizedEValue, &result.Confidence, &result.Status,
@@ -318,6 +333,9 @@ func (r *HypothesisRepositoryImpl) ListByValidationState(ctx context.Context, us
 		json.Unmarshal(refereeResultsJSON, &result.RefereeResults)
 		json.Unmarshal(executionMetadataJSON, &result.ExecutionMetadata)
 		json.Unmarshal(dataTopologyJSON, &result.DataTopology)
+		if len(explanationMarkdownJSON) > 0 {
+			json.Unmarshal(explanationMarkdownJSON, &result.ExplanationMarkdown)
+		}
 
 		// Set phase E-values
 		result.PhaseEValues = phaseEValues
@@ -332,6 +350,7 @@ func (r *HypothesisRepositoryImpl) ListByValidationState(ctx context.Context, us
 func (r *HypothesisRepositoryImpl) ListByWorkspace(ctx context.Context, userID uuid.UUID, workspaceID string, limit int) ([]*models.HypothesisResult, error) {
 	query := `
 		SELECT id, session_id, workspace_id, business_hypothesis, science_hypothesis, null_case,
+			   COALESCE(explanation_markdown, '') as explanation_markdown,
 			   referee_results, passed, validation_timestamp,
 			   standards_version, execution_metadata, created_at,
 			   phase_e_values, feasibility_score, risk_level, data_topology,

@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <title>{{.Title}}</title>
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <script src="https://unpkg.com/htmx.org@1.9.10/dist/ext/ws.js"></script>
     <script src="https://unpkg.com/htmx.org@1.9.10/dist/ext/sse.js"></script>
@@ -21,29 +22,12 @@
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Sleek White Mode CSS Variables */
-        :root {
-            --color-background: #FFFFFF;
-            --color-surface: #FFFFFF;
-            --color-surface-secondary: #F8F9FA;
-            --color-text-primary: #1A1A1B;
-            --color-text-secondary: #6B7280;
-            --color-text-accent: #2563EB;
-            --color-border: #E5E7EB;
-            --color-border-hover: #D1D5DB;
-            --color-success: #10B981;
-            --color-warning: #F59E0B;
-            --color-error: #EF4444;
-            --line-height-relaxed: 1.6;
-        }
-
         /* Global Resets for Clean Light Mode */
         * {
             text-rendering: optimizeLegibility;
         }
 
         /* Dynamic Panel Layout Styles */
-
         #main-layout > * {
             /* All panels should be able to flex */
             flex-shrink: 0;
@@ -60,6 +44,49 @@
         /* Smooth transitions for panel visibility changes */
         #main-layout > *.hidden {
             display: none !important;
+        }
+
+        /* Loading and interaction states */
+        .htmx-loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .redacted-block {
+            background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+            background-size: 200% 100%;
+            animation: redacted-pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes redacted-pulse {
+            0%, 100% { background-position: 200% 0; }
+            50% { background-position: -200% 0; }
+        }
+
+        /* Hypothesis expansion states */
+        .hypothesis-expanded {
+            transition: all 0.2s ease-in-out;
+        }
+
+        .hypothesis-expanded.hidden {
+            display: none !important;
+            opacity: 0;
+            max-height: 0;
+            overflow: hidden;
+        }
+
+        .hypothesis-expanded:not(.hidden) {
+            display: block !important;
+            opacity: 1;
+            max-height: 1000px; /* Adjust based on content */
+        }
+
+        .hypothesis-arrow {
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .hypothesis-arrow.rotate-180 {
+            transform: rotate(180deg);
         }
 </style>
 </head>
@@ -91,6 +118,7 @@
     <script src="/static/js/ui-enhancements.js"></script>
     <script src="/static/js/form-helpers.js"></script>
     <script src="/static/js/research-progressive.js"></script>
+    <script src="/static/js/data-landscape.js"></script>
     
     <!-- HTMX Configuration -->
     <script>
@@ -174,6 +202,276 @@
         function triggerImpactShake() {
             // Simple visual feedback - could be enhanced with CSS animations
             console.log('[UI] Impact shake triggered (placeholder)');
+        }
+
+        // Hypothesis card toggle functions
+        function toggleHypothesisCard(element) {
+            try {
+                console.log('[Hypothesis] Toggle clicked for card:', element.dataset.hypothesisId);
+
+                // Validate element has required dataset
+                if (!element || !element.dataset || !element.dataset.hypothesisId) {
+                    console.error('[Hypothesis] Invalid element passed to toggleHypothesisCard - missing hypothesisId');
+                    if (element) element.style.border = '2px solid red';
+                    return;
+                }
+
+                const expanded = element.querySelector('.hypothesis-expanded');
+                const arrow = element.querySelector('.hypothesis-arrow');
+
+                // Validate required DOM elements exist
+                if (!expanded) {
+                    console.error('[Hypothesis] Could not find .hypothesis-expanded element in card:', element.dataset.hypothesisId);
+                    element.style.border = '2px solid red';
+                    element.style.backgroundColor = '#fee2e2';
+                    return;
+                }
+
+                if (!arrow) {
+                    console.warn('[Hypothesis] Could not find .hypothesis-arrow element in card:', element.dataset.hypothesisId, '- arrow animation disabled');
+                }
+
+                const isHidden = expanded.classList.contains('hidden');
+                console.log('[Hypothesis] Current state - hidden:', isHidden, 'for card:', element.dataset.hypothesisId);
+
+                if (isHidden) {
+                    // Expand
+                    expanded.classList.remove('hidden');
+                    if (arrow) {
+                        arrow.classList.add('rotate-180');
+                        arrow.setAttribute('aria-expanded', 'true');
+                    }
+                    console.log('[Hypothesis] ✅ Expanded card:', element.dataset.hypothesisId);
+                } else {
+                    // Collapse
+                    expanded.classList.add('hidden');
+                    if (arrow) {
+                        arrow.classList.remove('rotate-180');
+                        arrow.setAttribute('aria-expanded', 'false');
+                    }
+                    console.log('[Hypothesis] ✅ Collapsed card:', element.dataset.hypothesisId);
+                }
+
+                // Clear any error styling
+                element.style.border = '';
+                element.style.backgroundColor = '';
+
+            } catch (error) {
+                console.error('[Hypothesis] 🚨 Error toggling card expansion:', error, 'for card:', element?.dataset?.hypothesisId || 'unknown');
+                if (element) {
+                    element.style.border = '2px solid #dc2626';
+                    element.style.backgroundColor = '#fee2e2';
+                }
+            }
+        }
+
+        function toggleHypothesisGrid(element) {
+            try {
+                console.log('[Hypothesis] Toggle clicked for grid item:', element.dataset.hypothesisId);
+
+                // Validate element has required dataset
+                if (!element || !element.dataset || !element.dataset.hypothesisId) {
+                    console.error('[Hypothesis] Invalid element passed to toggleHypothesisGrid - missing hypothesisId');
+                    if (element) element.style.border = '2px solid red';
+                    return;
+                }
+
+                const expanded = element.querySelector('.hypothesis-expanded');
+                const arrow = element.querySelector('.hypothesis-arrow');
+
+                // Validate required DOM elements exist
+                if (!expanded) {
+                    console.error('[Hypothesis] Could not find .hypothesis-expanded element in grid item:', element.dataset.hypothesisId);
+                    element.style.border = '2px solid red';
+                    element.style.backgroundColor = '#fee2e2';
+                    return;
+                }
+
+                if (!arrow) {
+                    console.warn('[Hypothesis] Could not find .hypothesis-arrow element in grid item:', element.dataset.hypothesisId, '- arrow animation disabled');
+                }
+
+                const isHidden = expanded.classList.contains('hidden');
+                console.log('[Hypothesis] Current state - hidden:', isHidden, 'for grid item:', element.dataset.hypothesisId);
+
+                if (isHidden) {
+                    // Expand
+                    expanded.classList.remove('hidden');
+                    if (arrow) {
+                        arrow.classList.add('rotate-180');
+                        arrow.setAttribute('aria-expanded', 'true');
+                    }
+                    console.log('[Hypothesis] ✅ Expanded grid item:', element.dataset.hypothesisId);
+                } else {
+                    // Collapse
+                    expanded.classList.add('hidden');
+                    if (arrow) {
+                        arrow.classList.remove('rotate-180');
+                        arrow.setAttribute('aria-expanded', 'false');
+                    }
+                    console.log('[Hypothesis] ✅ Collapsed grid item:', element.dataset.hypothesisId);
+                }
+
+                // Clear any error styling
+                element.style.border = '';
+                element.style.backgroundColor = '';
+
+            } catch (error) {
+                console.error('[Hypothesis] 🚨 Error toggling grid item expansion:', error, 'for grid item:', element?.dataset?.hypothesisId || 'unknown');
+                if (element) {
+                    element.style.border = '2px solid #dc2626';
+                    element.style.backgroundColor = '#fee2e2';
+                }
+            }
+        }
+
+        function toggleHypothesisList(element) {
+            try {
+                console.log('[Hypothesis] Toggle clicked for list item:', element.dataset.hypothesisId);
+
+                // Validate element has required dataset
+                if (!element || !element.dataset || !element.dataset.hypothesisId) {
+                    console.error('[Hypothesis] Invalid element passed to toggleHypothesisList - missing hypothesisId');
+                    if (element) element.style.border = '2px solid red';
+                    return;
+                }
+
+                const expanded = element.querySelector('.hypothesis-expanded');
+                const arrow = element.querySelector('.hypothesis-arrow');
+
+                // Validate required DOM elements exist
+                if (!expanded) {
+                    console.error('[Hypothesis] Could not find .hypothesis-expanded element in list item:', element.dataset.hypothesisId);
+                    element.style.border = '2px solid red';
+                    element.style.backgroundColor = '#fee2e2';
+                    return;
+                }
+
+                if (!arrow) {
+                    console.warn('[Hypothesis] Could not find .hypothesis-arrow element in list item:', element.dataset.hypothesisId, '- arrow animation disabled');
+                }
+
+                const isHidden = expanded.classList.contains('hidden');
+                console.log('[Hypothesis] Current state - hidden:', isHidden, 'for list item:', element.dataset.hypothesisId);
+
+                if (isHidden) {
+                    // Expand
+                    expanded.classList.remove('hidden');
+                    if (arrow) {
+                        arrow.classList.add('rotate-180');
+                        arrow.setAttribute('aria-expanded', 'true');
+                    }
+                    console.log('[Hypothesis] ✅ Expanded list item:', element.dataset.hypothesisId);
+                } else {
+                    // Collapse
+                    expanded.classList.add('hidden');
+                    if (arrow) {
+                        arrow.classList.remove('rotate-180');
+                        arrow.setAttribute('aria-expanded', 'false');
+                    }
+                    console.log('[Hypothesis] ✅ Collapsed list item:', element.dataset.hypothesisId);
+                }
+
+                // Clear any error styling
+                element.style.border = '';
+                element.style.backgroundColor = '';
+
+            } catch (error) {
+                console.error('[Hypothesis] 🚨 Error toggling list item expansion:', error, 'for list item:', element?.dataset?.hypothesisId || 'unknown');
+                if (element) {
+                    element.style.border = '2px solid #dc2626';
+                    element.style.backgroundColor = '#fee2e2';
+                }
+            }
+        }
+
+        // ===== MODAL FUNCTIONS =====
+        // Data Modal Functions
+        function openDataModal(type, datasetName) {
+            console.log('[Modal] Opening data modal for:', type, datasetName);
+            const modal = document.getElementById('data-modal');
+            if (modal) {
+                // Update modal content based on type and dataset
+                const titleElement = modal.querySelector('h2');
+                if (titleElement) {
+                    titleElement.textContent = `Dataset: ${datasetName}`;
+                }
+                modal.style.display = 'flex';
+                modal.setAttribute('aria-hidden', 'false');
+                console.log('[Modal] Data modal opened successfully');
+            } else {
+                console.error('[Modal] Data modal element not found');
+            }
+        }
+
+        function closeDataModal() {
+            console.log('[Modal] Closing data modal');
+            const modal = document.getElementById('data-modal');
+            if (modal) {
+                modal.style.display = 'none';
+                modal.setAttribute('aria-hidden', 'true');
+                console.log('[Modal] Data modal closed successfully');
+            } else {
+                console.error('[Modal] Data modal element not found');
+            }
+        }
+
+        // Upload Modal Functions
+        function showUploadModal() {
+            console.log('[Modal] Opening upload modal');
+            const modal = document.getElementById('upload-modal');
+            if (modal) {
+                modal.style.display = 'flex';
+                modal.setAttribute('aria-hidden', 'false');
+                console.log('[Modal] Upload modal opened successfully');
+            } else {
+                console.error('[Modal] Upload modal element not found');
+            }
+        }
+
+        function hideUploadModal() {
+            console.log('[Modal] Closing upload modal');
+            const modal = document.getElementById('upload-modal');
+            if (modal) {
+                modal.style.display = 'none';
+                modal.setAttribute('aria-hidden', 'true');
+                console.log('[Modal] Upload modal closed successfully');
+            } else {
+                console.error('[Modal] Upload modal element not found');
+            }
+        }
+
+        // Merge Modal Functions
+        function showMergeModal() {
+            console.log('[Modal] Opening merge modal');
+            const modal = document.getElementById('merge-modal');
+            if (modal) {
+                modal.style.display = 'flex';
+                modal.setAttribute('aria-hidden', 'false');
+                console.log('[Modal] Merge modal opened successfully');
+            } else {
+                console.error('[Modal] Merge modal element not found');
+            }
+        }
+
+        function hideMergeModal() {
+            console.log('[Modal] Closing merge modal');
+            const modal = document.getElementById('merge-modal');
+            if (modal) {
+                modal.style.display = 'none';
+                modal.setAttribute('aria-hidden', 'true');
+                console.log('[Modal] Merge modal closed successfully');
+            } else {
+                console.error('[Modal] Merge modal element not found');
+            }
+        }
+
+        // Workspace Graph Function
+        function showWorkspaceGraph(workspaceId) {
+            console.log('[Workspace] Showing graph for workspace:', workspaceId);
+            // Placeholder for workspace graph functionality
+            // Could open a modal or navigate to workspace visualization
+            console.log('[Workspace] Workspace graph functionality not implemented yet');
         }
 
         // Removed terminal-specific effects for clean light mode

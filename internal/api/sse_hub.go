@@ -26,6 +26,11 @@ type ResearchEvent struct {
 	Progress     float64                `json:"progress"`
 	Data         map[string]interface{} `json:"data,omitempty"`
 	Timestamp    time.Time              `json:"timestamp"`
+
+	// Scientific Ledger fields for event sequencing and traceability
+	SID           int64  `json:"sid,omitempty"`            // Global Sequence ID
+	DependencySID int64  `json:"dependency_sid,omitempty"` // ID of evidence this depends on
+	EventCategory string `json:"event_category,omitempty"` // "EVIDENCE", "HYPOTHESIS", "PROGRESS"
 }
 
 // SSEHub manages Server-Sent Events for real-time research updates

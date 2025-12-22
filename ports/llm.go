@@ -17,6 +17,11 @@ type LLMResponse struct {
 	Usage   *UsageData
 }
 
+// ResponseFormat forces structured output from GPT models
+type ResponseFormat struct {
+	Type string `json:"type"` // "json_object" for structured output
+}
+
 // LLMClient interface for LLM providers (enhanced with usage tracking)
 type LLMClient interface {
 	// Legacy method for backward compatibility
@@ -24,4 +29,7 @@ type LLMClient interface {
 
 	// Enhanced method with usage tracking
 	ChatCompletionWithUsage(ctx context.Context, model string, prompt string, maxTokens int) (*LLMResponse, error)
+
+	// Enhanced method with usage tracking and response format
+	ChatCompletionWithUsageAndFormat(ctx context.Context, model string, prompt string, maxTokens int, responseFormat *ResponseFormat) (*LLMResponse, error)
 }

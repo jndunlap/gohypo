@@ -1,15 +1,21 @@
 package ui
 
 import (
+	"context"
 	"html/template"
 	"log"
 
 	"gohypo/internal/api"
 	"gohypo/internal/research"
+	"gohypo/models"
 	"gohypo/ui/services"
+
+	"github.com/google/uuid"
 )
 
-func (s *Server) AddResearchRoutes(sessionMgr *research.SessionManager, storage *research.ResearchStorage, worker *research.ResearchWorker, sseHub *api.SSEHub, appContainer interface{}) {
+func (s *Server) AddResearchRoutes(sessionMgr *research.SessionManager, storage *research.ResearchStorage, worker *research.ResearchWorker, sseHub *api.SSEHub, appContainer interface{}, hypothesisRepo interface {
+	GetHypothesis(ctx context.Context, workspaceID uuid.UUID, hypothesisID string) (*models.HypothesisResult, error)
+}) {
 	// Set research components on server
 	s.researchStorage = storage
 	s.renderService = services.NewRenderService(s.templates)
@@ -19,7 +25,7 @@ func (s *Server) AddResearchRoutes(sessionMgr *research.SessionManager, storage 
 	renderService := s.renderService
 
 	// Initialize handlers
-	researchHandler := NewResearchHandler(dataService)
+	researchHandler := NewResearchHandler(dataService, hypothesisRepo)
 	dataHandler := NewDataHandler(renderService)
 	industryHandler := NewIndustryHandler(s.greenfieldService)
 
@@ -46,9 +52,16 @@ func (s *Server) AddResearchRoutes(sessionMgr *research.SessionManager, storage 
 			research.GET("/sse", sseHub.HandleSSE) // SSE endpoint for real-time updates
 		}
 
+		// Debug endpoints
+		debug := api.Group("/debug")
+		{
+			debug.GET("/current-prompt", dataHandler.HandleCurrentPrompt(storage))
+		}
+
 		// Hypothesis management endpoints
 		api.GET("/hypothesis/:id", dataHandler.HandleHypothesisCard(storage))
 		api.GET("/hypothesis/:id/toggle", dataHandler.HandleHypothesisToggle(storage))
 		api.GET("/hypothesis/:id/evidence", dataHandler.HandleHypothesisEvidence(storage))
+		api.GET("/hypotheses/:hypothesisId/stability/:subsampleIndex/:refereeIndex", researchHandler.GetStabilityAnalysis)
 	}
 }

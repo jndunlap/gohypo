@@ -2,6 +2,7 @@ package ai
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"gohypo/domain/stats"
 	"gohypo/models"
@@ -108,88 +109,38 @@ func (haa *HypothesisAnalysisAgent) buildAnalysisPrompt(
 	dataSnapshot DataTopologySnapshot,
 ) (string, error) {
 
-	template := `ANALYZE HYPOTHESIS RISK WITH SCIENTIFIC RIGOR
-
-HYPOTHESIS: {{.BusinessHypothesis}}
-SCIENTIFIC CLAIM: {{.ScienceHypothesis}}
-CAUSE VARIABLE: {{.CauseKey}}
-EFFECT VARIABLE: {{.EffectKey}}
-
-DATA TOPOLOGY CONTEXT:
-- Sample Size: {{.SampleSize}} observations
-- Sparsity: {{.SparsityRatio}}% missing data
-- Cause Variable Cardinality: {{.CardinalityCause}} unique values
-- Effect Variable Cardinality: {{.CardinalityEffect}} unique values
-- Distribution Skewness (Cause): {{.SkewnessCause}}
-- Distribution Skewness (Effect): {{.SkewnessEffect}}
-- Temporal Coverage: {{.TemporalCoverage}}% complete
-
-ASSESSED CONFOUNDING SIGNALS:
-{{range .ConfoundingSignals}}- {{.}}
-{{end}}
-
-RISK ASSESSMENT FRAMEWORK:
-
-1. SEMANTIC COMPLEXITY (1-10 scale):
-   - 1-2: Simple descriptive claims ("X is correlated with Y")
-   - 3-5: Moderate causal claims ("X influences Y under certain conditions")
-   - 6-8: Complex causal claims ("X influences Y through mediating variables")
-   - 9-10: Extraordinary claims ("X reverses established relationships")
-
-2. STATISTICAL FRAGILITY (0.0-1.0 scale):
-   - Based on sample size, sparsity, cardinality, and temporal coverage
-   - Higher fragility = more validation tests required
-
-3. RISK LEVEL DETERMINATION:
-   - LOW: Simple claims with abundant, clean data (>1000 samples, <5% missing, low skew)
-   - MEDIUM: Moderate complexity or data challenges
-   - HIGH: Complex causality, sparse data, or high confounding potential
-   - CRITICAL: Claims requiring extraordinary evidence (counterintuitive, high-stakes)
-
-4. TEST COUNT RECOMMENDATIONS:
-   - LOW RISK: 1-3 basic integrity checks
-   - MEDIUM RISK: 3-6 comprehensive tests
-   - HIGH RISK: 6-9 rigorous validation
-   - CRITICAL RISK: 8-10 full statistical battery
-
-5. CATEGORY PRIORITIZATION:
-   - Always include SHREDDER for statistical integrity
-   - Add INVARIANCE for temporal claims
-   - Add ANTI_CONFOUNDER for complex causal claims
-   - Add MECHANISM for non-obvious relationships
-
-REQUIRED OUTPUT: Valid JSON with risk assessment, test count range, critical concerns, and rationale.`
-
-	// Prepare template data (placeholder for now)
-	_ = struct {
-		BusinessHypothesis string
-		ScienceHypothesis  string
-		CauseKey           string
-		EffectKey          string
-		SampleSize         int
-		SparsityRatio      float64
-		CardinalityCause   int
-		CardinalityEffect  int
-		SkewnessCause      float64
-		SkewnessEffect     float64
-		TemporalCoverage   float64
-		ConfoundingSignals []string
-	}{
-		BusinessHypothesis: hypothesis.BusinessHypothesis,
-		ScienceHypothesis:  hypothesis.ScienceHypothesis,
-		CauseKey:           hypothesis.CauseKey,
-		EffectKey:          hypothesis.EffectKey,
-		SampleSize:         dataSnapshot.SampleSize,
-		SparsityRatio:      dataSnapshot.SparsityRatio,
-		CardinalityCause:   dataSnapshot.CardinalityCause,
-		CardinalityEffect:  dataSnapshot.CardinalityEffect,
-		SkewnessCause:      dataSnapshot.SkewnessCause,
-		SkewnessEffect:     dataSnapshot.SkewnessEffect,
-		TemporalCoverage:   dataSnapshot.TemporalCoverage,
-		ConfoundingSignals: dataSnapshot.ConfoundingSignals,
+	// Build confounding signals JSON
+	confoundingJSON := "[]"
+	if len(dataSnapshot.ConfoundingSignals) > 0 {
+		confoundingBytes, err := json.Marshal(dataSnapshot.ConfoundingSignals)
+		if err == nil {
+			confoundingJSON = string(confoundingBytes)
+		}
 	}
 
-	return template, nil // TODO: Implement proper template rendering
+	// Prepare template replacements
+	replacements := map[string]string{
+		"business_hypothesis": hypothesis.BusinessHypothesis,
+		"science_hypothesis":  hypothesis.ScienceHypothesis,
+		"cause_key":           hypothesis.CauseKey,
+		"effect_key":          hypothesis.EffectKey,
+		"sample_size":         fmt.Sprintf("%d", dataSnapshot.SampleSize),
+		"sparsity_ratio":      fmt.Sprintf("%.1f", dataSnapshot.SparsityRatio),
+		"cardinality_cause":   fmt.Sprintf("%d", dataSnapshot.CardinalityCause),
+		"cardinality_effect":  fmt.Sprintf("%d", dataSnapshot.CardinalityEffect),
+		"skewness_cause":      fmt.Sprintf("%.2f", dataSnapshot.SkewnessCause),
+		"skewness_effect":     fmt.Sprintf("%.2f", dataSnapshot.SkewnessEffect),
+		"temporal_coverage":   fmt.Sprintf("%.1f", dataSnapshot.TemporalCoverage),
+		"confounding_signals": confoundingJSON,
+	}
+
+	// Load and render the hypothesis_risk_analysis prompt
+	prompt, err := haa.promptManager.RenderPrompt("hypothesis_risk_analysis", replacements)
+	if err != nil {
+		return "", fmt.Errorf("failed to render hypothesis_risk_analysis prompt: %w", err)
+	}
+
+	return prompt, nil
 }
 
 // validateAndEnhanceResult ensures the LLM output is reasonable and complete

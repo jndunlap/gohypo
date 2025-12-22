@@ -3,6 +3,7 @@ package ui
 import (
 	"context"
 	"fmt"
+	"gohypo/ai"
 	"gohypo/domain/core"
 	"gohypo/domain/stats"
 	"gohypo/models"
@@ -79,11 +80,11 @@ func (s *Server) handleIndex(c *gin.Context) {
 						}
 
 						fieldStats := &FieldStats{
-							Name:        field.Name,
-							Type:        displayType,
-							SampleSize:  int(ds.RecordCount),
-							MissingRate: missingRate,
-							UniqueCount: field.UniqueCount,
+							Name:           field.Name,
+							Type:           displayType,
+							SampleSize:     int(ds.RecordCount),
+							MissingRate:    missingRate,
+							UniqueCount:    field.UniqueCount,
 							MissingRatePct: fmt.Sprintf("%.1f%%", missingRate*100),
 						}
 
@@ -151,11 +152,17 @@ func (s *Server) handleIndex(c *gin.Context) {
 			}
 		}
 
+		// Load AI prompts for debugging
+		promptManager := ai.NewPromptManager("prompts")
+		greenfieldPrompt, _ := promptManager.LoadPrompt("greenfield_research")
+		logicalAuditorPrompt, _ := promptManager.LoadPrompt("logical_auditor")
+		falsificationPrompt, _ := promptManager.LoadPrompt("falsification_research")
+
 		data := map[string]interface{}{
-			"Title":             "GoHypo - Loading Dataset",
-			"Loading":           true,
-			"FieldStats":        []*FieldStats{},
-			"FieldCount":        0,
+			"Title":      "GoHypo - Loading Dataset",
+			"Loading":    true,
+			"FieldStats": []*FieldStats{},
+			"FieldCount": 0,
 			"DatasetInfo": map[string]interface{}{
 				"name":               "Loading dataset information...",
 				"missingnessOverall": 0.0,
@@ -168,7 +175,10 @@ func (s *Server) handleIndex(c *gin.Context) {
 				"RecordCount": 0,
 				"Fields":      []*FieldStats{},
 			},
-			"Hypotheses":        hypotheses,
+			"Hypotheses":           hypotheses,
+			"GreenfieldPrompt":     greenfieldPrompt,
+			"LogicalAuditorPrompt": logicalAuditorPrompt,
+			"FalsificationPrompt":  falsificationPrompt,
 		}
 		s.renderTemplate(c, "main.html", data)
 		return
@@ -206,10 +216,18 @@ func (s *Server) handleIndex(c *gin.Context) {
 	}
 	cacheData["Hypotheses"] = hypotheses
 
+	// Load AI prompts for debugging
+	promptManager := ai.NewPromptManager("prompts")
+	greenfieldPrompt, _ := promptManager.LoadPrompt("greenfield_research")
+	logicalAuditorPrompt, _ := promptManager.LoadPrompt("logical_auditor")
+	falsificationPrompt, _ := promptManager.LoadPrompt("falsification_research")
+
+	cacheData["GreenfieldPrompt"] = greenfieldPrompt
+	cacheData["LogicalAuditorPrompt"] = logicalAuditorPrompt
+	cacheData["FalsificationPrompt"] = falsificationPrompt
 	cacheData["Title"] = "GoHypo - Research Dashboard"
 	s.renderTemplate(c, "main.html", cacheData)
 }
-
 
 func (s *Server) handleFieldsList(c *gin.Context) {
 	s.cacheMutex.RLock()

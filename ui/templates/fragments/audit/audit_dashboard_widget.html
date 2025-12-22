@@ -1,0 +1,74 @@
+<div class="audit-dashboard-widget">
+  <div class="widget-header">
+    <h3>Audit Dashboard</h3>
+    <div class="widget-controls">
+      <button class="refresh-btn" onclick="refreshAuditData()">🔄</button>
+      <button class="settings-btn" onclick="openAuditSettings()">⚙️</button>
+    </div>
+  </div>
+
+  <div class="audit-metrics">
+    <div class="metric-card">
+      <div class="metric-value">{{.TotalEvidenceItems}}</div>
+      <div class="metric-label">Evidence Items</div>
+      <div class="metric-change {{if gt .EvidenceChange 0}}positive{{else}}negative{{end}}">
+        {{printf "%+.1f" .EvidenceChange}}%
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-value">{{.ActiveValidations}}</div>
+      <div class="metric-label">Active Validations</div>
+      <div class="metric-trend">↗️ Growing</div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-value">{{printf "%.1f" .AverageQualityScore}}</div>
+      <div class="metric-label">Avg Quality Score</div>
+      <div class="metric-status {{if ge .AverageQualityScore 0.8}}excellent{{else if ge .AverageQualityScore 0.6}}good{{else}}needs-improvement{{end}}">
+        {{if ge .AverageQualityScore 0.8}}Excellent{{else if ge .AverageQualityScore 0.6}}Good{{else}}Needs Work{{end}}
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-value">{{.ComplianceViolations}}</div>
+      <div class="metric-label">Compliance Issues</div>
+      <div class="metric-alert {{if gt .ComplianceViolations 0}}alert{{end}}">
+        {{if gt .ComplianceViolations 0}}⚠️ Review{{else}}✅ Clear{{end}}
+      </div>
+    </div>
+  </div>
+
+  <div class="recent-audit-activity">
+    <h4>Recent Audit Activity</h4>
+    <div class="activity-feed">
+      {{range .RecentActivities}}
+      <div class="activity-item {{.Type}}">
+        <div class="activity-icon">{{.Icon}}</div>
+        <div class="activity-content">
+          <div class="activity-primary">{{.Description}}</div>
+          <div class="activity-meta">
+            <time>{{formatTime .Timestamp}}</time>
+            <span class="activity-user">{{.User}}</span>
+          </div>
+        </div>
+        {{if .ActionRequired}}
+        <div class="action-required">⚡ Action Needed</div>
+        {{end}}
+      </div>
+      {{end}}
+    </div>
+  </div>
+
+  <div class="audit-actions">
+    <button class="btn-primary" onclick="generateAuditReport()">
+      Generate Full Report
+    </button>
+    <button class="btn-secondary" onclick="scheduleAuditReview()">
+      Schedule Review
+    </button>
+    <button class="btn-outline" onclick="viewAuditPolicies()">
+      Audit Policies
+    </button>
+  </div>
+</div>

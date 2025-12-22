@@ -1,0 +1,71 @@
+{{define "hypothesis_base"}}
+{{/*
+  Universal hypothesis template that adapts to any context.
+
+  Required context variables:
+  - .ID: string
+  - .BusinessHypothesis: string (optional)
+  - .Passed: bool
+  - .Status: string (passed|accepted|rejected|pending)
+  - .Confidence: float64 (0.0-1.0)
+  - .CurrentEValue: float64
+  - .ExecutionMetadata: struct with sample_size
+  - .RefereeResults: []RefereeResult
+
+  Optional context variables:
+  - .Layout: string (compact|expanded|card|panel)
+  - .ShowStats: bool (default true)
+  - .ShowGates: bool (default true)
+  - .Interactive: bool (default true)
+  - .MaxGates: int (default 4)
+*/}}
+
+{{/* Determine normalized status */}}
+{{$status := .Status}}
+{{if .Passed}}
+  {{$status = "passed"}}
+{{else if eq .Status "accepted"}}
+  {{$status = "accepted"}}
+{{else if eq .Status "rejected"}}
+  {{$status = "rejected"}}
+{{else}}
+  {{$status = "pending"}}
+{{end}}
+
+{{/* Layout-specific wrapper */}}
+{{if eq .Layout "panel"}}
+  <div class="hypothesis-row bg-white border-b border-gray-200 hover:bg-gray-50 cursor-pointer group select-none"
+       data-hypothesis-id="{{.ID}}">
+{{else if eq .Layout "card"}}
+  <div class="bg-white hover:bg-gray-50 group relative"
+       data-hypothesis-id="{{.ID}}"
+       {{if .Interactive}}hx-on:click="toggleHypothesisCard(this)"{{end}}>
+{{else}}
+  <div class="bg-white hover:bg-gray-50 cursor-pointer group relative"
+       data-hypothesis-id="{{.ID}}"
+       {{if .Interactive}}hx-on:click="toggleHypothesis{{if eq .Layout "list"}}List{{else}}Grid{{end}}(this)"{{end}}>
+{{end}}
+
+  <div class="px-6 py-4">
+    {{template "hypothesis_header" dict "ID" .ID "BusinessHypothesis" .BusinessHypothesis "Status" $status "Layout" .Layout "Interactive" .Interactive}}
+    {{if .ShowStats}}{{template "hypothesis_stats" dict "Confidence" .Confidence "EValue" .CurrentEValue "SampleSize" .ExecutionMetadata.sample_size}}{{end}}
+  </div>
+
+  {{if or .ShowGates .RefereeResults}}
+  <div class="hypothesis-expanded {{if eq .Layout "panel"}}{{else}}hidden{{end}} border-t border-gray-200 px-6 py-4 bg-gray-50">
+    {{if .ExplanationMarkdown}}
+    {{template "hypothesis_explanation" dict "ExplanationMarkdown" .ExplanationMarkdown}}
+    {{end}}
+
+    <!-- Manifold Visualization -->
+    {{if eq .Layout "card"}}
+    {{template "hypothesis/hypothesis_expanded" .}}
+    {{end}}
+
+    {{template "hypothesis_gates" dict "RefereeResults" .RefereeResults "MaxDisplay" (or .MaxGates 4)}}
+    {{template "hypothesis_actions" dict "ID" .ID "Passed" .Passed "Confidence" .Confidence}}
+  </div>
+  {{end}}
+
+</div>
+{{end}}

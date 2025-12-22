@@ -1,0 +1,335 @@
+{{define "hypothesis/stability_heatmap"}}
+<!-- Stability Analysis Heatmap Component -->
+<div class="stability-heatmap" id="stability-heatmap-{{.HypothesisID}}">
+  <div class="heatmap-header">
+    <h4 class="heatmap-title">Stability Analysis: {{.SubsampleCount}} Subsamples</h4>
+    <div class="heatmap-legend">
+      <div class="legend-item">
+        <div class="legend-color legend-passed"></div>
+        <span class="legend-label">Passed</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color legend-failed"></div>
+        <span class="legend-label">Failed</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-metric">Overall Stability: {{printf "%.1f" (mul .OverallStability 100)}}%</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="heatmap-container">
+    <!-- Referee Labels (Y-axis) -->
+    <div class="heatmap-y-axis">
+      {{range .RefereeNames}}
+      <div class="axis-label referee-label" title="{{.}}">
+        {{if gt (len .) 15}}{{substr . 0 12}}...{{else}}{{.}}{{end}}
+      </div>
+      {{end}}
+    </div>
+
+    <!-- Heatmap Grid -->
+    <div class="heatmap-grid">
+      {{range $subsampleIndex, $subsample := .SubsampleResults}}
+      <div class="subsample-column" data-subsample="{{$subsampleIndex}}">
+        {{range $refereeIndex, $result := $subsample.RefereeResults}}
+        <div class="heatmap-cell {{if $result.Passed}}cell-passed{{else}}cell-failed{{end}}"
+             data-subsample="{{$subsampleIndex}}"
+             data-referee="{{$refereeIndex}}"
+             data-referee-name="{{index $.RefereeNames $refereeIndex}}"
+             title="Subsample {{$subsampleIndex}}: {{index $.RefereeNames $refereeIndex}} - {{if $result.Passed}}PASSED{{else}}FAILED{{end}}{{if $result.FailureReason}} ({{$result.FailureReason}}){{end}}"
+             hx-get="/api/hypotheses/{{$.HypothesisID}}/stability/{{$subsampleIndex}}/{{$refereeIndex}}"
+             hx-target="#stability-detail-modal"
+             hx-swap="innerHTML">
+        </div>
+        {{end}}
+      </div>
+      {{end}}
+    </div>
+  </div>
+
+  <!-- Subsample Numbers (X-axis) -->
+  <div class="heatmap-x-axis">
+    {{range $i, $subsample := .SubsampleResults}}
+    <div class="axis-label subsample-label" title="Subsample {{$i}}">
+      S{{$i}}
+    </div>
+    {{end}}
+  </div>
+
+  <!-- Stability Insights -->
+  <div class="stability-insights">
+    <div class="insight-metrics">
+      <div class="metric">
+        <span class="metric-label">Stability Threshold:</span>
+        <span class="metric-value">{{printf "%.0f" (mul .StabilityThreshold 100)}}%</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Stable Referees:</span>
+        <span class="metric-value">{{len .StableHypotheses}}/{{len .RefereeNames}}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Required Subsamples:</span>
+        <span class="metric-value">{{.MinStableSubs}}</span>
+      </div>
+    </div>
+
+    <div class="insight-analysis">
+      {{if lt .OverallStability .StabilityThreshold}}
+      <div class="analysis-warning">
+        <strong>⚠️ Low Stability Detected</strong>
+        <p>This hypothesis shows inconsistent results across data subsamples. Consider investigating the unstable referees or collecting more data.</p>
+      </div>
+      {{else if ge .OverallStability 0.9}}
+      <div class="analysis-success">
+        <strong>✅ Highly Stable</strong>
+        <p>Excellent reproducibility across all subsamples. This hypothesis demonstrates robust statistical properties.</p>
+      </div>
+      {{else}}
+      <div class="analysis-neutral">
+        <strong>ℹ️ Moderately Stable</strong>
+        <p>The hypothesis performs consistently but may benefit from additional validation or parameter tuning.</p>
+      </div>
+      {{end}}
+    </div>
+  </div>
+</div>
+
+<!-- Modal for detailed subsample analysis -->
+<div id="stability-detail-modal" class="modal-overlay hidden">
+  <div class="modal-content stability-detail-modal">
+    <div class="modal-header">
+      <h3>Subsample Analysis Details</h3>
+      <button class="modal-close" onclick="closeStabilityModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <!-- Dynamic content loaded via HTMX -->
+    </div>
+  </div>
+</div>
+
+<style>
+/* Stability Heatmap Styles */
+.stability-heatmap {
+  @apply bg-white border border-gray-200 rounded-lg p-6 shadow-sm;
+}
+
+.heatmap-header {
+  @apply flex justify-between items-start mb-6;
+}
+
+.heatmap-title {
+  @apply text-lg font-semibold text-gray-900;
+}
+
+.heatmap-legend {
+  @apply flex items-center gap-4 text-sm;
+}
+
+.legend-item {
+  @apply flex items-center gap-2;
+}
+
+.legend-color {
+  @apply w-4 h-4 rounded border;
+}
+
+.legend-passed {
+  @apply bg-green-500;
+}
+
+.legend-failed {
+  @apply bg-red-500;
+}
+
+.legend-metric {
+  @apply font-medium text-gray-700;
+}
+
+.heatmap-container {
+  @apply flex mb-4;
+}
+
+.heatmap-y-axis {
+  @apply flex flex-col pr-2;
+}
+
+.axis-label {
+  @apply text-xs text-gray-600 font-mono text-right py-1;
+  min-height: 24px;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+
+.referee-label {
+  @apply text-left;
+  writing-mode: horizontal-tb;
+  text-orientation: horizontal;
+}
+
+.heatmap-grid {
+  @apply flex gap-1;
+}
+
+.subsample-column {
+  @apply flex flex-col gap-1;
+}
+
+.heatmap-cell {
+  @apply w-6 h-6 rounded cursor-pointer border border-gray-300 transition-all duration-200;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.heatmap-cell:hover {
+  @apply shadow-md transform scale-110;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.cell-passed {
+  @apply bg-green-500;
+}
+
+.cell-passed:hover {
+  @apply bg-green-600;
+}
+
+.cell-failed {
+  @apply bg-red-500;
+}
+
+.cell-failed:hover {
+  @apply bg-red-600;
+}
+
+.heatmap-x-axis {
+  @apply flex justify-center gap-1 ml-8;
+}
+
+.subsample-label {
+  @apply text-center;
+  width: 24px;
+}
+
+.stability-insights {
+  @apply border-t border-gray-200 pt-4;
+}
+
+.insight-metrics {
+  @apply grid grid-cols-3 gap-4 mb-4;
+}
+
+.metric {
+  @apply text-center;
+}
+
+.metric-label {
+  @apply text-xs text-gray-600 block;
+}
+
+.metric-value {
+  @apply text-lg font-semibold text-gray-900;
+}
+
+.analysis-warning {
+  @apply bg-yellow-50 border border-yellow-200 rounded-lg p-4;
+}
+
+.analysis-warning strong {
+  @apply text-yellow-800;
+}
+
+.analysis-warning p {
+  @apply text-yellow-700 text-sm mt-1;
+}
+
+.analysis-success {
+  @apply bg-green-50 border border-green-200 rounded-lg p-4;
+}
+
+.analysis-success strong {
+  @apply text-green-800;
+}
+
+.analysis-success p {
+  @apply text-green-700 text-sm mt-1;
+}
+
+.analysis-neutral {
+  @apply bg-blue-50 border border-blue-200 rounded-lg p-4;
+}
+
+.analysis-neutral strong {
+  @apply text-blue-800;
+}
+
+.analysis-neutral p {
+  @apply text-blue-700 text-sm mt-1;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  @apply fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50;
+}
+
+.modal-content {
+  @apply bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-96 overflow-y-auto;
+}
+
+.modal-header {
+  @apply flex justify-between items-center p-6 border-b border-gray-200;
+}
+
+.modal-header h3 {
+  @apply text-lg font-semibold text-gray-900;
+}
+
+.modal-close {
+  @apply text-gray-400 hover:text-gray-600 text-xl font-bold cursor-pointer;
+}
+
+.modal-body {
+  @apply p-6;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .heatmap-container {
+    @apply flex-col;
+  }
+
+  .heatmap-y-axis {
+    @apply flex-row pb-2 pr-0;
+  }
+
+  .heatmap-x-axis {
+    @apply ml-0 mt-2;
+  }
+
+  .insight-metrics {
+    @apply grid-cols-1 gap-2;
+  }
+}
+</style>
+
+<script>
+// Stability Heatmap Interactions
+function closeStabilityModal() {
+  document.getElementById('stability-detail-modal').classList.add('hidden');
+}
+
+// Add click handlers for cells
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.heatmap-cell').forEach(cell => {
+    cell.addEventListener('click', function() {
+      // Visual feedback
+      this.classList.add('ring-2', 'ring-blue-500');
+
+      // Remove after animation
+      setTimeout(() => {
+        this.classList.remove('ring-2', 'ring-blue-500');
+      }, 300);
+    });
+  });
+});
+</script>
+{{end}}

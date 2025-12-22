@@ -1,0 +1,69 @@
+<div class="interaction-audit" id="interactions-{{.SessionID}}">
+  <div class="audit-header">
+    <h4>User Interaction Audit</h4>
+    <div class="audit-filters">
+      <select id="interaction-filter">
+        <option value="all">All Actions</option>
+        <option value="evidence">Evidence Views</option>
+        <option value="decisions">Decision Changes</option>
+        <option value="exports">Data Exports</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="interaction-timeline">
+    {{range .Interactions}}
+    <div class="interaction-entry" data-type="{{.Type}}" data-timestamp="{{.Timestamp}}">
+      <div class="interaction-icon">
+        {{if eq .Type "evidence_view"}}👁️{{end}}
+        {{if eq .Type "hypothesis_edit"}}✏️{{end}}
+        {{if eq .Type "validation_override"}}⚠️{{end}}
+        {{if eq .Type "data_export"}}📤{{end}}
+      </div>
+
+      <div class="interaction-content">
+        <div class="interaction-primary">
+          <span class="action">{{.Action}}</span>
+          <span class="target">{{.Target}}</span>
+        </div>
+
+        <div class="interaction-meta">
+          <time>{{formatTime .Timestamp}}</time>
+          <span class="user">{{.UserID}}</span>
+          {{if .IPAddress}}<span class="ip">{{.IPAddress}}</span>{{end}}
+        </div>
+
+        {{if .Details}}
+        <div class="interaction-details">
+          <pre>{{.Details | jsonPretty}}</pre>
+        </div>
+        {{end}}
+
+        {{if .ComplianceFlags}}
+        <div class="compliance-flags">
+          {{range .ComplianceFlags}}
+          <span class="flag {{.Level}}">{{.Flag}}</span>
+          {{end}}
+        </div>
+        {{end}}
+      </div>
+    </div>
+    {{end}}
+  </div>
+
+  <div class="audit-footer">
+    <div class="audit-stats">
+      <span>Total Interactions: {{len .Interactions}}</span>
+      <span>Last Activity: {{.LastActivity | formatTime}}</span>
+    </div>
+
+    <div class="audit-actions">
+      <button class="btn-secondary" onclick="exportInteractionLog('{{.SessionID}}')">
+        Export Audit Log
+      </button>
+      <button class="btn-outline" onclick="anonymizeLog('{{.SessionID}}')">
+        Anonymize Data
+      </button>
+    </div>
+  </div>
+</div>

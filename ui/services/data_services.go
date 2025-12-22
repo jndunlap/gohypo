@@ -288,3 +288,4 @@ func (s *DataService) getExcelFieldMetadata() (*excel.ExcelData, map[string]stri
 
 	return data, columnTypes, nil
 }
+

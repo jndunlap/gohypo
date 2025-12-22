@@ -139,3 +139,4 @@ func InvalidInput(message string) *AppError {
 	return New(CodeInvalidInput, message)
 }
 
+

@@ -1,0 +1,83 @@
+<div class="evidence-quality-dashboard">
+  <div class="quality-header">
+    <h4>Evidence Quality Metrics</h4>
+    <div class="quality-score">
+      <div class="score-ring" style="--score: {{.OverallQualityScore}}">
+        <span class="score-value">{{printf "%.1f" .OverallQualityScore}}</span>
+      </div>
+      <span class="score-label">Quality Score</span>
+    </div>
+  </div>
+
+  <div class="quality-metrics">
+    <div class="metric-group">
+      <h5>Statistical Rigor</h5>
+      <div class="metric">
+        <span class="metric-label">Sample Size</span>
+        <span class="metric-value">{{.SampleSize}}</span>
+        <span class="metric-status {{if ge .SampleSize 100}}good{{else}}warning{{end}}"></span>
+      </div>
+
+      <div class="metric">
+        <span class="metric-label">Effect Size</span>
+        <span class="metric-value">{{printf "%.3f" .EffectSize}}</span>
+        <span class="metric-status {{if ge .EffectSize 0.2}}good{{else}}warning{{end}}"></span>
+      </div>
+
+      <div class="metric">
+        <span class="metric-label">P-Value</span>
+        <span class="metric-value">{{printf "%.6f" .PValue}}</span>
+        <span class="metric-status {{if le .PValue 0.05}}good{{else}}warning{{end}}"></span>
+      </div>
+    </div>
+
+    <div class="metric-group">
+      <h5>Data Quality</h5>
+      <div class="metric">
+        <span class="metric-label">Missing Data</span>
+        <span class="metric-value">{{printf "%.1f%%" .MissingRate}}</span>
+        <span class="metric-status {{if le .MissingRate 0.05}}good{{else}}warning{{end}}"></span>
+      </div>
+
+      <div class="metric">
+        <span class="metric-label">Outliers</span>
+        <span class="metric-value">{{printf "%.1f%%" .OutlierRate}}</span>
+        <span class="metric-status {{if le .OutlierRate 0.10}}good{{else}}warning{{end}}"></span>
+      </div>
+
+      <div class="metric">
+        <span class="metric-label">Distribution</span>
+        <span class="metric-value">{{.DistributionType}}</span>
+        <span class="metric-status {{if eq .DistributionType "NORMAL"}}good{{else}}warning{{end}}"></span>
+      </div>
+    </div>
+
+    <div class="metric-group">
+      <h5>Validation Coverage</h5>
+      <div class="metric">
+        <span class="metric-label">Referees Passed</span>
+        <span class="metric-value">{{.PassedReferees}}/{{.TotalReferees}}</span>
+        <span class="metric-status {{if ge (div .PassedReferees .TotalReferees) 0.5}}good{{else}}warning{{end}}"></span>
+      </div>
+
+      <div class="metric">
+        <span class="metric-label">Categories Tested</span>
+        <span class="metric-value">{{len .CategoriesTested}}</span>
+        <span class="metric-status {{if ge (len .CategoriesTested) 3}}good{{else}}warning{{end}}"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="quality-recommendations">
+    <h5>Quality Recommendations</h5>
+    <ul class="recommendations-list">
+      {{range .Recommendations}}
+      <li class="recommendation {{.Priority}}">
+        <span class="rec-icon">{{.Icon}}</span>
+        <span class="rec-text">{{.Text}}</span>
+        <span class="rec-action">{{.Action}}</span>
+      </li>
+      {{end}}
+    </ul>
+  </div>
+</div>

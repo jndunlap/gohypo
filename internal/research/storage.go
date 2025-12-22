@@ -136,3 +136,4 @@ func (rs *ResearchStorage) CleanupOldFiles(maxAge time.Duration) (int, error) {
 	// Database-backed storage doesn't need file cleanup
 	return 0, nil
 }
+

@@ -1,0 +1,131 @@
+<div class="evidence-provenance">
+  <div class="provenance-header">
+    <h4>Evidence Provenance Chain</h4>
+    <p class="provenance-subtitle">Complete lineage from raw data to validation decision</p>
+  </div>
+
+  <div class="provenance-chain">
+    <!-- Data Ingestion -->
+    <div class="provenance-step" data-step="1">
+      <div class="step-icon">📥</div>
+      <div class="step-content">
+        <h5>Data Ingestion</h5>
+        <div class="step-details">
+          <div class="detail-item">
+            <span class="label">Source:</span>
+            <span class="value">{{.DataSource}}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Timestamp:</span>
+            <time>{{formatTime .IngestionTime}}</time>
+          </div>
+          <div class="detail-item">
+            <span class="label">Hash:</span>
+            <code>{{.DataHash}}</code>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Statistical Analysis -->
+    <div class="provenance-step" data-step="2">
+      <div class="step-icon">📊</div>
+      <div class="step-content">
+        <h5>Statistical Analysis</h5>
+        <div class="step-details">
+          <div class="detail-item">
+            <span class="label">Stage:</span>
+            <span class="value">{{.AnalysisStage}}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Method:</span>
+            <span class="value">{{.AnalysisMethod}}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Version:</span>
+            <span class="value">{{.AnalysisVersion}}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hypothesis Generation -->
+    <div class="provenance-step" data-step="3">
+      <div class="step-icon">🤖</div>
+      <div class="step-content">
+        <h5>Hypothesis Generation</h5>
+        <div class="step-details">
+          <div class="detail-item">
+            <span class="label">Generator:</span>
+            <span class="value">{{.GeneratorType}}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Model:</span>
+            <span class="value">{{.GeneratorModel}}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Prompt Hash:</span>
+            <code>{{.PromptHash}}</code>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Validation Execution -->
+    <div class="provenance-step" data-step="4">
+      <div class="step-icon">⚖️</div>
+      <div class="step-content">
+        <h5>Validation Execution</h5>
+        <div class="step-details">
+          <div class="detail-item">
+            <span class="label">Referees:</span>
+            <span class="value">{{len .RefereeResults}} executed</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Passed:</span>
+            <span class="value">{{.PassedCount}}/{{len .RefereeResults}}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Execution Time:</span>
+            <span class="value">{{.TotalExecutionTime}}ms</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Final Decision -->
+    <div class="provenance-step final" data-step="5">
+      <div class="step-icon {{if .FinalDecision.Passed}}success{{else}}failure{{end}}">
+        {{if .FinalDecision.Passed}}✅{{else}}❌{{end}}
+      </div>
+      <div class="step-content">
+        <h5>Final Decision</h5>
+        <div class="step-details">
+          <div class="detail-item">
+            <span class="label">Outcome:</span>
+            <span class="value {{if .FinalDecision.Passed}}success{{else}}failure{{end}}">
+              {{if .FinalDecision.Passed}}HYPOTHESIS VALIDATED{{else}}HYPOTHESIS REJECTED{{end}}
+            </span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Confidence:</span>
+            <span class="value">{{printf "%.2f" .FinalDecision.Confidence}}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">E-Value:</span>
+            <span class="value">{{printf "%.2f" .FinalDecision.EValue}}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="provenance-actions">
+    <button class="btn-primary" onclick="exportProvenanceChain('{{.HypothesisID}}')">
+      Export Provenance Report
+    </button>
+    <button class="btn-secondary" onclick="verifyChainIntegrity('{{.HypothesisID}}')">
+      Verify Chain Integrity
+    </button>
+  </div>
+</div>

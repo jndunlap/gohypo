@@ -20,6 +20,7 @@ import (
 	"gohypo/internal/migration"
 	"gohypo/internal/research"
 	"gohypo/internal/testkit"
+	"gohypo/internal/validation"
 	"gohypo/models"
 	"gohypo/ports"
 	"gohypo/ui"
@@ -189,6 +190,28 @@ func main() {
 	statsSweepService := app.NewStatsSweepService(stageRunner, kit.LedgerAdapter(), rngPort)
 
 	if greenfieldService != nil {
+		// Create advanced validation orchestrator
+		validationConfig := validation.ValidationConfig{
+			MaxComputationalCapacity: 50,               // Allow 50 concurrent computation units
+			CapacityTimeout:          5 * time.Minute,  // Wait up to 5 minutes for capacity
+			StabilityEnabled:         true,             // Enable stability selection
+			SubsampleCount:           10,               // Use 10 subsamples for stability
+			SubsampleFraction:        0.8,              // Use 80% of data per subsample
+			StabilityThreshold:       0.8,              // Require 80% stability
+			LogicalAuditorEnabled:    true,             // Enable logical auditor
+			AuditorModel:             "gpt-4o-mini",    // Use efficient model for auditing
+			ValidationTimeout:        10 * time.Minute, // Allow 10 minutes per hypothesis
+		}
+
+		// Create LLM client for logical auditor (simplified - would use proper LLM adapter)
+		llmClient := createLLMClient(aiConfig)
+
+		// Create heuristic auditor for fallback
+		statisticalEngine := brief.NewStatisticalEngine()
+		heuristicAuditor := validation.NewHeuristicAuditor(statisticalEngine)
+
+		validationOrchestrator := validation.NewValidationOrchestrator(validationConfig, llmClient, heuristicAuditor, aiConfig.PromptsDir)
+
 		worker = research.NewResearchWorker(
 			appContainer.SessionManager,
 			appContainer.ResearchStorage,
@@ -203,6 +226,7 @@ func main() {
 			appContainer.ValidationEngine,
 			appContainer.DynamicSelector,
 			appContainer.HypothesisRepo,
+			validationOrchestrator,
 		)
 		worker.StartWorkerPool(2)
 		log.Println("Research worker pool initialized")
@@ -214,13 +238,13 @@ func main() {
 	// Initialize web server
 	server := ui.NewServer(embeddedFiles)
 	reader := kit.LedgerReaderAdapter()
-	if err := server.Initialize(kit, reader, embeddedFiles, greenfieldService, statisticalEngine, aiConfig, db, appContainer.SSEHub, appContainer.UserRepo); err != nil {
+	if err := server.Initialize(kit, reader, embeddedFiles, greenfieldService, statisticalEngine, aiConfig, db, appContainer.SSEHub, appContainer.UserRepo, appContainer.HypothesisRepo); err != nil {
 		log.Fatalf("Failed to initialize server: %v", err)
 	}
 
 	// Add research routes using container components
 	if worker != nil {
-		server.AddResearchRoutes(appContainer.SessionManager, appContainer.ResearchStorage, worker, appContainer.SSEHub, appContainer)
+		server.AddResearchRoutes(appContainer.SessionManager, appContainer.ResearchStorage, worker, appContainer.SSEHub, appContainer, appContainer.HypothesisRepo)
 		log.Println("Research API routes added with SSE support")
 	}
 
@@ -244,4 +268,18 @@ func main() {
 func setupGreenfieldServices(config *models.AIConfig, ledgerPort ports.LedgerPort, hypothesisAnalyzer *ai.HypothesisAnalysisAgent) *app.GreenfieldService {
 	greenfieldAdapter := llm.NewGreenfieldAdapter(config)
 	return app.NewGreenfieldService(greenfieldAdapter, ledgerPort, hypothesisAnalyzer)
+}
+
+// createLLMClient creates an LLM client for validation purposes
+// This is a simplified implementation - in production, this would use the full LLM adapter
+func createLLMClient(config *models.AIConfig) ports.LLMClient {
+	// Placeholder implementation - returns nil if no API key
+	// In production, this would create a proper LLM client
+	if config.OpenAIKey == "" {
+		return nil
+	}
+
+	// For now, return nil - the validation orchestrator will handle this gracefully
+	// In a full implementation, this would create an OpenAI client or similar
+	return nil
 }

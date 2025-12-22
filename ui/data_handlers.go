@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
+	"time"
 
 	"gohypo/internal/research"
 	"gohypo/ui/services"
@@ -33,6 +36,14 @@ func (h *DataHandler) HandleResearchLedger(storage *research.ResearchStorage) gi
 		hypotheses, err := storage.ListRecent(c.Request.Context(), limit)
 		if err != nil {
 			log.Printf("[API] Failed to list hypotheses: %v", err)
+
+			if c.GetHeader("HX-Request") == "true" {
+				c.Header("Content-Type", "text/html")
+				html := h.renderService.RenderHypothesisError("Failed to retrieve hypotheses from database")
+				c.String(http.StatusInternalServerError, html)
+				return
+			}
+
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": "Failed to retrieve hypotheses",
 			})
@@ -50,6 +61,60 @@ func (h *DataHandler) HandleResearchLedger(storage *research.ResearchStorage) gi
 			"hypotheses": hypotheses,
 			"count":      len(hypotheses),
 		})
+	}
+}
+
+func (h *DataHandler) HandleCurrentPrompt(storage *research.ResearchStorage) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Look for the most recent prompt file in the research_prompts directory
+		promptFiles, err := filepath.Glob("research_prompts/*.txt")
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Failed to scan prompt files",
+			})
+			return
+		}
+
+		if len(promptFiles) == 0 {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "No prompt files found",
+			})
+			return
+		}
+
+		// Find the most recent prompt file
+		var latestFile string
+		var latestTime time.Time
+
+		for _, file := range promptFiles {
+			info, err := os.Stat(file)
+			if err != nil {
+				continue
+			}
+			if info.ModTime().After(latestTime) {
+				latestTime = info.ModTime()
+				latestFile = file
+			}
+		}
+
+		if latestFile == "" {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "No valid prompt files found",
+			})
+			return
+		}
+
+		// Read and return the prompt content
+		content, err := os.ReadFile(latestFile)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Failed to read prompt file",
+			})
+			return
+		}
+
+		c.Header("Content-Type", "text/plain; charset=utf-8")
+		c.String(http.StatusOK, string(content))
 	}
 }
 

@@ -1,0 +1,64 @@
+<div class="audit-summary-card">
+  <div class="audit-header">
+    <h4>Hypothesis Audit Summary</h4>
+    <div class="audit-badges">
+      <span class="badge {{if .Passed}}success{{else}}failure{{end}}">
+        {{if .Passed}}Validated{{else}}Rejected{{end}}
+      </span>
+      <span class="badge info">{{.RefereeResults | len}} referees</span>
+      <span class="badge secondary">{{.StandardsVersion}}</span>
+    </div>
+  </div>
+
+  <div class="audit-timeline">
+    <div class="timeline-phase">
+      <div class="phase-marker generation"></div>
+      <div class="phase-content">
+        <h5>Generation</h5>
+        <time>{{.ValidationTimestamp | formatTime}}</time>
+        <p>LLM-generated hypothesis with {{.RefereeResults | len}} proposed referees</p>
+      </div>
+    </div>
+
+    <div class="timeline-phase">
+      <div class="phase-marker analysis"></div>
+      <div class="phase-content">
+        <h5>Analysis</h5>
+        <p>Data quality assessment and statistical validation</p>
+        <div class="phase-details">
+          <span>Sample Size: {{.ExecutionMetadata.sample_size}}</span>
+          <span>E-value: {{printf "%.2f" .CurrentEValue}}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="timeline-phase">
+      <div class="phase-marker validation {{if .Passed}}success{{else}}failure{{end}}"></div>
+      <div class="phase-content">
+        <h5>Validation</h5>
+        <p>Statistical referee execution completed</p>
+        <div class="referee-summary">
+          {{range .RefereeResults}}
+          <div class="referee-result {{if .Passed}}passed{{else}}failed{{end}}">
+            <span class="referee-name">{{.GateName}}</span>
+            <span class="referee-outcome">{{if .Passed}}✓{{else}}✗{{end}}</span>
+            {{if not .Passed}}<span class="failure-reason">{{.FailureReason}}</span>{{end}}
+          </div>
+          {{end}}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="audit-actions">
+    <button class="btn-primary" onclick="viewFullAudit('{{.ID}}')">
+      View Full Audit Trail
+    </button>
+    <button class="btn-secondary" onclick="downloadAuditReport('{{.ID}}')">
+      Download Report
+    </button>
+    <button class="btn-outline" onclick="appealDecision('{{.ID}}')">
+      Appeal Decision
+    </button>
+  </div>
+</div>
