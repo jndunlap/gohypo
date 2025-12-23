@@ -10,7 +10,6 @@ import (
 
 	"gohypo/domain/core"
 	"gohypo/domain/dataset"
-	"gohypo/domain/discovery"
 	"gohypo/domain/greenfield"
 	"gohypo/models"
 	"gohypo/ports"
@@ -72,13 +71,12 @@ func (rw *ResearchWorker) loadMatrixBundleForHypothesisWithContext(ctx context.C
 func (rw *ResearchWorker) prepareFieldMetadata(
 	metadata []greenfield.FieldMetadata,
 	statsArtifacts []map[string]interface{},
-	discoveryBriefs []discovery.DiscoveryBrief,
+	discoveryBriefs []interface{}, // Keep for backward compatibility but ignore
 ) (string, error) {
 	// Prepare comprehensive context for LLM
 	contextData := map[string]interface{}{
 		"field_metadata":        metadata,
 		"statistical_artifacts": statsArtifacts,
-		"discovery_briefs":      discoveryBriefs,
 		"total_fields":          len(metadata),
 		"total_stats_artifacts": len(statsArtifacts),
 	}

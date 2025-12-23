@@ -195,7 +195,10 @@ func (vo *ValidationOrchestrator) ValidateHypothesis(
 
 	// Fallback to hypothesis referees if auditor didn't provide selection
 	if len(selectedReferees) == 0 {
-		selectedReferees = hypothesis.RefereeGates.SelectedReferees
+		selectedReferees = make([]string, len(hypothesis.RefereeGates.SelectedReferees))
+		for i, referee := range hypothesis.RefereeGates.SelectedReferees {
+			selectedReferees[i] = referee.Name
+		}
 	}
 
 	// Phase 2: Stability Selection (if enabled)
@@ -277,10 +280,17 @@ func (vo *ValidationOrchestrator) performLogicalAudit(
 	}
 
 		// Call LLM with timeout
-	llmCtx, cancel := context.WithTimeout(ctx, 30*time.Second) // 30 second timeout for LLM
-	defer cancel()
+		llmCtx, cancel := context.WithTimeout(ctx, 120*time.Second) // 120 second timeout for LLM
+		defer cancel()
 
-	response, err := vo.llmClient.ChatCompletion(llmCtx, vo.config.AuditorModel, prompt, 2000)
+		var response string
+
+		if vo.llmClient != nil {
+			response, err = vo.llmClient.ChatCompletion(llmCtx, vo.config.AuditorModel, prompt, 2000)
+		} else {
+			// No LLM client available, skip to heuristic fallback
+			err = fmt.Errorf("no LLM client available")
+		}
 	if err != nil {
 		// LLM failed - use heuristic auditor as fallback
 		log.Printf("[ValidationOrchestrator] LLM auditor failed (%v), using heuristic fallback", err)

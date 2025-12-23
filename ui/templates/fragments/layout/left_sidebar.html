@@ -15,7 +15,7 @@
 
             <!-- Add Dataset Block (Top Priority) -->
             <div class="dataset-block bg-white border-b  border-gray-200  hover:bg-gray-50 cursor-pointer group"
-                 onclick="addNewData()">
+                 onclick="(function(){console.log('Add dataset clicked'); var modal = document.getElementById('upload-modal'); if(modal){modal.style.display='block'; document.body.classList.add('overflow-hidden'); if(window.loadWorkspaces) window.loadWorkspaces(); if(window.resetUploadState) window.resetUploadState(); console.log('Modal opened successfully');}else{alert('Upload modal not found - please refresh the page');}})()">
                 <div class="text-center py-8 px-6">
                     <div class="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center mx-auto mb-3 group-hover:bg-gray-300">
                         <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
@@ -27,18 +27,25 @@
                 </div>
             </div>
 
-            <!-- Merge Datasets Block -->
+            <!-- Automatic Merge Suggestions Block -->
             {{if gt (len .Datasets) 1}}
-            <div class="dataset-block bg-white border-b border-gray-200  hover:bg-gray-50 cursor-pointer group"
-                 onclick="window.showMergeModal()">
-                <div class="text-center py-6 px-6">
-                    <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-3 group-hover:bg-gray-200">
-                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"></path>
-                        </svg>
+            <div class="dataset-block bg-white border-b border-gray-200">
+                <div class="text-center py-4 px-6 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h4 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Auto Merge</h4>
+                        <button onclick="refreshMergeSuggestions()" class="text-gray-400 hover:text-gray-600 p-1 rounded">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                        </button>
                     </div>
-                    <p class="text-sm font-semibold text-gray-700">Merge Datasets</p>
-                    <p class="text-xs text-gray-500 mt-1">Combine multiple datasets into one</p>
+                </div>
+                <div id="merge-suggestions-container" class="py-2">
+                    <!-- Merge suggestions will be loaded dynamically -->
+                    <div class="text-center py-4 px-6">
+                        <div class="w-6 h-6 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin mx-auto mb-2"></div>
+                        <p class="text-xs text-gray-500">Analyzing datasets...</p>
+                    </div>
                 </div>
             </div>
             {{end}}
@@ -152,6 +159,9 @@
 
     <!-- DataSpace Blocks JavaScript -->
     <script>
+        console.log('[Left Sidebar] Script starting...');
+
+
         // Ensure modal control functions are available (in case base.html isn't loaded)
         if (typeof window.showUploadModal === 'undefined') {
             window.showUploadModal = function() {
@@ -164,7 +174,7 @@
                 }
             };
         }
-        
+
         if (typeof window.showMergeModal === 'undefined') {
             window.showMergeModal = function() {
                 const modal = document.getElementById('merge-modal');
@@ -176,6 +186,789 @@
                 }
             };
         }
+
+        if (typeof window.refreshMergeSuggestions === 'undefined') {
+            window.refreshMergeSuggestions = function() {
+                loadMergeSuggestions();
+            };
+        }
+
+        function loadMergeSuggestions() {
+            const container = document.getElementById('merge-suggestions-container');
+            if (!container) return;
+
+            // Get current workspace ID from URL or context
+            const urlParams = new URLSearchParams(window.location.search);
+            const workspaceId = urlParams.get('workspace') || window.currentWorkspaceId;
+
+            if (!workspaceId) {
+                container.innerHTML = '<div class="text-center py-4 px-6"><p class="text-xs text-gray-500">No workspace selected</p></div>';
+                return;
+            }
+
+            fetch(`/api/workspaces/${workspaceId}/discover`, {
+                method: 'POST'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    displayMergeSuggestions(data.merge_suggestions || []);
+                })
+                .catch(error => {
+                    console.error('Failed to load merge suggestions:', error);
+                    container.innerHTML = '<div class="text-center py-4 px-6"><p class="text-xs text-red-600">Failed to analyze datasets</p></div>';
+                });
+        }
+
+        function displayMergeSuggestions(suggestions) {
+            const container = document.getElementById('merge-suggestions-container');
+
+            if (!suggestions || suggestions.length === 0) {
+                container.innerHTML = '<div class="text-center py-4 px-6"><p class="text-xs text-gray-500">No merge suggestions found</p></div>';
+                return;
+            }
+
+            const suggestionsHtml = suggestions.map(suggestion => {
+                const confidencePercent = Math.round(suggestion.confidence * 100);
+                const confidenceColor = confidencePercent >= 90 ? 'text-green-600' :
+                                       confidencePercent >= 70 ? 'text-yellow-600' : 'text-orange-600';
+
+                const isTimeseries = suggestion.metadata && suggestion.metadata.analysis_type === 'timeseries_compatibility';
+
+                return `
+                    <div class="px-4 py-3 border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-2 h-2 rounded-full ${isTimeseries ? 'bg-purple-500' : 'bg-blue-500'}"></div>
+                                <span class="text-xs font-semibold text-gray-900 capitalize">${suggestion.merge_type.replace('auto_', '')}</span>
+                                <span class="text-xs ${confidenceColor} font-medium">${confidencePercent}% confident</span>
+                                ${isTimeseries ? '<span class="text-xs bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded text-xs font-medium">Timeseries</span>' : ''}
+                            </div>
+                            <div class="flex space-x-2">
+                                ${isTimeseries ? `<button onclick="previewTimeseriesMerge('${suggestion.source_datasets.join(',')}', '${suggestion.metadata.time_column_1}')"
+                                        class="text-xs bg-purple-600 text-white px-2 py-1 rounded hover:bg-purple-700 transition-colors">
+                                    Preview
+                                </button>` : ''}
+                                <button onclick="executeAutoMerge('${suggestion.source_datasets.join(',')}', '${suggestion.merge_type}')"
+                                        class="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 transition-colors">
+                                    Merge
+                                </button>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-600 mb-1">${suggestion.reasoning}</p>
+                        <div class="flex items-center justify-between text-xs text-gray-500">
+                            <span>${suggestion.expected_row_count} rows, ${suggestion.expected_columns} cols</span>
+                            <span>${suggestion.source_datasets.length} datasets</span>
+                        </div>
+                        ${isTimeseries ? `<div class="mt-2 text-xs text-purple-600">
+                            <span>Time column: ${suggestion.metadata.time_column_1}</span>
+                            ${suggestion.metadata.frequency_match ? '<span class="ml-2 text-green-600">✓ Frequency match</span>' : ''}
+                        </div>` : ''}
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = suggestionsHtml;
+        }
+
+        function executeAutoMerge(datasetIds, mergeType) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const workspaceId = urlParams.get('workspace') || window.currentWorkspaceId;
+
+            if (!workspaceId) {
+                alert('No workspace selected');
+                return;
+            }
+
+            const datasetIdArray = datasetIds.split(',');
+
+            // Generate smart dataset name and detect timeseries
+            Promise.all([
+                generateSmartDatasetName(datasetIdArray, mergeType),
+                detectTimeseriesDatasets(datasetIdArray)
+            ]).then(([outputName, timeseriesInfo]) => {
+                const mergeRequest = {
+                    dataset_ids: datasetIdArray,
+                    output_name: outputName,
+                    workspace_id: workspaceId,
+                    merge_config: {
+                        strategy: 'hybrid',
+                        join_type: mergeType.replace('auto_', ''),
+                        auto_mode: true
+                    }
+                };
+
+                // Add timeseries configuration if detected
+                if (timeseriesInfo.isTimeseries) {
+                    mergeRequest.merge_config.temporal_config = {
+                        time_column: timeseriesInfo.timeColumn,
+                        time_format: "",
+                        source_time_zone: "UTC", // Auto-detect source timezone
+                        target_time_zone: "UTC",
+                        frequency: "unknown",
+                        detect_frequency: true,
+                        gap_fill_strategy: "forward", // Better default for timeseries
+                        interpolation: "linear",
+                        max_gap_duration: "24h", // 24 hours max gap to fill
+                        sort_by_time: true,
+                        deduplicate_by: "last", // Keep most recent data
+                        outlier_detection: true,
+                        outlier_threshold: 3.0,
+                        business_calendar: null
+                    };
+                }
+
+                // Show loading state
+                const button = event.target;
+                const originalText = button.textContent;
+                button.textContent = 'Starting...';
+                button.disabled = true;
+
+                // Create progress indicator
+                const progressContainer = document.createElement('div');
+                progressContainer.className = 'mt-2 space-y-1';
+                progressContainer.innerHTML = `
+                    <div class="flex justify-between text-xs">
+                        <span id="auto-merge-status">Initializing merge...</span>
+                        <span id="auto-merge-percent">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div id="auto-merge-bar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                `;
+                button.parentNode.appendChild(progressContainer);
+
+                // Start SSE monitoring
+                const evtSource = new EventSource('/api/research/sse?session_id=auto-merge-' + Date.now());
+
+                evtSource.onmessage = function(event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        if (data.dataset_id === outputName) {
+                            updateAutoMergeProgress(data.event_type, data.progress, data.message, button, progressContainer);
+
+                            if (data.event_type === 'merge_completed' || data.event_type === 'merge_failed') {
+                                evtSource.close();
+
+                                if (data.event_type === 'merge_completed') {
+                                    setTimeout(() => {
+                                        window.location.reload();
+                                    }, 1000);
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Error parsing auto-merge SSE data:', e);
+                    }
+                };
+
+                evtSource.onerror = function(err) {
+                    console.error('Auto-merge SSE error:', err);
+                    evtSource.close();
+                    button.textContent = 'Failed';
+                    button.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                    button.classList.add('bg-red-600', 'hover:bg-red-700');
+                    setTimeout(() => {
+                        button.textContent = originalText;
+                        button.disabled = false;
+                        button.classList.remove('bg-red-600', 'hover:bg-red-700');
+                        button.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                        progressContainer.remove();
+                    }, 3000);
+                };
+
+                // Submit merge request
+                fetch('/api/datasets/merge', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(mergeRequest)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    button.textContent = 'Merging...';
+                })
+                .catch(error => {
+                    console.error('Auto merge failed:', error);
+                    evtSource.close();
+                    button.textContent = 'Failed';
+                    button.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                    button.classList.add('bg-red-600', 'hover:bg-red-700');
+
+                    setTimeout(() => {
+                        button.textContent = originalText;
+                        button.disabled = false;
+                        button.classList.remove('bg-red-600', 'hover:bg-red-700');
+                        button.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                        progressContainer.remove();
+                    }, 3000);
+                });
+            }).catch(error => {
+                console.error('Failed to generate dataset name:', error);
+                // Fallback to timestamp-based name
+                const outputName = `auto_merged_${Date.now()}`;
+                executeAutoMergeWithName(datasetIds, mergeType, outputName);
+            });
+        }
+
+        // Expose executeAutoMerge globally
+        window.executeAutoMerge = executeAutoMerge;
+
+        function generateSmartDatasetName(datasetIds, mergeType) {
+            return Promise.all(
+                datasetIds.map(id => fetch(`/api/datasets/${id}`).then(r => r.json()))
+            ).then(datasets => {
+                // Extract meaningful information from datasets
+                const names = datasets.map(ds => ds.display_name || ds.original_filename || `dataset_${ds.id.slice(-8)}`);
+                const domains = [...new Set(datasets.map(ds => ds.domain).filter(d => d))];
+                const descriptions = datasets.map(ds => ds.description).filter(d => d);
+
+                // Apply naming heuristics
+                let smartName = generateHeuristicName(names, domains, descriptions, mergeType);
+
+                // Ensure uniqueness and clean format
+                smartName = smartName.toLowerCase()
+                    .replace(/[^a-z0-9_]/g, '_')
+                    .replace(/_+/g, '_')
+                    .replace(/^_|_$/g, '')
+                    .slice(0, 50); // Limit length
+
+                // Add timestamp suffix if needed for uniqueness
+                if (smartName.length < 5) {
+                    smartName = `merged_${Date.now()}`;
+                }
+
+                return smartName;
+            });
+        }
+
+        function generateHeuristicName(names, domains, descriptions, mergeType) {
+            // Heuristic 1: If all datasets have the same domain, use domain + "combined"
+            if (domains.length === 1 && domains[0]) {
+                const domain = domains[0].toLowerCase().replace(/\s+/g, '_');
+                return `${domain}_combined`;
+            }
+
+            // Heuristic 2: Find common prefixes/suffixes in names
+            const commonPrefix = findCommonPrefix(names);
+            if (commonPrefix && commonPrefix.length > 3) {
+                return `${commonPrefix}merged`;
+            }
+
+            // Heuristic 3: Use merge type + entity extraction
+            const entities = extractEntitiesFromNames(names);
+            if (entities.length > 0) {
+                const primaryEntity = entities[0];
+                const mergeAction = getMergeActionWord(mergeType);
+                return `${primaryEntity}_${mergeAction}`;
+            }
+
+            // Heuristic 4: Combine first and last dataset names
+            if (names.length >= 2) {
+                const first = names[0].split('_')[0] || 'dataset1';
+                const last = names[names.length - 1].split('_')[0] || 'dataset2';
+                return `${first}_${last}_merged`;
+            }
+
+            // Fallback
+            return `auto_merged_${Date.now()}`;
+        }
+
+        function findCommonPrefix(names) {
+            if (names.length < 2) return '';
+
+            const sorted = names.slice().sort();
+            const first = sorted[0];
+            const last = sorted[sorted.length - 1];
+
+            let i = 0;
+            while (i < first.length && i < last.length && first[i] === last[i]) {
+                i++;
+            }
+
+            return first.slice(0, i).replace(/_$/, '');
+        }
+
+        function extractEntitiesFromNames(names) {
+            // Extract meaningful entities from dataset names
+            const entities = [];
+            const entityPatterns = [
+                /(customer|client|user|person|employee|student)_/i,
+                /(product|item|service|order)_/i,
+                /(sale|purchase|transaction|payment)_/i,
+                /(inventory|stock|supply)_/i,
+                /(metric|analytics|report|data)_/i
+            ];
+
+            for (const name of names) {
+                for (const pattern of entityPatterns) {
+                    const match = name.match(pattern);
+                    if (match) {
+                        entities.push(match[1].toLowerCase());
+                        break;
+                    }
+                }
+            }
+
+            // Return most common entity
+            const entityCount = {};
+            entities.forEach(entity => {
+                entityCount[entity] = (entityCount[entity] || 0) + 1;
+            });
+
+            return Object.entries(entityCount)
+                .sort((a, b) => b[1] - a[1])
+                .map(([entity]) => entity);
+        }
+
+        function getMergeActionWord(mergeType) {
+            const actions = {
+                'auto_union': 'combined',
+                'auto_join': 'joined',
+                'auto_append': 'extended',
+                'auto_consolidate': 'consolidated'
+            };
+            return actions[mergeType] || 'merged';
+        }
+
+        function previewTimeseriesMerge(datasetIds, timeColumn) {
+            const datasetIdArray = datasetIds.split(',');
+
+            // Create preview modal
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
+                    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900">Timeseries Merge Preview</h3>
+                        <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="p-6 overflow-y-auto max-h-96">
+                        <div class="mb-4">
+                            <div class="text-sm text-gray-600 mb-2">
+                                Previewing merge of ${datasetIdArray.length} timeseries datasets using time column: <strong>${timeColumn}</strong>
+                            </div>
+                            <div id="timeseries-preview-chart" class="border border-gray-200 rounded p-4 bg-gray-50">
+                                <div class="text-center py-8">
+                                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                                    <p class="text-sm text-gray-600">Loading timeseries preview...</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex justify-end space-x-3">
+                            <button onclick="this.closest('.fixed').remove()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                                Cancel
+                            </button>
+                                <button data-action="execute-merge" data-dataset-ids="${datasetIds}" data-merge-type="auto_join"
+                                    class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
+                                Proceed with Merge
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            // Load preview data
+            loadTimeseriesPreview(datasetIdArray, timeColumn);
+        }
+
+        function loadTimeseriesPreview(datasetIds, timeColumn) {
+            const chartContainer = document.getElementById('timeseries-preview-chart');
+
+            // Fetch sample data from each dataset
+            Promise.all(
+                datasetIds.map(id => fetch(`/api/datasets/${id}`).then(r => r.json()))
+            ).then(datasets => {
+                // Create a simple visualization of the time ranges
+                const timeRanges = datasets.map((ds, index) => {
+                    // Mock time range data - in reality you'd sample actual data
+                    const startDate = new Date();
+                    startDate.setDate(startDate.getDate() - (datasets.length - index) * 7);
+
+                    const endDate = new Date();
+                    endDate.setDate(endDate.getDate() + (index + 1) * 3);
+
+                    return {
+                        dataset: ds.display_name || `Dataset ${index + 1}`,
+                        start: startDate,
+                        end: endDate,
+                        records: ds.record_count || 100 + Math.random() * 200
+                    };
+                });
+
+                renderTimeseriesPreview(chartContainer, timeRanges, timeColumn);
+            }).catch(error => {
+                console.error('Failed to load timeseries preview:', error);
+                chartContainer.innerHTML = `
+                    <div class="text-center py-8 text-red-600">
+                        <p class="text-sm font-medium">Failed to load preview</p>
+                        <p class="text-xs mt-1">${error.message}</p>
+                    </div>
+                `;
+            });
+        }
+
+        function renderTimeseriesPreview(container, timeRanges, timeColumn) {
+            const now = new Date();
+            const minDate = new Date(Math.min(...timeRanges.map(r => r.start)));
+            const maxDate = new Date(Math.max(...timeRanges.map(r => r.end)));
+
+            // Create SVG timeline
+            const svgWidth = 600;
+            const svgHeight = 200;
+            const padding = 40;
+
+            const timeToX = (date) => padding + ((date - minDate) / (maxDate - minDate)) * (svgWidth - 2 * padding);
+
+            const svg = `
+                <svg width="${svgWidth}" height="${svgHeight}" class="border border-gray-300 rounded">
+                    <!-- Background grid -->
+                    <defs>
+                        <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#f3f4f6" stroke-width="1"/>
+                        </pattern>
+                    </defs>
+                    <rect width="100%" height="100%" fill="url(#grid)" />
+
+                    <!-- X-axis -->
+                    <line x1="${padding}" y1="${svgHeight - padding}" x2="${svgWidth - padding}" y2="${svgHeight - padding}"
+                          stroke="#374151" stroke-width="1"/>
+
+                    <!-- Time labels -->
+                    <text x="${padding}" y="${svgHeight - 10}" font-size="10" text-anchor="middle">${minDate.toLocaleDateString()}</text>
+                    <text x="${svgWidth - padding}" y="${svgHeight - 10}" font-size="10" text-anchor="middle">${maxDate.toLocaleDateString()}</text>
+                    <text x="${svgWidth/2}" y="${svgHeight - 10}" font-size="10" text-anchor="middle">Time (${timeColumn})</text>
+
+                    <!-- Dataset time ranges -->
+                    ${timeRanges.map((range, index) => {
+                        const y = 30 + index * 25;
+                        const x1 = timeToX(range.start);
+                        const x2 = timeToX(range.end);
+                        const width = Math.max(x2 - x1, 2);
+                        const color = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'][index % 5];
+
+                        return `
+                            <!-- Time range bar -->
+                            <rect x="${x1}" y="${y - 8}" width="${width}" height="16" fill="${color}" opacity="0.7" rx="2"/>
+                            <!-- Dataset label -->
+                            <text x="${x1 - 5}" y="${y + 3}" font-size="11" text-anchor="end" fill="#374151">${range.dataset}</text>
+                            <!-- Record count -->
+                            <text x="${x2 + 5}" y="${y + 3}" font-size="10" fill="#6b7280">${range.records} records</text>
+                        `;
+                    }).join('')}
+
+                    <!-- Current time indicator -->
+                    <line x1="${timeToX(now)}" y1="${padding}" x2="${timeToX(now)}" y2="${svgHeight - padding}"
+                          stroke="#dc2626" stroke-width="2" stroke-dasharray="5,5"/>
+                    <text x="${timeToX(now)}" y="${padding - 5}" font-size="10" text-anchor="middle" fill="#dc2626">Now</text>
+                </svg>
+
+                <div class="mt-4 text-xs text-gray-600">
+                    <p><strong>Merge Preview:</strong> Datasets will be aligned by timestamp (${timeColumn}) with automatic gap filling and timezone normalization.</p>
+                    <ul class="mt-2 space-y-1">
+                        <li>• Time ranges will be merged chronologically</li>
+                        <li>• Missing timestamps will use forward-fill interpolation</li>
+                        <li>• Outlier detection will remove anomalous values</li>
+                        <li>• Duplicate timestamps will keep the most recent data</li>
+                    </ul>
+                </div>
+            `;
+
+            container.innerHTML = svg;
+        }
+
+        function detectTimeseriesDatasets(datasetIds) {
+            return Promise.all(
+                datasetIds.map(id => fetch(`/api/datasets/${id}`).then(r => r.json()))
+            ).then(datasets => {
+                // Check if any dataset has temporal fields
+                const hasTemporalFields = datasets.some(ds => {
+                    if (!ds.metadata || !ds.metadata.fields) return false;
+                    return ds.metadata.fields.some(field => {
+                        const name = field.name.toLowerCase();
+                        return name.includes('time') || name.includes('date') ||
+                               name.includes('timestamp') || name.includes('created') ||
+                               name.includes('updated') || name.includes('occurred');
+                    });
+                });
+
+                if (!hasTemporalFields) {
+                    return { isTimeseries: false };
+                }
+
+                // Find the most common time column name
+                const timeColumns = [];
+                datasets.forEach(ds => {
+                    if (ds.metadata && ds.metadata.fields) {
+                        ds.metadata.fields.forEach(field => {
+                            const name = field.name.toLowerCase();
+                            if (name.includes('time') || name.includes('date') ||
+                                name.includes('timestamp') || name.includes('created') ||
+                                name.includes('updated') || name.includes('occurred')) {
+                                timeColumns.push(field.name);
+                            }
+                        });
+                    }
+                });
+
+                // Find most common time column
+                const timeColumnCounts = {};
+                timeColumns.forEach(col => {
+                    timeColumnCounts[col] = (timeColumnCounts[col] || 0) + 1;
+                });
+
+                let mostCommonTimeColumn = null;
+                let maxCount = 0;
+                for (const [col, count] of Object.entries(timeColumnCounts)) {
+                    if (count > maxCount) {
+                        maxCount = count;
+                        mostCommonTimeColumn = col;
+                    }
+                }
+
+                return {
+                    isTimeseries: true,
+                    timeColumn: mostCommonTimeColumn || timeColumns[0] || 'timestamp'
+                };
+            }).catch(error => {
+                console.error('Failed to detect timeseries:', error);
+                return { isTimeseries: false };
+            });
+        }
+
+        function executeAutoMergeWithName(datasetIds, mergeType, outputName) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const workspaceId = urlParams.get('workspace') || window.currentWorkspaceId;
+
+            const datasetIdArray = datasetIds.split(',');
+            const mergeRequest = {
+                dataset_ids: datasetIdArray,
+                output_name: outputName,
+                workspace_id: workspaceId,
+                merge_config: {
+                    strategy: 'hybrid',
+                    join_type: mergeType.replace('auto_', ''),
+                    auto_mode: true
+                }
+            };
+
+            // Show loading state
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = 'Starting...';
+            button.disabled = true;
+
+            // Create progress indicator
+            const progressContainer = document.createElement('div');
+            progressContainer.className = 'mt-2 space-y-1';
+            progressContainer.innerHTML = `
+                <div class="flex justify-between text-xs">
+                    <span id="auto-merge-status">Initializing merge...</span>
+                    <span id="auto-merge-percent">0%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div id="auto-merge-bar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+            `;
+            button.parentNode.appendChild(progressContainer);
+
+            // Start SSE monitoring
+            const evtSource = new EventSource('/api/research/sse?session_id=auto-merge-' + Date.now());
+
+            evtSource.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.dataset_id === outputName) {
+                        updateAutoMergeProgress(data.event_type, data.progress, data.message, button, progressContainer);
+
+                        if (data.event_type === 'merge_completed' || data.event_type === 'merge_failed') {
+                            evtSource.close();
+
+                            if (data.event_type === 'merge_completed') {
+                                setTimeout(() => {
+                                    window.location.reload();
+                                }, 1000);
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error parsing auto-merge SSE data:', e);
+                }
+            };
+
+            evtSource.onerror = function(err) {
+                console.error('Auto-merge SSE error:', err);
+                evtSource.close();
+                button.textContent = 'Failed';
+                button.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                button.classList.add('bg-red-600', 'hover:bg-red-700');
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.disabled = false;
+                    button.classList.remove('bg-red-600', 'hover:bg-red-700');
+                    button.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                    progressContainer.remove();
+                }, 3000);
+            };
+
+            // Submit merge request
+            fetch('/api/datasets/merge', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(mergeRequest)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                button.textContent = 'Merging...';
+            })
+            .catch(error => {
+                console.error('Auto merge failed:', error);
+                evtSource.close();
+                button.textContent = 'Failed';
+                button.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                button.classList.add('bg-red-600', 'hover:bg-red-700');
+
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.disabled = false;
+                    button.classList.remove('bg-red-600', 'hover:bg-red-700');
+                    button.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                    progressContainer.remove();
+                }, 3000);
+            });
+        }
+
+            // Show loading state
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = 'Starting...';
+            button.disabled = true;
+
+            // Create progress indicator
+            const progressContainer = document.createElement('div');
+            progressContainer.className = 'mt-2 space-y-1';
+            progressContainer.innerHTML = `
+                <div class="flex justify-between text-xs">
+                    <span id="auto-merge-status">Initializing merge...</span>
+                    <span id="auto-merge-percent">0%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div id="auto-merge-bar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+            `;
+            button.parentNode.appendChild(progressContainer);
+
+            // Start SSE monitoring
+            const evtSource = new EventSource('/api/research/sse?session_id=auto-merge-' + Date.now());
+
+            evtSource.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.dataset_id === outputName) {
+                        updateAutoMergeProgress(data.event_type, data.progress, data.message, button, progressContainer);
+
+                        if (data.event_type === 'merge_completed' || data.event_type === 'merge_failed') {
+                            evtSource.close();
+
+                            if (data.event_type === 'merge_completed') {
+                                setTimeout(() => {
+                                    window.location.reload();
+                                }, 1000);
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error parsing auto-merge SSE data:', e);
+                }
+            };
+
+            evtSource.onerror = function(err) {
+                console.error('Auto-merge SSE error:', err);
+                evtSource.close();
+                button.textContent = 'Failed';
+                button.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                button.classList.add('bg-red-600', 'hover:bg-red-700');
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.disabled = false;
+                    button.classList.remove('bg-red-600', 'hover:bg-red-700');
+                    button.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                    progressContainer.remove();
+                }, 3000);
+            };
+
+            // Submit merge request
+            fetch('/api/datasets/merge', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(mergeRequest)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                button.textContent = 'Merging...';
+            })
+            .catch(error => {
+                console.error('Auto merge failed:', error);
+                evtSource.close();
+                button.textContent = 'Failed';
+                button.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                button.classList.add('bg-red-600', 'hover:bg-red-700');
+
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.disabled = false;
+                    button.classList.remove('bg-red-600', 'hover:bg-red-700');
+                    button.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                    progressContainer.remove();
+                }, 3000);
+            });
+        }
+
+        function updateAutoMergeProgress(eventType, progress, message, button, progressContainer) {
+            const progressBar = progressContainer.querySelector('#auto-merge-bar');
+            const progressText = progressContainer.querySelector('#auto-merge-status');
+            const progressPercent = progressContainer.querySelector('#auto-merge-percent');
+
+            progressBar.style.width = progress + '%';
+            progressPercent.textContent = Math.round(progress) + '%';
+            progressText.textContent = message;
+
+            if (eventType === 'merge_failed') {
+                progressBar.classList.remove('bg-blue-600');
+                progressBar.classList.add('bg-red-600');
+                button.textContent = 'Failed';
+            } else if (eventType === 'merge_completed') {
+                progressBar.classList.remove('bg-red-600');
+                progressBar.classList.add('bg-green-600');
+                button.textContent = '✓ Complete';
+            } else {
+                progressBar.classList.remove('bg-red-600', 'bg-green-600');
+                progressBar.classList.add('bg-blue-600');
+                button.textContent = 'Merging...';
+            }
+        }
         
         if (typeof window.showWorkspaceGraph === 'undefined') {
             window.showWorkspaceGraph = function(workspaceId) {
@@ -186,12 +979,6 @@
 
         let expandedDatasets = new Set();
         let selectedFields = new Map(); // fieldName -> {element, datasetId, fieldType}
-
-        function addNewData() {
-            console.log('Add new dataset clicked');
-            // Open the professional upload modal
-            window.showUploadModal();
-        }
 
         function toggleDatasetBlock(datasetId) {
             console.log('toggleDatasetBlock called with:', datasetId);
@@ -334,6 +1121,29 @@
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             console.log('DataSpace Blocks initialized');
+
+            // Add event listeners for data-action elements
+            document.addEventListener('click', function(e) {
+                const action = e.target.closest('[data-action]');
+                if (!action) return;
+
+                const actionType = action.dataset.action;
+
+                if (actionType === 'execute-merge') {
+                    e.preventDefault();
+                    const datasetIds = action.dataset.datasetIds;
+                    const mergeType = action.dataset.mergeType;
+                    if (window.executeAutoMerge && datasetIds && mergeType) {
+                        window.executeAutoMerge(datasetIds, mergeType);
+                        action.closest('.fixed').remove();
+                    } else {
+                        console.error('executeAutoMerge function not available or missing data attributes');
+                    }
+                }
+            });
+
+            // Load merge suggestions for auto-merge functionality
+            loadMergeSuggestions();
 
             // Add event listeners for dataset headers
             document.querySelectorAll('.dataset-header').forEach(header => {

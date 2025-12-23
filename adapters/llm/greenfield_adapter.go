@@ -14,9 +14,9 @@ import (
 )
 
 type GreenfieldAdapter struct {
-	StructuredClient  *ai.StructuredClient[models.GreenfieldResearchOutput]
-	LogicalAuditor    *LogicalAuditorAdapter
-	Scout             *ai.ForensicScout
+	StructuredClient *ai.StructuredClient[models.GreenfieldResearchOutput]
+	LogicalAuditor   *LogicalAuditorAdapter
+	Scout            *ai.ForensicScout
 }
 
 func NewGreenfieldAdapter(config *models.AIConfig) *GreenfieldAdapter {
@@ -40,16 +40,7 @@ func (ga *GreenfieldAdapter) GetScout() *ai.ForensicScout {
 }
 
 func (ga *GreenfieldAdapter) GenerateResearchDirectives(ctx context.Context, req ports.GreenfieldResearchRequest) (*ports.GreenfieldResearchResponse, error) {
-	fmt.Printf("[GreenfieldAdapter] ═══════════════════════════════════════════════════\n")
-	fmt.Printf("[GreenfieldAdapter] 🚀 STARTING RESEARCH DIRECTIVE GENERATION\n")
-	fmt.Printf("[GreenfieldAdapter] Session: %s\n", req.RunID)
-	fmt.Printf("[GreenfieldAdapter] Input: %d fields, %d statistical artifacts\n", len(req.FieldMetadata), len(req.StatisticalArtifacts))
-	fmt.Printf("[GreenfieldAdapter] ═══════════════════════════════════════════════════\n")
-
-	// Step 1: Run Forensic Scout to get industry context (Layer 2)
-	fmt.Printf("[GreenfieldAdapter] 🔍 Step 1: Running Forensic Scout for industry context...\n")
-
-	// Extract field names from the request metadata for scout analysis
+	// Extract field names for scout analysis
 	fieldNames := make([]string, len(req.FieldMetadata))
 	for i, field := range req.FieldMetadata {
 		fieldNames[i] = field.Name
@@ -57,113 +48,46 @@ func (ga *GreenfieldAdapter) GenerateResearchDirectives(ctx context.Context, req
 
 	scoutResponse, err := ga.Scout.AnalyzeFields(ctx, fieldNames)
 	if err != nil {
-		// Log error but don't fail - continue without industry context
-		fmt.Printf("[GreenfieldAdapter] ⚠️  Warning: Scout failed, continuing without industry context: %v\n", err)
 		scoutResponse = nil
-	} else {
-		fmt.Printf("[GreenfieldAdapter] ✅ Forensic Scout completed successfully\n")
-		fmt.Printf("[GreenfieldAdapter]   • Domain: %s\n", scoutResponse.Domain)
-		fmt.Printf("[GreenfieldAdapter]   • Dataset: %s\n", scoutResponse.DatasetName)
 	}
 
-	// Step 2: Build Layer 3 dynamic content with evidence orchestration
-	fmt.Printf("[GreenfieldAdapter] 📝 Step 2: Orchestrating evidence for LLM input...\n")
-
-	// Create evidence orchestrator and transform raw data into LLM-friendly format
+	// Build evidence orchestration
 	orchestrator := analysis.NewEvidenceOrchestrator()
 	outcomeCol := ga.determineOutcomeColumn(req.FieldMetadata)
-	fmt.Printf("[GreenfieldAdapter] 📊 Orchestrating evidence...\n")
-	fmt.Printf("[GreenfieldAdapter]   • Outcome column: %s\n", outcomeCol)
-	fmt.Printf("[GreenfieldAdapter]   • Statistical artifacts: %d\n", len(req.StatisticalArtifacts))
 
 	evidenceBrief := orchestrator.OrchestrateEvidence(
 		req.FieldMetadata,
 		req.StatisticalArtifacts,
 		outcomeCol,
-		[]string{}, // Would be populated from actual analysis
-		map[string]string{}, // Would be populated from actual analysis
+		[]string{},
+		map[string]string{},
 	)
 
-	fmt.Printf("[GreenfieldAdapter] ✅ Evidence orchestration completed\n")
-	totalItems := len(evidenceBrief.Associations) + len(evidenceBrief.Breakpoints) + len(evidenceBrief.Interactions) + len(evidenceBrief.StructuralBreaks) + len(evidenceBrief.TransferEntropies) + len(evidenceBrief.HysteresisEffects)
-	fmt.Printf("[GreenfieldAdapter]   • Evidence brief items: %d total\n", totalItems)
-	fmt.Printf("[GreenfieldAdapter]     - Associations: %d\n", len(evidenceBrief.Associations))
-	fmt.Printf("[GreenfieldAdapter]     - Breakpoints: %d\n", len(evidenceBrief.Breakpoints))
-	fmt.Printf("[GreenfieldAdapter]     - Interactions: %d\n", len(evidenceBrief.Interactions))
-	fmt.Printf("[GreenfieldAdapter]     - Structural breaks: %d\n", len(evidenceBrief.StructuralBreaks))
-	fmt.Printf("[GreenfieldAdapter]     - Transfer entropies: %d\n", len(evidenceBrief.TransferEntropies))
-	fmt.Printf("[GreenfieldAdapter]     - Hysteresis effects: %d\n", len(evidenceBrief.HysteresisEffects))
-
 	dynamicPrompt := ga.buildDynamicResearchPrompt(evidenceBrief, req.FieldMetadata)
-	fmt.Printf("[GreenfieldAdapter] ✅ Dynamic prompt built successfully (length: %d chars)\n", len(dynamicPrompt))
 
-	fmt.Printf("[GreenfieldAdapter] 🧠 Step 3: Calling LLM with greenfield_research prompt...\n")
-
-	// Call LLM with dynamic prompt and STRICT JSON system instructions
 	systemMessage := "You are a statistical research assistant. For dynamic e-value validation, you must select at least 1 referee from the approved list based on the hypothesis requirements. Output valid JSON only."
-	fmt.Printf("[GreenfieldAdapter] 📤 Sending request to LLM with greenfield_research prompt...\n")
-	fmt.Printf("[GreenfieldAdapter]   • System message: %s\n", systemMessage)
-	fmt.Printf("[GreenfieldAdapter]   • Prompt length: %d chars\n", len(dynamicPrompt))
 
 	llmResponse, err := ga.StructuredClient.GetJsonResponseWithContext(ctx, "openai", dynamicPrompt, systemMessage)
 	if err != nil {
-		fmt.Printf("[GreenfieldAdapter] ❌ LLM CALL FAILED: %v\n", err)
-		fmt.Printf("[GreenfieldAdapter] 💥 Prompt used: greenfield_research.txt (rendered)\n")
 		return nil, fmt.Errorf("LLM call failed: %w", err)
 	}
 
-	fmt.Printf("[GreenfieldAdapter] ✅ LLM response received successfully\n")
-
-	// DEBUG: Log the LLM response to inspect referee selections
-	fmt.Printf("[GreenfieldAdapter] ═══ LLM RESPONSE DEBUG (from greenfield_research.txt) ═══\n")
-	fmt.Printf("[GreenfieldAdapter] Generated %d research directives\n", len(llmResponse.ResearchDirectives))
-	for i, directive := range llmResponse.ResearchDirectives {
-		fmt.Printf("[GreenfieldAdapter] Directive %d: %s\n", i+1, directive.ID)
-		fmt.Printf("[GreenfieldAdapter]   • Business Hypothesis: %s\n", directive.BusinessHypothesis)
-		fmt.Printf("[GreenfieldAdapter]   • Cause → Effect: %s → %s\n", directive.CauseKey, directive.EffectKey)
-		fmt.Printf("[GreenfieldAdapter]   • Referees (%d): %v\n", len(directive.RefereeGates.SelectedReferees), directive.RefereeGates.SelectedReferees)
-		if len(directive.RefereeGates.SelectedReferees) != 3 {
-			fmt.Printf("[GreenfieldAdapter] ⚠️  WARNING: Directive %s has %d referees instead of 3!\n", directive.ID, len(directive.RefereeGates.SelectedReferees))
-			fmt.Printf("[GreenfieldAdapter] 🚨 This will cause validation to FAIL!\n")
-		} else {
-			fmt.Printf("[GreenfieldAdapter] ✅ Referee count is correct (3)\n")
-		}
-	}
-	fmt.Printf("[GreenfieldAdapter] ═══════════════════════════════════════════════════\n")
-
-	// Use industry context from LLM response if available, otherwise use scout result
+	// Use industry context from scout result if available
 	if llmResponse.IndustryContext == "" && scoutResponse != nil {
-		// Format structured scout response for hypothesis generation
 		llmResponse.IndustryContext = fmt.Sprintf("%s dataset: %s", scoutResponse.Domain, scoutResponse.DatasetName)
 	}
 
 	// Enhance directives with referee selections from logical auditor
-	fmt.Printf("[GreenfieldAdapter] 🔍 Step 5: Calling logical auditor for referee selection...\n")
 	enhancedDirectives, err := ga.enhanceDirectivesWithReferees(ctx, llmResponse.ResearchDirectives, req.FieldMetadata, req.StatisticalArtifacts)
 	if err != nil {
-		fmt.Printf("[GreenfieldAdapter] ⚠️  Warning: Logical auditor failed, using default referees: %v\n", err)
 		enhancedDirectives = llmResponse.ResearchDirectives
-	} else {
-		fmt.Printf("[GreenfieldAdapter] ✅ Logical auditor enhanced %d directives with referee selections\n", len(enhancedDirectives))
 	}
 
 	// Convert LLM response to domain objects
 	directives := ga.convertToDomainDirectives(enhancedDirectives)
 
 	// Generate engineering backlog from the directives
-	fmt.Printf("[GreenfieldAdapter] 📋 Step 4: Generating engineering backlog...\n")
 	engineeringBacklog := ga.generateEngineeringBacklog(directives)
-	fmt.Printf("[GreenfieldAdapter] ✅ Engineering backlog created: %d items\n", len(engineeringBacklog))
-
-	fmt.Printf("[GreenfieldAdapter] ═══════════════════════════════════════════════════\n")
-	fmt.Printf("[GreenfieldAdapter] 🎉 RESEARCH DIRECTIVE GENERATION COMPLETE\n")
-	fmt.Printf("[GreenfieldAdapter] Summary:\n")
-	fmt.Printf("[GreenfieldAdapter]   • Prompt template: prompts/greenfield_research.txt\n")
-	fmt.Printf("[GreenfieldAdapter]   • Directives generated: %d\n", len(directives))
-	fmt.Printf("[GreenfieldAdapter]   • Engineering backlog items: %d\n", len(engineeringBacklog))
-	fmt.Printf("[GreenfieldAdapter]   • LLM model: %s\n", "gpt-5.2") // TODO: Get from LLMClient
-	fmt.Printf("[GreenfieldAdapter]   • Temperature: %.2f\n", 0.1) // TODO: Get from LLMClient
-	fmt.Printf("[GreenfieldAdapter] ═══════════════════════════════════════════════════\n")
 
 	return &ports.GreenfieldResearchResponse{
 		Directives:         directives,
@@ -173,7 +97,7 @@ func (ga *GreenfieldAdapter) GenerateResearchDirectives(ctx context.Context, req
 		Audit: ports.GreenfieldAudit{
 			GeneratorType: "llm",
 			Model:         "gpt-5.2", // TODO: Get from LLMClient
-			Temperature:   0.1,     // TODO: Get from LLMClient
+			Temperature:   0.1,       // TODO: Get from LLMClient
 		},
 	}, nil
 }
@@ -199,7 +123,7 @@ func (ga *GreenfieldAdapter) convertToDomainDirectives(llmDirectives []models.Re
 				PermutationRuns: llmDir.RefereeGates.PermutationRuns,
 			},
 			ExplanationMarkdown: llmDir.ExplanationMarkdown,
-			CreatedAt: core.Now(),
+			CreatedAt:           core.Now(),
 		}
 	}
 
@@ -330,59 +254,30 @@ func (ga *GreenfieldAdapter) estimateEffort(capability string) string {
 	return "medium" // Default
 }
 
-// buildDynamicResearchPrompt creates Layer 3 content (variable per research session)
+// buildDynamicResearchPrompt creates prompt content from evidence
 func (ga *GreenfieldAdapter) buildDynamicResearchPrompt(evidenceBrief *analysis.EvidenceBrief, fieldMetadata []greenfield.FieldMetadata) string {
-	fmt.Printf("[GreenfieldAdapter] ═══ PROMPT BUILDING PROCESS ═══\n")
-	fmt.Printf("[GreenfieldAdapter] 📋 Building LLM-optimized evidence context...\n")
-
-	// Convert EvidenceBrief to JSON for prompt injection
-	fmt.Printf("[GreenfieldAdapter]   • Evidence associations: %d\n", len(evidenceBrief.Associations))
-	fmt.Printf("[GreenfieldAdapter]   • Breakpoints: %d\n", len(evidenceBrief.Breakpoints))
-	fmt.Printf("[GreenfieldAdapter]   • Interactions: %d\n", len(evidenceBrief.Interactions))
-	fmt.Printf("[GreenfieldAdapter]   • Structural breaks: %d\n", len(evidenceBrief.StructuralBreaks))
 
 	evidenceJSON, err := json.MarshalIndent(evidenceBrief, "", "  ")
 	if err != nil {
-		// Fallback to simple string representation
-		fmt.Printf("[GreenfieldAdapter] ❌ Evidence JSON marshaling failed: %v\n", err)
 		evidenceJSON = []byte(fmt.Sprintf("Error marshaling evidence: %v", err))
-	} else {
-		fmt.Printf("[GreenfieldAdapter] ✅ Evidence JSON marshaled successfully (%d bytes)\n", len(evidenceJSON))
 	}
 
-	// Convert field metadata to JSON
 	fieldMetadataJSON, err := json.MarshalIndent(fieldMetadata, "", "  ")
 	if err != nil {
-		fmt.Printf("[GreenfieldAdapter] ❌ Field metadata JSON marshaling failed: %v\n", err)
 		fieldMetadataJSON = []byte(fmt.Sprintf("Error marshaling field metadata: %v", err))
-	} else {
-		fmt.Printf("[GreenfieldAdapter] ✅ Field metadata JSON marshaled successfully (%d bytes)\n", len(fieldMetadataJSON))
 	}
 
-	// Prepare template replacements
 	replacements := map[string]string{
-		"FIELD_METADATA_JSON":           string(fieldMetadataJSON),
-		"INDUSTRY_CONTEXT_INJECTION":    "Industry context will be injected by the adapter.",
-		"STATISTICAL_EVIDENCE_JSON":     string(evidenceJSON),
-		"VALIDATED_HYPOTHESIS_SUMMARY": "No validated hypotheses available for feedback learning.", // Placeholder
+		"FIELD_METADATA_JSON":          string(fieldMetadataJSON),
+		"INDUSTRY_CONTEXT_INJECTION":   "Industry context will be injected by the adapter.",
+		"STATISTICAL_EVIDENCE_JSON":    string(evidenceJSON),
+		"VALIDATED_HYPOTHESIS_SUMMARY": "No validated hypotheses available for feedback learning.",
 	}
 
-	fmt.Printf("[GreenfieldAdapter] 🔧 Loading template: prompts/greenfield_research.txt\n")
-	fmt.Printf("[GreenfieldAdapter] 📝 Rendering prompt with dynamic replacements...\n")
-
-	// Render the full greenfield research prompt
-	prompt, err := ga.StructuredClient.PromptManager.RenderPrompt("greenfield_research", replacements)
+	prompt, err := ga.StructuredClient.PromptManager.RenderPrompt("greenfield", replacements)
 	if err != nil {
-		fmt.Printf("[GreenfieldAdapter] ❌ CRITICAL: Failed to render greenfield_research.txt template: %v\n", err)
-		fmt.Printf("[GreenfieldAdapter] 🔄 Using minimal fallback prompt instead\n")
-		// Fallback to minimal prompt
 		return fmt.Sprintf("INPUT DATA:\n%s\n\nGenerate 3 research hypotheses as JSON.", string(evidenceJSON))
 	}
-
-	fmt.Printf("[GreenfieldAdapter] ✅ Successfully rendered greenfield_research.txt prompt\n")
-	fmt.Printf("[GreenfieldAdapter]   • Final prompt length: %d characters\n", len(prompt))
-	fmt.Printf("[GreenfieldAdapter]   • Template replacements: %d\n", len(replacements))
-	fmt.Printf("[GreenfieldAdapter] ═══════════════════════════════\n")
 
 	return prompt
 }
@@ -443,22 +338,24 @@ func (ga *GreenfieldAdapter) enhanceDirectivesWithReferees(
 		auditorReq := ports.LogicalAuditorRequest{
 			BusinessHypothesis:  directive.BusinessHypothesis,
 			ScienceHypothesis:   directive.ScienceHypothesis,
-			NullCase:           directive.NullCase,
-			CauseKey:           directive.CauseKey,
-			EffectKey:          directive.EffectKey,
+			NullCase:            directive.NullCase,
+			CauseKey:            directive.CauseKey,
+			EffectKey:           directive.EffectKey,
 			StatisticalEvidence: string(statisticalJSON),
-			VariableContext:    string(fieldMetadataJSON),
-			RigorLevel:         "decision-critical", // Default to high rigor for new hypotheses
+			VariableContext:     string(fieldMetadataJSON),
+			RigorLevel:          "decision-critical", // Default to high rigor for new hypotheses
 			ComputationalBudget: "medium",
 		}
 
 		auditorResponse, err := ga.LogicalAuditor.GenerateRefereeSelection(ctx, auditorReq)
 		if err != nil {
-			// Log error but continue with defaults
-			fmt.Printf("[GreenfieldAdapter] ⚠️  Logical auditor failed for directive %s: %v\n", directive.ID, err)
 			// Use default referee selection
 			directive.RefereeGates = models.RefereeGates{
-				SelectedReferees: []string{"Permutation_Shredder", "Chow_Stability_Test", "Transfer_Entropy"},
+				SelectedReferees: []models.RefereeSelection{
+					{Name: "Permutation_Shredder", Category: "VALIDATION", Priority: 1},
+					{Name: "Chow_Stability_Test", Category: "VALIDATION", Priority: 2},
+					{Name: "Transfer_Entropy", Category: "CAUSALITY", Priority: 3},
+				},
 				ConfidenceTarget: 0.95,
 				Rationale:        "Default referee selection due to auditor failure",
 			}

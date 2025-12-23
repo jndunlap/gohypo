@@ -28,9 +28,9 @@ func (r *SessionRepositoryImpl) CreateSession(ctx context.Context, userID uuid.U
 
 	// JSONBMap implements driver.Valuer, so it will be automatically converted
 	_, err := r.db.ExecContext(ctx, `
-		INSERT INTO research_sessions (id, user_id, state, progress, current_hypothesis, started_at, metadata, created_at, updated_at, title)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NULL)
-	`, session.ID, session.UserID, session.State, session.Progress, session.CurrentHypothesis, session.StartedAt, session.Metadata, session.CreatedAt, session.UpdatedAt)
+		INSERT INTO research_sessions (id, user_id, workspace_id, state, progress, current_hypothesis, started_at, metadata, created_at, updated_at, title)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NULL)
+	`, session.ID, session.UserID, session.WorkspaceID, session.State, session.Progress, session.CurrentHypothesis, session.StartedAt, session.Metadata, session.CreatedAt, session.UpdatedAt)
 
 	if err != nil {
 		return nil, err
@@ -43,7 +43,7 @@ func (r *SessionRepositoryImpl) CreateSession(ctx context.Context, userID uuid.U
 func (r *SessionRepositoryImpl) GetSession(ctx context.Context, userID, sessionID uuid.UUID) (*models.ResearchSession, error) {
 	var session models.ResearchSession
 	err := r.db.GetContext(ctx, &session, `
-		SELECT id, user_id, state, progress, current_hypothesis, started_at, completed_at, error_message, metadata, created_at, updated_at
+		SELECT id, user_id, workspace_id, state, progress, current_hypothesis, started_at, completed_at, error_message, metadata, created_at, updated_at
 		FROM research_sessions
 		WHERE user_id = $1 AND id = $2
 	`, userID, sessionID)
@@ -88,7 +88,7 @@ func (r *SessionRepositoryImpl) UpdateSessionState(ctx context.Context, userID, 
 // ListUserSessions returns sessions for a user, optionally limited
 func (r *SessionRepositoryImpl) ListUserSessions(ctx context.Context, userID uuid.UUID, limit int) ([]*models.ResearchSession, error) {
 	query := `
-		SELECT id, user_id, state, progress, current_hypothesis, started_at, completed_at, error_message, metadata, created_at, updated_at
+		SELECT id, user_id, workspace_id, state, progress, current_hypothesis, started_at, completed_at, error_message, metadata, created_at, updated_at
 		FROM research_sessions
 		WHERE user_id = $1
 		ORDER BY started_at DESC
@@ -136,7 +136,7 @@ func (r *SessionRepositoryImpl) ListUserSessions(ctx context.Context, userID uui
 func (r *SessionRepositoryImpl) GetActiveUserSessions(ctx context.Context, userID uuid.UUID) ([]*models.ResearchSession, error) {
 	// Use GetContext for each session to ensure proper scanning, or use rows manually
 	rows, err := r.db.QueryContext(ctx, `
-		SELECT id, user_id, state, progress, current_hypothesis, started_at, completed_at, error_message, metadata, created_at, updated_at
+		SELECT id, user_id, workspace_id, state, progress, current_hypothesis, started_at, completed_at, error_message, metadata, created_at, updated_at
 		FROM research_sessions
 		WHERE user_id = $1 AND state NOT IN ('complete', 'error')
 		ORDER BY started_at DESC

@@ -1,21 +1,29 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"embed"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
+	"os"
+	"path/filepath"
 	"time"
 
 	"gohypo/adapters/excel"
 	"gohypo/adapters/llm"
+	"gohypo/adapters/postgres"
 	"gohypo/ai"
 	"gohypo/app"
+	"gohypo/domain/core"
+	domainDataset "gohypo/domain/dataset"
 	"gohypo/internal/analysis/brief"
 	"gohypo/internal/config"
 	"gohypo/internal/container"
+	"gohypo/internal/dataset"
 	"gohypo/internal/errors"
 	"gohypo/internal/migration"
 	"gohypo/internal/research"
@@ -29,6 +37,16 @@ import (
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
+
+// memoryFileReader wraps bytes.Reader to implement multipart.File interface
+type memoryFileReader struct {
+	*bytes.Reader
+}
+
+func (m *memoryFileReader) Close() error {
+	// No-op for in-memory content
+	return nil
+}
 
 //go:embed ui/templates/** ui/static/*
 var embeddedFiles embed.FS
@@ -131,6 +149,9 @@ func main() {
 		log.Fatalf("Failed to initialize container: %v", err)
 	}
 
+	// Create dataset repository (needed for research worker)
+	datasetRepo := postgres.NewDatasetRepository(db)
+
 	// Ensure default workspace exists
 	if err := appContainer.EnsureDefaultWorkspace(context.Background()); err != nil {
 		log.Fatalf("Failed to ensure default workspace exists: %v", err)
@@ -167,6 +188,16 @@ func main() {
 		MaxTokens:     appConfig.AI.MaxTokens,
 		Temperature:   appConfig.AI.Temperature,
 		PromptsDir:    appConfig.AI.PromptsDir,
+	}
+
+	// Auto-load CSV files from data directory if enabled
+	if appConfig.Data.AutoLoadCSVs {
+		if err := autoLoadCSVs(context.Background(), db, aiConfig, appContainer); err != nil {
+			log.Printf("Warning: Failed to auto-load CSV files: %v", err)
+			// Don't exit - continue with application startup
+		}
+	} else {
+		log.Println("ℹ️  Auto-loading CSV files is disabled (AUTO_LOAD_CSVS=false)")
 	}
 
 	// Create hypothesis analyzer if AI is available
@@ -206,11 +237,17 @@ func main() {
 		// Create LLM client for logical auditor (simplified - would use proper LLM adapter)
 		llmClient := createLLMClient(aiConfig)
 
-		// Create heuristic auditor for fallback
-		statisticalEngine := brief.NewStatisticalEngine()
-		heuristicAuditor := validation.NewHeuristicAuditor(statisticalEngine)
-
-		validationOrchestrator := validation.NewValidationOrchestrator(validationConfig, llmClient, heuristicAuditor, aiConfig.PromptsDir)
+		var validationOrchestrator *validation.ValidationOrchestrator
+		if llmClient != nil {
+			// Only create validation orchestrator if LLM client is available
+			statisticalEngine := brief.NewStatisticalEngine()
+			heuristicAuditor := validation.NewHeuristicAuditor(statisticalEngine)
+			validationOrchestrator = validation.NewValidationOrchestrator(validationConfig, llmClient, heuristicAuditor, aiConfig.PromptsDir)
+		} else {
+			// No LLM client available - skip validation orchestrator to prevent crashes
+			log.Println("⚠️  No LLM client available - skipping advanced validation orchestrator")
+			validationOrchestrator = nil
+		}
 
 		worker = research.NewResearchWorker(
 			appContainer.SessionManager,
@@ -227,6 +264,7 @@ func main() {
 			appContainer.DynamicSelector,
 			appContainer.HypothesisRepo,
 			validationOrchestrator,
+			datasetRepo, // Dataset repository for accessing uploaded files
 		)
 		worker.StartWorkerPool(2)
 		log.Println("Research worker pool initialized")
@@ -281,5 +319,142 @@ func createLLMClient(config *models.AIConfig) ports.LLMClient {
 
 	// For now, return nil - the validation orchestrator will handle this gracefully
 	// In a full implementation, this would create an OpenAI client or similar
+	return nil
+}
+
+// autoLoadCSVs automatically loads CSV files from the data directory into datasets
+func autoLoadCSVs(ctx context.Context, db *sqlx.DB, aiConfig *models.AIConfig, appContainer *container.Container) error {
+	log.Println("🔄 Starting automatic CSV loading from data/ directory...")
+
+	// Check if data directory exists
+	dataDir := "./data"
+	if _, err := os.Stat(dataDir); os.IsNotExist(err) {
+		log.Printf("⚠️  Data directory %s does not exist, skipping auto-load", dataDir)
+		return nil
+	}
+
+	// Get all CSV files in the data directory
+	files, err := filepath.Glob(filepath.Join(dataDir, "*.csv"))
+	if err != nil {
+		return fmt.Errorf("failed to list CSV files: %w", err)
+	}
+
+	if len(files) == 0 {
+		log.Println("ℹ️  No CSV files found in data directory")
+		return nil
+	}
+
+	log.Printf("📁 Found %d CSV file(s) to process", len(files))
+
+	// Get default user ID
+	userID := core.ID("550e8400-e29b-41d4-a716-446655440000")
+
+	// Ensure default workspace exists
+	workspaceRepo := appContainer.WorkspaceRepo
+	if workspaceRepo == nil {
+		return fmt.Errorf("workspace repository not available")
+	}
+
+	defaultWorkspace, err := workspaceRepo.GetDefaultForUser(ctx, userID)
+	if err != nil {
+		// Create default workspace if it doesn't exist
+		newWorkspace := domainDataset.NewDefaultWorkspace(userID)
+		newWorkspace.ID = core.NewID()
+
+		if err := workspaceRepo.Create(ctx, newWorkspace); err != nil {
+			return fmt.Errorf("failed to create default workspace: %w", err)
+		}
+		defaultWorkspace = newWorkspace
+		log.Printf("✅ Created default workspace: %s", defaultWorkspace.ID)
+	}
+
+	// Create dataset processor (similar to how it's done in UI server)
+	storageConfig := dataset.DefaultStorageConfig()
+
+	// Create file storage
+	fileStorage := dataset.NewLocalFileStorage(storageConfig)
+
+	// Create forensic scout for data analysis
+	forensicScout := ai.NewForensicScout(aiConfig)
+
+	// Create dataset repository
+	datasetRepo := postgres.NewDatasetRepository(db)
+
+	// Create dataset processor
+	datasetProcessor := dataset.NewProcessorWithConfig(
+		forensicScout,
+		datasetRepo,
+		workspaceRepo,
+		fileStorage,
+		nil, // No SSE hub needed for auto-loading
+		db,
+		storageConfig,
+	)
+
+	// Process each CSV file
+	for _, filePath := range files {
+		filename := filepath.Base(filePath)
+
+		// Skip if already processed (check by filename in database)
+		// For now, we'll process all files - in production you'd want to check for duplicates
+
+		log.Printf("📊 Processing CSV file: %s", filename)
+
+		// Open the file
+		file, err := os.Open(filePath)
+		if err != nil {
+			log.Printf("❌ Failed to open file %s: %v", filename, err)
+			continue
+		}
+
+		// Get file info for size validation
+		fileInfo, err := file.Stat()
+		if err != nil {
+			log.Printf("❌ Failed to get file info for %s: %v", filename, err)
+			file.Close()
+			continue
+		}
+
+		// Validate file size (50MB limit)
+		const maxFileSize = 50 * 1024 * 1024 // 50MB
+		if fileInfo.Size() > maxFileSize {
+			log.Printf("❌ File %s too large: %.1f MB (limit: 50MB)", filename, float64(fileInfo.Size())/(1024*1024))
+			file.Close()
+			continue
+		}
+
+		// Read entire file into memory for processing (since we can't keep file handles open)
+		fileContent, err := io.ReadAll(file)
+		file.Close() // Close immediately after reading
+		if err != nil {
+			log.Printf("❌ Failed to read file content for %s: %v", filename, err)
+			continue
+		}
+
+		// Create a reader from the content that implements multipart.File
+		contentReader := &memoryFileReader{bytes.NewReader(fileContent)}
+
+		// Create upload object with in-memory content
+		upload := &domainDataset.DatasetUpload{
+			UserID:      userID,
+			WorkspaceID: defaultWorkspace.ID,
+			Filename:    filename,
+			File:        contentReader, // This implements multipart.File interface
+			MimeType:    "text/csv",
+		}
+
+		// Process the dataset
+		log.Printf("🔄 Starting dataset processing for: %s", filename)
+		datasetID, err := datasetProcessor.ProcessUpload(ctx, upload)
+
+		if err != nil {
+			log.Printf("❌ Failed to process dataset %s: %v", filename, err)
+			continue
+		}
+
+		log.Printf("✅ Successfully initiated processing for dataset: %s (ID: %s)", filename, datasetID)
+	}
+
+	log.Printf("🎉 Auto-loading complete! Processed %d CSV file(s)", len(files))
 	return nil
 }

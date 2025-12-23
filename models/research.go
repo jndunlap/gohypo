@@ -77,9 +77,21 @@ func NewResearchSession(id uuid.UUID, userID uuid.UUID, metadata map[string]inte
 	if jsonbMetadata == nil {
 		jsonbMetadata = make(JSONBMap)
 	}
+
+	// Extract workspace ID from metadata if present
+	var workspaceID uuid.UUID
+	if wsID, ok := metadata["workspace_id"]; ok {
+		if wsIDStr, ok := wsID.(string); ok {
+			if parsedID, err := uuid.Parse(wsIDStr); err == nil {
+				workspaceID = parsedID
+			}
+		}
+	}
+
 	return &ResearchSession{
 		ID:                  id,
 		UserID:              userID,
+		WorkspaceID:         workspaceID,
 		State:               SessionStateIdle,
 		Progress:            0.0,
 		CurrentHypothesis:   "",

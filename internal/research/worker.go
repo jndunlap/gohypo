@@ -47,10 +47,13 @@ type ResearchWorker struct {
 
 	// Industrial-grade validation components
 	validationOrchestrator *validation.ValidationOrchestrator // Advanced validation orchestrator
+
+	// Dataset repository for accessing uploaded datasets
+	datasetRepo ports.DatasetRepository // Dataset repository for uploaded files
 }
 
 // NewResearchWorker creates a new research worker
-func NewResearchWorker(sessionMgr *SessionManager, storage *ResearchStorage, promptRepo interface{}, greenfieldSvc interface{}, llmConfig *models.AIConfig, statsSweepSvc statsSweepRunner, kitAny interface{}, sseHub interface{}, uiBroadcaster *ResearchUIBroadcaster, hypothesisAnalyzer *ai.HypothesisAnalysisAgent, validationEngine interface{}, dynamicSelector interface{}, hypothesisRepo ports.HypothesisRepository, validationOrchestrator *validation.ValidationOrchestrator) *ResearchWorker {
+func NewResearchWorker(sessionMgr *SessionManager, storage *ResearchStorage, promptRepo interface{}, greenfieldSvc interface{}, llmConfig *models.AIConfig, statsSweepSvc statsSweepRunner, kitAny interface{}, sseHub interface{}, uiBroadcaster *ResearchUIBroadcaster, hypothesisAnalyzer *ai.HypothesisAnalysisAgent, validationEngine interface{}, dynamicSelector interface{}, hypothesisRepo ports.HypothesisRepository, validationOrchestrator *validation.ValidationOrchestrator, datasetRepo ports.DatasetRepository) *ResearchWorker {
 	// Extract the port from the greenfield service
 	var greenfieldPort ports.GreenfieldResearchPort
 	if gs, ok := greenfieldSvc.(*app.GreenfieldService); ok {
@@ -91,6 +94,7 @@ func NewResearchWorker(sessionMgr *SessionManager, storage *ResearchStorage, pro
 		dynamicSelector:       dynamicSelector,
 		hypothesisSummarizer:  hypothesisSummarizer,
 		validationOrchestrator: validationOrchestrator,
+		datasetRepo:           datasetRepo,
 	}
 }
 
@@ -137,25 +141,36 @@ func (rw *ResearchWorker) ProcessResearch(ctx context.Context, sessionID string,
 		return
 	}
 
-	// Handle statistical artifacts - skip stats sweep for UI-uploaded datasets
+	// Handle statistical artifacts - attempt stats sweep when no pre-computed artifacts available
 	if len(statsArtifacts) == 0 {
 		log.Printf("[ResearchWorker] 📊 Phase 2/4: Statistical Analysis - No pre-computed artifacts available for session %s", sessionID)
-		log.Printf("[ResearchWorker] ℹ️ Note: UI-uploaded datasets don't generate statistical artifacts automatically")
-		log.Printf("[ResearchWorker] 🔄 Proceeding with field metadata only (hypotheses will be based on field names and types)")
-		statsArtifacts = []map[string]interface{}{} // Empty artifacts - LLM will work with field metadata only
+		log.Printf("[ResearchWorker] 🔄 Attempting stats sweep to generate statistical artifacts...")
+
+		// Attempt to run stats sweep to generate artifacts
+		newArtifacts, err := rw.RunStatsSweep(ctx, sessionID, fieldMetadata)
+		if err != nil {
+			log.Printf("[ResearchWorker] ⚠️ Stats sweep failed, proceeding with field metadata only: %v", err)
+			statsArtifacts = []map[string]interface{}{} // Empty artifacts - LLM will work with field metadata only
+		} else {
+			statsArtifacts = newArtifacts
+			log.Printf("[ResearchWorker] ✅ Stats sweep completed, generated %d artifacts", len(statsArtifacts))
+		}
 	} else {
 		log.Printf("[ResearchWorker] 📊 Phase 2/4: Statistical Analysis - Using %d existing artifacts for session %s", len(statsArtifacts), sessionID)
-		log.Printf("[ResearchWorker] ⏭️ Skipping stats sweep (artifacts already available)")
+		log.Printf("[ResearchWorker] 🔄 Running additional stats sweep to augment existing artifacts...")
+		// Run stats sweep to get additional artifacts
+		newArtifacts, err := rw.RunStatsSweep(ctx, sessionID, fieldMetadata)
+		if err != nil {
+			log.Printf("[ResearchWorker] ⚠️ Additional stats sweep failed, continuing with existing artifacts: %v", err)
+		} else {
+			statsArtifacts = append(statsArtifacts, newArtifacts...)
+			log.Printf("[ResearchWorker] ✅ Additional stats sweep completed, total artifacts: %d", len(statsArtifacts))
+		}
 	}
-
-	// Build basic discovery briefs for LLM context (will be enhanced with sense results later)
-	log.Printf("[ResearchWorker] 🏗️ Building discovery briefs for session %s", sessionID)
-	discoveryBriefs := rw.buildDiscoveryBriefs(sessionID, statsArtifacts)
-	log.Printf("[ResearchWorker] ✅ Built %d discovery briefs for session %s", len(discoveryBriefs), sessionID)
 
 	// Convert metadata and stats artifacts to JSON for LLM processing
 	log.Printf("[ResearchWorker] 📝 Preparing field metadata JSON for session %s", sessionID)
-	fieldJSON, err := rw.prepareFieldMetadata(fieldMetadata, statsArtifacts, discoveryBriefs)
+	fieldJSON, err := rw.prepareFieldMetadata(fieldMetadata, statsArtifacts, nil)
 	if err != nil {
 		log.Printf("[ResearchWorker] ❌ CRITICAL: Failed to prepare field metadata for session %s: %v", sessionID, err)
 		rw.sessionMgr.SetSessionError(ctx, sessionID, fmt.Sprintf("Failed to prepare metadata: %v", err))
@@ -185,63 +200,39 @@ func (rw *ResearchWorker) ProcessResearch(ctx context.Context, sessionID string,
 	} else {
 		log.Printf("[ResearchWorker] ✅ LLM hypothesis generation completed in %.2fs", phaseDuration.Seconds())
 		log.Printf("[ResearchWorker] Generated %d hypotheses for validation", len(hypotheses.ResearchDirectives))
-	}
 
-	// NEW: Phase 3.5 - AI Hypothesis Analysis
-	if rw.hypothesisAnalyzer != nil {
-		log.Printf("[ResearchWorker] 🧠 Phase 3.5/4: AI Hypothesis Analysis - Analyzing %d hypotheses for risk profiles", len(hypotheses.ResearchDirectives))
-
-		analysisStart := time.Now()
-		riskProfiles := make(map[string]interface{}) // Store risk profiles by hypothesis ID
-
-		for _, directive := range hypotheses.ResearchDirectives {
-			// Create data topology snapshot from available metadata
-			dataSnapshot := ai.DataTopologySnapshot{
-				SampleSize:         1000,       // TODO: Get actual sample size from fieldMetadata
-				SparsityRatio:      0.05,       // TODO: Calculate from actual data
-				CardinalityCause:   50,         // TODO: Get from fieldMetadata
-				CardinalityEffect:  50,         // TODO: Get from fieldMetadata
-				SkewnessCause:      0.0,        // TODO: Calculate from actual data
-				SkewnessEffect:     0.0,        // TODO: Calculate from actual data
-				TemporalCoverage:   1.0,        // TODO: Calculate from actual data
-				ConfoundingSignals: []string{}, // TODO: Analyze from fieldMetadata
-				AvailableFields:    make([]string, len(fieldMetadata)),
-			}
-
-			for i, field := range fieldMetadata {
-				dataSnapshot.AvailableFields[i] = field.Name
-			}
-
-			// Analyze hypothesis risk
-			riskProfile, err := rw.hypothesisAnalyzer.AnalyzeHypothesis(ctx, directive, dataSnapshot)
-			if err != nil {
-				log.Printf("[ResearchWorker] ⚠️ Failed to analyze hypothesis %s: %v", directive.ID, err)
-				continue
-			}
-
-			riskProfiles[directive.ID] = riskProfile
-
-			// Broadcast risk assessment to UI
-			if rw.uiBroadcaster != nil {
-				if err := rw.uiBroadcaster.BroadcastHypothesisRiskAssessed(sessionID, directive.ID, riskProfile); err != nil {
-					log.Printf("[ResearchWorker] ⚠️ Failed to broadcast risk assessment for hypothesis %s: %v", directive.ID, err)
+		// Emit hypothesis generation events for chat interface
+		if sseHub, ok := rw.sseHub.(*api.SSEHub); ok {
+			for i, directive := range hypotheses.ResearchDirectives {
+				hypothesisData := map[string]interface{}{
+					"id":                   directive.ID,
+					"phenomenon_name":      directive.PhenomenonName,
+					"business_hypothesis":  directive.BusinessHypothesis,
+					"science_hypothesis":   directive.ScienceHypothesis,
+					"null_case":           directive.NullCase,
+					"cause_key":           directive.CauseKey,
+					"effect_key":          directive.EffectKey,
+					"opportunity_topology": directive.OpportunityTopology,
+					"explanation_markdown": directive.ExplanationMarkdown,
+					"sequence":            i + 1,
+					"total":              len(hypotheses.ResearchDirectives),
 				}
+
+				sseHub.Broadcast(api.ResearchEvent{
+					SessionID: sessionID,
+					EventType: "hypothesis_generated",
+					Progress:  float64(i+1) / float64(len(hypotheses.ResearchDirectives)) * 30.0 + 20.0, // 20-50% range for hypothesis generation
+					Data:      hypothesisData,
+					Timestamp: time.Now(),
+				})
+
+				// Small delay between hypothesis events for better UX
+				time.Sleep(200 * time.Millisecond)
 			}
-
-			log.Printf("[ResearchWorker] 📊 Hypothesis %s analyzed: Risk=%d, Tests=%d-%d, Feasibility=%.1f%%",
-				directive.ID, int(riskProfile.RiskLevel), riskProfile.RequiredTestCount.Min,
-				riskProfile.RequiredTestCount.Max, riskProfile.FeasibilityScore*100)
 		}
-
-		analysisDuration := time.Since(analysisStart)
-		log.Printf("[ResearchWorker] ✅ AI hypothesis analysis completed in %.2fs for %d hypotheses",
-			analysisDuration.Seconds(), len(riskProfiles))
-
-		// Store risk profiles for use in validation phase
-		// TODO: Pass riskProfiles to validation phase
-	} else {
-		log.Printf("[ResearchWorker] ⚠️ Hypothesis analyzer not available, skipping AI risk assessment")
 	}
+
+	// Skip to validation phase - no intermediate analysis needed
 
 	// Emit Layer 2 start event
 	if sseHub, ok := rw.sseHub.(*api.SSEHub); ok {

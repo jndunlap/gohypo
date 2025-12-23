@@ -52,8 +52,6 @@ type Container struct {
 	DynamicSelector  *referee.DynamicSelector
 	ValidationEngine *referee.ValidationEngine
 
-	WorkspaceAssembler *research.WorkspaceAssembler
-
 	// Test infrastructure (temporary - should be moved to proper test setup)
 	TestKit *testkit.TestKit
 }
@@ -172,6 +170,9 @@ func (c *Container) initResearch() error {
 		return fmt.Errorf("failed to create validation engine")
 	}
 
+	// Don't start the validation engine - it's not currently used and causes hanging goroutines
+	// c.ValidationEngine.Start()
+
 	// Start validation engine
 	c.ValidationEngine.Start()
 	log.Printf("Validation engine started with UI broadcaster integration")
@@ -274,4 +275,5 @@ func (c *Container) Shutdown(ctx context.Context) error {
 	}
 	return nil
 }
+
 

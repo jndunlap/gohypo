@@ -130,7 +130,8 @@ func (rw *ResearchWorker) executeEValueValidationWithEvidence(ctx context.Contex
 	jobs := make(chan refereeJob, refereeCount)
 
 	// Launch goroutines for each referee
-	for i, refereeName := range directive.RefereeGates.SelectedReferees {
+	for i, refereeSelection := range directive.RefereeGates.SelectedReferees {
+		refereeName := refereeSelection.Name
 		go func(index int, name string) {
 			jobStart := time.Now()
 			refereeInstance, err := refereePkg.GetRefereeFactory(name)

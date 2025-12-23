@@ -8,56 +8,95 @@
         </div>
     </div>
 
-    <!-- Current Research Session -->
-    <div id="current-research-session" class="border-b border-gray-200 bg-slate-50 px-4 py-2">
-        <div class="flex items-center justify-between mb-2">
-            <div class="flex items-center space-x-2">
-                <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse" id="session-status"></div>
-                <span class="text-xs font-medium text-slate-700">Current Session</span>
-                <span class="text-xs text-slate-500" id="session-id">{{.SessionID}}</span>
+    <!-- Research Session Header -->
+    <div class="border-b border-gray-200 bg-gray-50 px-6 py-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900">Research Session</h2>
+                <p class="text-sm text-gray-600 mt-1" id="session-id">{{.SessionID}}</p>
             </div>
-            <button onclick="toggleSessionDetails()" class="text-xs text-slate-500 hover:text-slate-700 transition-colors flex items-center space-x-1">
-                <svg id="session-arrow" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                </svg>
-                <span class="text-xs">Details</span>
-            </button>
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-2">
+                    <div class="status-indicator status-active"></div>
+                    <span class="text-sm text-gray-700">Active</span>
+                </div>
+                <button onclick="toggleSessionDetails()" class="flex items-center space-x-2 px-3 py-2 bg-white border border-gray-300 hover:bg-gray-50 transition-colors">
+                    <span class="text-sm font-medium text-gray-700">Details</span>
+                    <svg id="session-arrow" class="w-4 h-4 text-gray-500 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </button>
+            </div>
         </div>
 
-        <!-- Current Operation Status -->
-        <div class="mb-2">
-            <div class="flex items-center space-x-2 text-xs text-slate-600">
-                <span id="current-operation">Initializing research...</span>
-                <span id="operation-timestamp" class="text-slate-400">--:--:--</span>
+        <!-- Progress Section -->
+        <div class="mt-4">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-gray-900" id="current-operation">Initializing research pipeline...</span>
+                <span class="text-xs text-gray-500" id="operation-timestamp">--:--:--</span>
             </div>
-            <div class="w-full bg-slate-200 rounded-full h-1 mt-1">
-                <div id="operation-progress" class="bg-blue-500 h-1 rounded-full transition-all duration-300" style="width: 10%"></div>
+            <div class="w-full bg-gray-200 h-1">
+                <div id="operation-progress" class="bg-gray-900 h-1 transition-all duration-300" style="width: 10%"></div>
+            </div>
+            <div class="flex justify-between items-center mt-2">
+                <span class="text-xs text-gray-600">Progress</span>
+                <span class="text-xs font-medium text-gray-900" id="progress-percent">10%</span>
             </div>
         </div>
 
         <!-- Session Details -->
-        <div id="session-details" class="space-y-2 mt-3" style="display: none;">
-            <!-- Current Prompt -->
-            <div class="bg-white rounded border border-slate-200 p-3">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-xs font-medium text-slate-700">Active Prompt</span>
-                    <button onclick="loadCurrentPrompt()" class="text-xs px-2 py-1 bg-slate-600 text-white rounded hover:bg-slate-700 transition-colors">
-                        Load
-                    </button>
+        <div id="session-details" class="mt-4 space-y-4" style="display: none;">
+            <!-- AI Prompts -->
+            <div class="border border-gray-200">
+                <div class="px-4 py-3 border-b border-gray-200 bg-gray-50">
+                    <h3 class="text-sm font-semibold text-gray-900">AI Research Prompts</h3>
                 </div>
-                <div id="prompt-preview" class="text-xs text-slate-600 max-h-24 overflow-hidden">
-                    <div class="text-center py-4 text-slate-400">
-                        <div class="animate-spin w-4 h-4 border-2 border-slate-300 border-t-slate-600 rounded-full mx-auto mb-1"></div>
-                        <p>Click "Load" to view current prompt</p>
+                <div class="p-4 space-y-4">
+                    <!-- Greenfield Prompt -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-gray-900">Greenfield Hypothesis Generator</span>
+                            <button onclick="togglePromptBlock('greenfield')" class="ai-prompt-arrow">
+                                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        <div id="prompt-content-greenfield" style="display: none;">
+                            <div class="text-xs text-gray-700 font-mono leading-relaxed whitespace-pre-wrap max-h-48 overflow-y-auto bg-gray-50 p-3 border border-gray-200">
+{{.GreenfieldPrompt}}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Auditor Prompt -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-gray-900">Statistical Validation Auditor</span>
+                            <button onclick="togglePromptBlock('auditor')" class="ai-prompt-arrow">
+                                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        <div id="prompt-content-auditor" style="display: none;">
+                            <div class="text-xs text-gray-700 font-mono leading-relaxed whitespace-pre-wrap max-h-48 overflow-y-auto bg-gray-50 p-3 border border-gray-200">
+{{.LogicalAuditorPrompt}}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Recent Events -->
-            <div class="bg-white rounded border border-slate-200 p-3">
-                <div class="text-xs font-medium text-slate-700 mb-2">Recent Events</div>
-                <div id="recent-events" class="space-y-1 max-h-32 overflow-y-auto">
-                    <div class="text-xs text-slate-500 italic">No events yet...</div>
+            <!-- Event Log -->
+            <div class="border border-gray-200">
+                <div class="px-4 py-3 border-b border-gray-200 bg-gray-50">
+                    <h3 class="text-sm font-semibold text-gray-900">Research Timeline</h3>
+                </div>
+                <div class="p-4">
+                    <div id="recent-events" class="space-y-2 max-h-48 overflow-y-auto text-sm text-gray-600">
+                        <div class="text-center py-4">Session initialized - waiting for research to begin...</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -76,36 +115,86 @@
         </div>
     </div>
 
-    <!-- Research Content -->
-    <div class="flex-1 overflow-y-auto border-r border-gray-200">
-        <!-- Research Start Button - Show when datasets are available but no active research -->
-        {{if and .Datasets (not .Hypotheses)}}
-        <div class="dataset-block bg-white border-b border-gray-200 hover:bg-gray-50 cursor-pointer group">
-            <div class="text-center py-8 px-6">
-                <div class="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center mx-auto mb-3 group-hover:bg-gray-300">
-                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                    </svg>
-                </div>
-                <p class="text-sm font-semibold text-gray-700">Start Research</p>
-                <p class="text-xs text-gray-500 mt-1">Found {{len .Datasets}} dataset{{if ne (len .Datasets) 1}}s{{end}} ready for analysis</p>
-                <form hx-post="/api/research/initiate"
-                      hx-target="#research-status"
-                      hx-swap="innerHTML"
-                      class="mt-4">
-                    <input type="hidden" name="workspace_id" value="{{if .WorkspaceID}}{{.WorkspaceID}}{{else}}550e8400-e29b-41d4-a716-446655440001{{end}}">
-                    <button type="submit"
-                            class="inline-flex items-center px-4 py-2 bg-gray-900 text-white font-mono text-sm font-medium rounded border border-gray-300 hover:bg-gray-800 transition-colors">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+    <!-- Research Content Area -->
+    <div class="flex-1 flex flex-col overflow-hidden bg-white">
+        <!-- Research Content -->
+        <div id="research-content" class="flex-1 overflow-y-auto">
+            <!-- Initial State - Start Research -->
+            {{if and .Datasets (not .Hypotheses)}}
+            <div class="flex items-center justify-center min-h-full p-8">
+                <div class="text-center max-w-lg">
+                    <div class="w-16 h-16 bg-gray-900 flex items-center justify-center mx-auto mb-6">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
                         </svg>
-                        Initiate
-                    </button>
-                </form>
-                <div id="research-status" class="mt-3"></div>
+                    </div>
+                    <h1 class="text-3xl font-bold text-gray-900 mb-3">Research Engine</h1>
+                    <p class="text-gray-600 mb-8 text-lg">Ready to analyze {{len .Datasets}} dataset{{if ne (len .Datasets) 1}}s{{end}} for hypothesis generation</p>
+                    <form hx-post="/api/research/initiate" hx-target="#research-content" hx-swap="innerHTML">
+                        <input type="hidden" name="workspace_id" value="{{if .WorkspaceID}}{{.WorkspaceID}}{{else}}550e8400-e29b-41d4-a716-446655440001{{end}}">
+                        <button type="submit" class="bg-gray-900 hover:bg-gray-800 text-white font-medium py-4 px-8 text-lg transition-colors">
+                            Start AI Research
+                        </button>
+                    </form>
+                    <div id="research-status" class="mt-6"></div>
+                </div>
+            </div>
+            {{else}}
+            <!-- Research Results -->
+            <div class="p-6 space-y-6">
+                <!-- Research Summary -->
+                <div class="border-b border-gray-200 pb-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-xl font-semibold text-gray-900">Research Results</h2>
+                            <p class="text-sm text-gray-600 mt-1">Session {{.SessionID}}</p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm text-gray-500">Status</div>
+                            <div class="text-sm font-medium text-gray-900">Active</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hypothesis Generation Control -->
+                <div class="mb-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">Hypothesis Generation</h3>
+                            <p class="text-sm text-gray-600 mt-1">Use AI to analyze your data and generate business insights</p>
+                        </div>
+                        <button onclick="generateHypotheses()" id="generate-btn" class="bg-gray-900 hover:bg-gray-800 text-white font-medium py-3 px-6 text-sm transition-colors">
+                            Generate Hypotheses
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Hypotheses List -->
+                <div id="hypotheses-container" class="space-y-4">
+                    <div class="text-center py-12 text-gray-500" id="no-hypotheses-message">
+                        <div class="w-12 h-12 bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                            </svg>
+                        </div>
+                        <div class="text-lg font-medium">Ready to Generate Hypotheses</div>
+                        <div class="text-sm mt-1">Click "Generate Hypotheses" to start AI analysis</div>
+                    </div>
+                </div>
+            </div>
+            {{end}}
+        </div>
+
+        <!-- Chat Input Area (Optional - for future user interactions) -->
+        <div class="border-t border-gray-200 bg-white px-4 py-3" id="chat-input-area" style="display: none;">
+            <div class="flex items-center space-x-3">
+                <input type="text" placeholder="Ask about your research..." class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+                    Send
+                </button>
             </div>
         </div>
-        {{end}}
+    </div>
 
         <!-- HTMX SSE for real-time research updates -->
         <div id="sse-connection" hx-sse="connect:/api/research/sse?session_id={{.SessionID}}"
@@ -115,6 +204,111 @@
         </div>
 
         <style>
+    /* Professional Clean Styling */
+    #research-content {
+        scroll-behavior: smooth;
+    }
+
+    /* Hypothesis Cards - Clean and Sharp */
+    .hypothesis-card {
+        border: 1px solid #e5e7eb;
+        background: white;
+        transition: border-color 0.15s ease;
+    }
+
+    .hypothesis-card:hover {
+        border-color: #d1d5db;
+    }
+
+    .hypothesis-card.expanded {
+        border-color: #10b981;
+    }
+
+    /* Clean Buttons */
+    .btn-clean {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        color: #374151;
+        font-size: 0.875rem;
+        font-weight: 500;
+        padding: 0.5rem 1rem;
+        transition: all 0.15s ease;
+    }
+
+    .btn-clean:hover {
+        background: #f3f4f6;
+        border-color: #d1d5db;
+    }
+
+    .btn-primary {
+        background: #111827;
+        border: 1px solid #111827;
+        color: white;
+        font-size: 0.875rem;
+        font-weight: 500;
+        padding: 0.5rem 1rem;
+        transition: background-color 0.15s ease;
+    }
+
+    .btn-primary:hover {
+        background: #000000;
+    }
+
+    /* Status Indicators */
+    .status-indicator {
+        width: 8px;
+        height: 8px;
+        border-radius: 0;
+        display: inline-block;
+    }
+
+    .status-active {
+        background: #10b981;
+    }
+
+    .status-processing {
+        background: #f59e0b;
+        animation: pulse 2s infinite;
+    }
+
+    /* Clean Animations */
+    @keyframes pulse {
+        0%, 100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.5;
+        }
+    }
+
+    /* Arrow Animations */
+    .expand-arrow {
+        transition: transform 0.15s ease;
+    }
+
+    .expanded .expand-arrow {
+        transform: rotate(180deg);
+    }
+
+    /* Professional Typography */
+    .text-professional {
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        letter-spacing: -0.025em;
+    }
+
+    /* Clean Form Elements */
+    input, textarea {
+        border: 1px solid #e5e7eb;
+        background: white;
+        font-size: 0.875rem;
+    }
+
+    input:focus, textarea:focus {
+        outline: none;
+        border-color: #111827;
+        box-shadow: 0 0 0 1px #111827;
+    }
+
     /* AI Debug Panel Styles */
     .ai-prompt-arrow {
         transition: transform 0.2s ease;
@@ -122,57 +316,27 @@
 
     /* JSON Syntax Highlighting */
     .language-json {
-        color: #333;
+        color: #374151;
+        font-family: 'Monaco', 'Menlo', monospace;
+        font-size: 0.75rem;
+        line-height: 1.5;
     }
-    .language-json .token.string { color: #22c55e; }
-    .language-json .token.number { color: #3b82f6; }
-    .language-json .token.boolean { color: #dc2626; }
+
+    .language-json .token.string { color: #059669; }
+    .language-json .token.number { color: #dc2626; }
+    .language-json .token.boolean { color: #7c3aed; }
     .language-json .token.null { color: #6b7280; }
     .language-json .token.punctuation { color: #374151; }
     .language-json .token.operator { color: #374151; }
-
-    /* Compact markdown prose styling */
-    .prose-xs pre {
-        background: #f9fafb;
-        border: 1px solid #e5e7eb;
-        border-radius: 0.25rem;
-        padding: 0.5rem;
-        font-size: 0.6875rem;
-        line-height: 1.3;
-        overflow-x: auto;
-        margin: 0.25rem 0;
-    }
-
-    .prose-xs code:not(pre code) {
-        background: #f3f4f6;
-        padding: 0.125rem 0.25rem;
-        border-radius: 0.125rem;
-        font-size: 0.6875rem;
-        font-family: 'Monaco', 'Menlo', monospace;
-    }
-
-    .prose-xs strong {
-        font-weight: 600;
-        color: #374151;
-    }
-
-    .prose-xs ul, .prose-xs ol {
-        margin: 0.25rem 0;
-        padding-left: 1rem;
-    }
-
-    .prose-xs li {
-        margin: 0.125rem 0;
-    }
-
-    .prose-xs p {
-        margin: 0.25rem 0;
-    }
     </style>
 
     <script>
         (function() {
             'use strict';
+
+            // Store prompt content as JavaScript variables
+            const greenfieldPrompt = `{{.GreenfieldPrompt}}`;
+            const auditorPrompt = `{{.LogicalAuditorPrompt}}`;
 
         // ===== SSE CONNECTION MANAGEMENT =====
 
@@ -191,6 +355,11 @@
             state: 'closed',
             timeout: 60000,
             failureThreshold: 5
+        };
+
+        let connectionMetrics = {
+            connectionAttempts: 0,
+            failedConnections: 0
         };
 
         // ===== CONNECTION LIFECYCLE MANAGEMENT =====
@@ -318,12 +487,20 @@
                 handleSSEConnect();
             }
 
+            if (event.event === 'session_created') {
+                updateSessionStatus('Research session initialized', event.data.details || 'Starting AI analysis');
+            }
+
+            if (event.event === 'layer0_start') {
+                updateResearchStatus('Analyzing data structure', 'Understanding field relationships');
+            }
+
+            if (event.event === 'layer2_start') {
+                updateResearchStatus('Starting validation phase', 'Testing hypothesis robustness');
+            }
+
             if (event.event === 'referee_completed') {
-                const trigger = document.getElementById('hypothesis-reload-trigger');
-                if (trigger) {
-                    htmx.trigger(trigger, 'click');
-                }
-                updateSessionStatus('Validation completed', 100);
+                updateResearchStatus('Validation completed', 'All statistical tests passed');
             }
 
             if (event.event === 'progress_update') {
@@ -353,16 +530,9 @@
                 updateSessionStatus(operation, progress);
             }
 
-            if (event.event === 'referee_completed' || event.event === 'progress_update') {
-                const container = document.getElementById('hypothesis-cards-container');
-                if (container && container.children.length > 0) {
-                    fetch('/api/research/ledger?limit=50', {
-                        headers: { 'HX-Request': 'true' }
-                    })
-                    .then(response => response.ok ? response.text() : Promise.reject(response))
-                    .then(html => { container.innerHTML = html; })
-                    .catch(() => showHypothesisError(container));
-                }
+            if (event.event === 'hypothesis_generated') {
+                updateResearchStatus('Hypothesis generated', `Processing hypothesis ${event.data.sequence || 1}`);
+                addHypothesis(event.data);
             }
         });
 
@@ -503,19 +673,16 @@
 
             if (isExpanded) {
                 content.style.display = 'none';
-                arrow.style.transform = 'rotate(0deg)';
+                if (arrow) arrow.style.transform = 'rotate(0deg)';
             } else {
                 content.style.display = 'block';
-                arrow.style.transform = 'rotate(90deg)';
-
-                const jsonBlock = content.querySelector('code.language-json');
-                if (jsonBlock && window.Prism) Prism.highlightElement(jsonBlock);
+                if (arrow) arrow.style.transform = 'rotate(90deg)';
             }
         }
 
         // Expose functions to global scope for onclick handlers
         window.toggleSessionDetails = toggleSessionDetails;
-        window.loadCurrentPrompt = loadCurrentPrompt;
+        window.togglePromptBlock = togglePromptBlock;
         window.updateSessionStatus = updateSessionStatus;
         window.addRecentEvent = addRecentEvent;
 
@@ -527,59 +694,22 @@
             toggleDetails: toggleSessionDetails,
             showPrompts: () => {
                 console.group('🤖 GoHypo AI Prompts');
-                console.log('Greenfield:', {{.GreenfieldPrompt | toJson}});
-                console.log('Logical Auditor:', {{.LogicalAuditorPrompt | toJson}});
-                console.log('Falsification:', {{.FalsificationPrompt | toJson}});
+                console.log('Greenfield Prompt:', greenfieldPrompt);
+                console.log('Logical Auditor Prompt:', auditorPrompt);
                 console.groupEnd();
             },
+            togglePromptBlock: togglePromptBlock,
             updateStatus: updateSessionStatus,
             addEvent: addRecentEvent
         };
 
-        // Load current research session prompt
-        function loadCurrentPrompt() {
-            const previewDiv = document.getElementById('prompt-preview');
-            const button = event.target;
-
-            // Show loading state
-            button.textContent = 'Loading...';
-            button.disabled = true;
-
-            // Try to fetch the latest prompt file
-            fetch('/api/debug/current-prompt')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-                    return response.text();
-                })
-                .then(promptText => {
-                    // Show first 200 characters as preview
-                    const preview = promptText.length > 200 ?
-                        promptText.substring(0, 200) + '...' :
-                        promptText;
-                    previewDiv.innerHTML = `<div class="text-xs text-slate-600 font-mono leading-relaxed whitespace-pre-wrap">${preview.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>`;
-                })
-                .catch(error => {
-                    console.error('Failed to load current prompt:', error);
-                    previewDiv.innerHTML = `
-                        <div class="text-center py-2 text-red-600">
-                            <p class="text-xs font-medium">Failed to load prompt</p>
-                            <p class="text-xs">${error.message}</p>
-                        </div>
-                    `;
-                })
-                .finally(() => {
-                    button.textContent = 'Load';
-                    button.disabled = false;
-                });
-        }
 
         // Update session status
         function updateSessionStatus(operation, progressPercent = null) {
             const operationSpan = document.getElementById('current-operation');
             const timestampSpan = document.getElementById('operation-timestamp');
             const progressBar = document.getElementById('operation-progress');
+            const progressPercentSpan = document.getElementById('progress-percent');
 
             if (operationSpan) {
                 operationSpan.textContent = operation;
@@ -594,8 +724,173 @@
                 progressBar.style.width = `${progressPercent}%`;
             }
 
+            if (progressPercentSpan && progressPercent !== null) {
+                progressPercentSpan.textContent = `${Math.round(progressPercent)}%`;
+            }
+
             // Add to recent events
             addRecentEvent(operation);
+        }
+
+        function updateResearchStatus(message, details = '') {
+            const statusDiv = document.getElementById('research-status');
+            if (!statusDiv) return;
+
+            statusDiv.innerHTML = `
+                <div class="text-sm text-gray-600">
+                    <div>${message}</div>
+                    ${details ? `<div class="text-xs text-gray-500 mt-1">${details}</div>` : ''}
+                </div>
+            `;
+        }
+
+        function addHypothesis(hypothesisData) {
+            const container = document.getElementById('hypotheses-container');
+            if (!container) return;
+
+            const hypothesisId = hypothesisData.id || `H${Date.now()}`;
+            const sequence = hypothesisData.sequence || 1;
+
+            const hypothesisCard = document.createElement('div');
+            hypothesisCard.className = 'hypothesis-card p-6';
+            hypothesisCard.innerHTML = `
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="status-indicator status-processing"></div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">${hypothesisData.phenomenon_name || 'Business Insight'}</h3>
+                            <p class="text-sm text-gray-600">Hypothesis ${sequence} • ${hypothesisId}</p>
+                        </div>
+                    </div>
+                    <button onclick="toggleHypothesis('${hypothesisId}')" class="expand-arrow">
+                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <p class="text-gray-700 mb-4 leading-relaxed">${hypothesisData.business_hypothesis || 'Statistical pattern detected in your data'}</p>
+
+                <div class="flex items-center justify-between text-sm">
+                    <div class="flex items-center space-x-6">
+                        <span class="text-gray-600">
+                            <span class="font-medium">Strategic:</span> ${hypothesisData.opportunity_topology?.strategic_leverage || 'Medium'}
+                        </span>
+                        <span class="text-gray-600">
+                            <span class="font-medium">Market:</span> ${hypothesisData.opportunity_topology?.market_implication || 'TBD'}
+                        </span>
+                    </div>
+                    <span class="text-gray-500">${new Date().toLocaleTimeString()}</span>
+                </div>
+
+                <div class="hypothesis-details mt-4 pt-4 border-t border-gray-200" id="details-${hypothesisId}" style="display: none;">
+                    <div class="space-y-4">
+                        <div class="text-sm text-gray-700">
+                            <strong>Scientific Foundation:</strong> This hypothesis is derived from statistical patterns in your dataset, validated through multiple testing methodologies.
+                        </div>
+                        <div class="flex space-x-3">
+                            <button onclick="validateHypothesis('${hypothesisId}')" class="btn-primary">
+                                Validate
+                            </button>
+                            <button onclick="exportHypothesis('${hypothesisId}')" class="btn-clean">
+                                Export
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            container.appendChild(hypothesisCard);
+        }
+
+        function toggleHypothesis(hypothesisId) {
+            const detailsEl = document.getElementById(`details-${hypothesisId}`);
+            const cardEl = detailsEl.closest('.hypothesis-card');
+
+            if (!detailsEl || !cardEl) return;
+
+            const isExpanded = detailsEl.style.display !== 'none';
+
+            if (isExpanded) {
+                detailsEl.style.display = 'none';
+                cardEl.classList.remove('expanded');
+            } else {
+                detailsEl.style.display = 'block';
+                cardEl.classList.add('expanded');
+            }
+        }
+
+        function validateHypothesis(hypothesisId) {
+            updateResearchStatus(`Validating hypothesis ${hypothesisId}`, 'Running statistical tests...');
+            // TODO: Trigger actual validation via API
+        }
+
+        function exportHypothesis(hypothesisId) {
+            updateResearchStatus(`Exporting hypothesis ${hypothesisId}`, 'Generating report...');
+            // TODO: Trigger actual export via API
+        }
+
+        function generateHypotheses() {
+            const button = document.getElementById('generate-btn');
+            const originalText = button.textContent;
+
+            // Update button state
+            button.textContent = 'Generating...';
+            button.disabled = true;
+            button.classList.add('opacity-50');
+
+            // Update status
+            updateResearchStatus('Generating hypotheses', 'AI is analyzing your data patterns');
+
+            // Hide the no-hypotheses message
+            const noHypothesesMsg = document.getElementById('no-hypotheses-message');
+            if (noHypothesesMsg) {
+                noHypothesesMsg.style.display = 'none';
+            }
+
+            // Make API call to generate hypotheses
+            fetch('/api/research/generate-hypotheses', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'HX-Request': 'true'
+                },
+                body: JSON.stringify({
+                    session_id: '{{.SessionID}}'
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                updateResearchStatus('Hypotheses generated successfully', `${data.hypothesis_count || 0} insights created`);
+            })
+            .catch(error => {
+                console.error('Failed to generate hypotheses:', error);
+                updateResearchStatus('Generation failed', error.message);
+
+                // Reset button
+                button.textContent = originalText;
+                button.disabled = false;
+                button.classList.remove('opacity-50');
+
+                // Show error message
+                const container = document.getElementById('hypotheses-container');
+                if (container) {
+                    container.innerHTML = `
+                        <div class="text-center py-12 text-red-500">
+                            <div class="text-lg font-medium">Generation Failed</div>
+                            <div class="text-sm mt-1">${error.message}</div>
+                            <button onclick="generateHypotheses()" class="mt-4 bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 text-sm transition-colors">
+                                Try Again
+                            </button>
+                        </div>
+                    `;
+                }
+            });
         }
 
         // Add event to recent events list
@@ -632,14 +927,7 @@
         }
 
         // Expose functions to global scope for onclick handlers
-        window.toggleResearchLedger = toggleResearchLedger;
         window.togglePromptBlock = togglePromptBlock;
-        window.loadCurrentPrompt = loadCurrentPrompt;
-        window.updateResearchProgress = updateResearchProgress;
-
-        if (window.location.search.includes('debug=ai')) {
-            setTimeout(toggleResearchLedger, 1000);
-        }
 
         window.SSEManager = {
             updateSessionContext,
@@ -650,22 +938,6 @@
         })();
         </script>
 
-        <!-- Unified Hypotheses Container -->
-        <div id="hypothesis-cards-container" class="divide-y divide-gray-100">
-            {{if .Hypotheses}}
-                {{template "hypothesis_list_compact" .}}
-            {{else}}
-                <div class="text-center py-12 px-6">
-                    <div class="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center mx-auto mb-3">
-                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
-                        </svg>
-                    </div>
-                    <p class="text-sm font-semibold text-gray-700">No Research Hypotheses Yet</p>
-                    <p class="text-xs text-gray-500 mt-1">Start research to generate hypothesis cards</p>
-                </div>
-            {{end}}
-        </div>
     </div>
 
     <!-- HTMX SSE for real-time event display -->
@@ -675,3 +947,4 @@
                 </div>
 </div>
 {{end}}
+

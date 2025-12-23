@@ -179,19 +179,13 @@ func (a *ExcelMatrixResolverAdapter) convertToCanonicalEvents(rawData *ExcelData
 				continue // Skip entity column
 			}
 
-			// Convert RawRowData to map[string]interface{} for RawPayload
-			rawPayload := make(map[string]interface{})
-			for k, v := range row {
-				rawPayload[k] = v
-			}
-
 			event := ingestion.CanonicalEvent{
 				EntityID:   core.ID(entityID),
 				ObservedAt: core.Now(), // Excel data is point-in-time
 				Source:     "excel",
 				FieldKey:   colName,
 				Value:      a.coercer.CoerceValue(cellValue), // Standardized coercion
-				RawPayload: rawPayload,
+				RawPayload: nil, // Skip RawPayload to avoid memory issues - it's optional
 			}
 			events = append(events, event)
 		}

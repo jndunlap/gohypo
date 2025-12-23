@@ -187,9 +187,11 @@ func (p *Processor) ProcessUpload(ctx context.Context, upload *dataset.DatasetUp
 	go func() {
 		backgroundCtx := context.Background()
 		if err := p.processInBackground(backgroundCtx, ds.ID, upload); err != nil {
-			log.Printf("[DatasetProcessor] Background processing failed for dataset %s: %v", ds.ID, err)
+			log.Printf("[DatasetProcessor] ❌ Background processing FAILED for dataset %s: %v", ds.ID, err)
 			// Update status to failed
 			p.repository.UpdateStatus(backgroundCtx, ds.ID, dataset.StatusFailed, err.Error())
+		} else {
+			log.Printf("[DatasetProcessor] ✅ Background processing completed successfully for dataset %s", ds.ID)
 		}
 	}()
 
@@ -198,7 +200,7 @@ func (p *Processor) ProcessUpload(ctx context.Context, upload *dataset.DatasetUp
 
 // processInBackground handles the actual file processing
 func (p *Processor) processInBackground(ctx context.Context, datasetID core.ID, upload *dataset.DatasetUpload) error {
-	log.Printf("[DatasetProcessor] Background processing started for dataset: %s", datasetID)
+	log.Printf("[DatasetProcessor] 🔄 Background processing started for dataset: %s", datasetID)
 
 	// Send initial progress update
 	p.broadcastProgress(datasetID, "upload_started", 0, "Upload processing started")
@@ -316,7 +318,8 @@ func (p *Processor) processInBackground(ctx context.Context, datasetID core.ID, 
 
 	p.broadcastProgress(datasetID, "upload_completed", 100, fmt.Sprintf("Dataset '%s' ready for analysis!", scoutResult.DatasetName))
 
-	log.Printf("[DatasetProcessor] Successfully processed dataset: %s (%s)", scoutResult.DatasetName, datasetID)
+	log.Printf("[DatasetProcessor] ✅ Successfully processed dataset: %s (%s) with %d fields and %d records",
+		scoutResult.DatasetName, datasetID, len(parsedData.Fields), len(parsedData.Rows))
 	return nil
 }
 

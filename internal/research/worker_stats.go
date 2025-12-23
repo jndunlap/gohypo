@@ -4,12 +4,13 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"sort"
 	"time"
 
+	"github.com/google/uuid"
+	"gohypo/adapters/excel"
 	"gohypo/app"
 	"gohypo/domain/core"
-	"gohypo/domain/discovery"
+	"gohypo/domain/dataset"
 	"gohypo/domain/greenfield"
 	"gohypo/domain/stats"
 	"gohypo/ports"
@@ -25,9 +26,66 @@ func (rw *ResearchWorker) runStatsSweep(ctx context.Context, sessionID string, f
 		log.Printf("[ResearchWorker] ❌ Stats sweep service not available for session %s", sessionID)
 		return nil, fmt.Errorf("stats sweep service not available")
 	}
-	if rw.testkit == nil {
-		log.Printf("[ResearchWorker] ❌ Testkit not available for session %s", sessionID)
-		return nil, fmt.Errorf("testkit not available")
+
+	// Get the session to check for workspace-based datasets
+	session, err := rw.sessionMgr.GetSession(ctx, sessionID)
+	if err != nil {
+		log.Printf("[ResearchWorker] ❌ Could not get session %s: %v", sessionID, err)
+		return nil, fmt.Errorf("could not get session: %w", err)
+	}
+
+	var resolver ports.MatrixResolverPort
+	var useUploadedDataset bool
+
+	// Check if there's an uploaded dataset for this workspace
+	if session.WorkspaceID != uuid.Nil && rw.datasetRepo != nil {
+		log.Printf("[ResearchWorker] 🔍 Checking for uploaded datasets in workspace %s", session.WorkspaceID)
+
+		// Get datasets for this workspace
+		datasets, err := rw.datasetRepo.GetByWorkspace(ctx, core.ID(session.WorkspaceID.String()), 10, 0)
+		log.Printf("[ResearchWorker] 📊 GetByWorkspace result: err=%v, found %d datasets", err, len(datasets))
+
+		if err == nil && len(datasets) > 0 {
+			// Find the most recently updated dataset that has a file path
+			var selectedDataset *dataset.Dataset
+			for _, ds := range datasets {
+				log.Printf("[ResearchWorker] 📁 Found dataset: name=%s, status=%s, filepath=%s, updated=%v",
+					ds.DisplayName, ds.Status, ds.FilePath, ds.UpdatedAt)
+				if ds.Status == dataset.StatusReady && ds.FilePath != "" {
+					if selectedDataset == nil || ds.UpdatedAt.After(selectedDataset.UpdatedAt) {
+						selectedDataset = ds
+					}
+				}
+			}
+
+			if selectedDataset != nil {
+				log.Printf("[ResearchWorker] ✅ Selected dataset: %s (file: %s)", selectedDataset.DisplayName, selectedDataset.FilePath)
+
+				// Create a matrix resolver for the uploaded dataset
+				excelConfig := excel.ExcelConfig{
+					FilePath: selectedDataset.FilePath,
+				}
+				resolver = excel.NewExcelMatrixResolverAdapter(excelConfig)
+				useUploadedDataset = true
+				log.Printf("[ResearchWorker] 📊 Using uploaded dataset matrix resolver for session %s", sessionID)
+			} else {
+				log.Printf("[ResearchWorker] ❌ No ready datasets with file paths found in workspace")
+			}
+		} else {
+			log.Printf("[ResearchWorker] ❌ No datasets found in workspace: err=%v", err)
+		}
+	} else {
+		log.Printf("[ResearchWorker] ❌ Cannot check uploaded datasets: session.WorkspaceID=%s, datasetRepo=%v", session.WorkspaceID, rw.datasetRepo != nil)
+	}
+
+	// Fall back to testkit if no uploaded dataset found
+	if !useUploadedDataset {
+		if rw.testkit == nil {
+			log.Printf("[ResearchWorker] ❌ Testkit not available for session %s", sessionID)
+			return nil, fmt.Errorf("testkit not available")
+		}
+		resolver = rw.testkit.MatrixResolverAdapter()
+		log.Printf("[ResearchWorker] 🧪 Using testkit matrix resolver for session %s", sessionID)
 	}
 
 	// Resolve a matrix bundle for the variables we know about.
@@ -46,7 +104,6 @@ func (rw *ResearchWorker) runStatsSweep(ctx context.Context, sessionID string, f
 	log.Printf("[ResearchWorker] 📊 Resolving matrix bundle for %d variables in session %s", len(varKeys), sessionID)
 
 	matrixStart := time.Now()
-	resolver := rw.testkit.MatrixResolverAdapter()
 	bundle, err := resolver.ResolveMatrix(ctx, ports.MatrixResolutionRequest{
 		ViewID:     core.ID("ui-research"),
 		SnapshotID: core.SnapshotID(sessionID),
@@ -93,46 +150,6 @@ func (rw *ResearchWorker) runStatsSweep(ctx context.Context, sessionID string, f
 	return artifacts, nil
 }
 
-func (rw *ResearchWorker) buildDiscoveryBriefs(sessionID string, statsArtifacts []map[string]interface{}) []discovery.DiscoveryBrief {
-	// Extract relationship payloads out of the stats artifacts list (best-effort).
-	rels := make([]stats.RelationshipPayload, 0, len(statsArtifacts))
-	for _, a := range statsArtifacts {
-		kind, _ := a["kind"].(string)
-		if kind != string(core.ArtifactRelationship) {
-			continue
-		}
-		payload := a["payload"]
-
-		switch p := payload.(type) {
-		case stats.RelationshipPayload:
-			rels = append(rels, p)
-		case map[string]interface{}:
-			if rp, ok := coerceRelationshipPayloadMap(p); ok {
-				rels = append(rels, rp)
-			}
-		}
-	}
-
-	if len(rels) == 0 {
-		return nil
-	}
-
-	briefs := discovery.BuildDiscoveryBriefsFromRelationships(
-		core.SnapshotID(""), // snapshot unknown in UI research flow today
-		core.RunID(sessionID),
-		rels,
-		nil, // No sense results available in worker context
-	)
-
-	// Sort by confidence (desc) and keep a small, LLM-friendly set.
-	sort.Slice(briefs, func(i, j int) bool {
-		return briefs[i].ConfidenceScore > briefs[j].ConfidenceScore
-	})
-	if len(briefs) > 8 {
-		briefs = briefs[:8]
-	}
-	return briefs
-}
 
 func coerceRelationshipPayloadMap(m map[string]interface{}) (stats.RelationshipPayload, bool) {
 	varX, _ := m["variable_x"].(string)

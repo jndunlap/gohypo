@@ -45,6 +45,7 @@ func (s *Server) AddResearchRoutes(sessionMgr *research.SessionManager, storage 
 		research := api.Group("/research")
 		{
 			research.POST("/initiate", researchHandler.HandleInitiateResearch(sessionMgr, worker, sseHub))
+			research.POST("/generate-hypotheses", researchHandler.HandleGenerateHypotheses(sessionMgr, worker, sseHub))
 			research.GET("/status", researchHandler.HandleResearchStatus(sessionMgr))
 			research.GET("/ledger", dataHandler.HandleResearchLedger(storage))
 			research.GET("/download/:id", dataHandler.HandleDownloadHypothesis(storage))

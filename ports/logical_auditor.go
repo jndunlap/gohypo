@@ -16,6 +16,16 @@ type LogicalAuditorRequest struct {
 	VariableContext    string `json:"variable_context"`     // JSON string of field metadata
 	RigorLevel         string `json:"rigor_level"`          // "exploratory", "decision-critical"
 	ComputationalBudget string `json:"computational_budget"` // "low", "medium", "high"
+
+	// Data topology context for referee selection
+	SampleSize        int     `json:"sample_size"`
+	SparsityRatio     float64 `json:"sparsity_ratio"`
+	CardinalityCause  int     `json:"cardinality_cause"`
+	CardinalityEffect int     `json:"cardinality_effect"`
+	SkewnessCause     float64 `json:"skewness_cause"`
+	SkewnessEffect    float64 `json:"skewness_effect"`
+	TemporalCoverage  float64 `json:"temporal_coverage"`
+	ConfoundingSignals string `json:"confounding_signals"`
 }
 
 // LogicalAuditorPort defines the interface for logical auditor operations

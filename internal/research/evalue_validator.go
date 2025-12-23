@@ -200,7 +200,8 @@ func (ev *EValueValidator) executeRefereesOnValidationSet(
 	}
 
 	// Execute each referee on validation set
-	for _, refereeName := range selectedReferees {
+	for _, refereeSelection := range selectedReferees {
+		refereeName := refereeSelection.Name
 		refereeInstance, err := refereePkg.GetRefereeFactory(refereeName)
 		if err != nil {
 			log.Printf("[EValueValidator] ❌ Failed to create referee %s: %v", refereeName, err)

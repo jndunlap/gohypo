@@ -262,6 +262,26 @@ func (s *Server) handleMergeDatasets(c *gin.Context) {
 		WorkspaceID   string   `json:"workspace_id"`
 		MergeStrategy string   `json:"merge_strategy"`
 		JoinType      string   `json:"join_type"`
+		MergeConfig   struct {
+			Strategy       string `json:"strategy"`
+			JoinType       string `json:"join_type"`
+			AutoMode       bool   `json:"auto_mode"`
+			TemporalConfig struct {
+				TimeColumn       string  `json:"time_column"`
+				TimeFormat       string  `json:"time_format"`
+				SourceTimeZone   string  `json:"source_time_zone"`
+				TargetTimeZone   string  `json:"target_time_zone"`
+				Frequency        string  `json:"frequency"`
+				DetectFrequency  bool    `json:"detect_frequency"`
+				GapFillStrategy  string  `json:"gap_fill_strategy"`
+				Interpolation    string  `json:"interpolation"`
+				MaxGapDuration   string  `json:"max_gap_duration"`
+				SortByTime       bool    `json:"sort_by_time"`
+				DeduplicateBy    string  `json:"deduplicate_by"`
+				OutlierDetection bool    `json:"outlier_detection"`
+				OutlierThreshold float64 `json:"outlier_threshold"`
+			} `json:"temporal_config"`
+		} `json:"merge_config"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -298,14 +318,116 @@ func (s *Server) handleMergeDatasets(c *gin.Context) {
 		ValidateSchema: true,
 	}
 
-	// Override based on request
-	if req.MergeStrategy == "streaming" {
+	// Override based on merge_config if provided (auto-merge mode)
+	if req.MergeConfig.Strategy != "" {
+		switch req.MergeConfig.Strategy {
+		case "hybrid":
+			config.Strategy = processor.HybridMerge
+		case "streaming":
+			config.Strategy = processor.StreamingMerge
+		case "in_memory":
+			config.Strategy = processor.InMemoryMerge
+		case "database":
+			config.Strategy = processor.DatabaseMerge
+		}
+	}
+
+	if req.MergeConfig.JoinType != "" {
+		switch req.MergeConfig.JoinType {
+		case "union":
+			config.JoinType = processor.UnionJoin
+		case "inner":
+			config.JoinType = processor.InnerJoin
+		case "left":
+			config.JoinType = processor.LeftJoin
+		case "outer":
+			config.JoinType = processor.OuterJoin
+		}
+	}
+
+	// Handle temporal configuration
+	if req.MergeConfig.TemporalConfig.TimeColumn != "" {
+		temporalConfig := &processor.TemporalMergeConfig{
+			TimeColumn:       req.MergeConfig.TemporalConfig.TimeColumn,
+			TimeFormat:       req.MergeConfig.TemporalConfig.TimeFormat,
+			SourceTimeZone:   req.MergeConfig.TemporalConfig.SourceTimeZone,
+			TargetTimeZone:   req.MergeConfig.TemporalConfig.TargetTimeZone,
+			DetectFrequency:  req.MergeConfig.TemporalConfig.DetectFrequency,
+			SortByTime:       req.MergeConfig.TemporalConfig.SortByTime,
+			DeduplicateBy:    processor.DeduplicateByTime(req.MergeConfig.TemporalConfig.DeduplicateBy),
+			OutlierDetection: req.MergeConfig.TemporalConfig.OutlierDetection,
+			OutlierThreshold: req.MergeConfig.TemporalConfig.OutlierThreshold,
+		}
+
+		// Set frequency
+		switch req.MergeConfig.TemporalConfig.Frequency {
+		case "second":
+			temporalConfig.Frequency = processor.FrequencySecond
+		case "minute":
+			temporalConfig.Frequency = processor.FrequencyMinute
+		case "hour":
+			temporalConfig.Frequency = processor.FrequencyHour
+		case "day":
+			temporalConfig.Frequency = processor.FrequencyDay
+		case "week":
+			temporalConfig.Frequency = processor.FrequencyWeek
+		case "month":
+			temporalConfig.Frequency = processor.FrequencyMonth
+		case "year":
+			temporalConfig.Frequency = processor.FrequencyYear
+		default:
+			temporalConfig.Frequency = processor.FrequencyUnknown
+		}
+
+		// Set gap fill strategy
+		switch req.MergeConfig.TemporalConfig.GapFillStrategy {
+		case "forward":
+			temporalConfig.GapFillStrategy = processor.GapFillForward
+		case "backward":
+			temporalConfig.GapFillStrategy = processor.GapFillBackward
+		case "interpolate":
+			temporalConfig.GapFillStrategy = processor.GapFillInterpolate
+		case "zero":
+			temporalConfig.GapFillStrategy = processor.GapFillZero
+		default:
+			temporalConfig.GapFillStrategy = processor.GapFillNone
+		}
+
+		// Set interpolation type
+		switch req.MergeConfig.TemporalConfig.Interpolation {
+		case "linear":
+			temporalConfig.Interpolation = processor.InterpolateLinear
+		case "spline":
+			temporalConfig.Interpolation = processor.InterpolateSpline
+		default:
+			temporalConfig.Interpolation = processor.InterpolateNone
+		}
+
+		// Parse max gap duration
+		if req.MergeConfig.TemporalConfig.MaxGapDuration != "" {
+			if duration, err := time.ParseDuration(req.MergeConfig.TemporalConfig.MaxGapDuration); err == nil {
+				temporalConfig.MaxGapDuration = duration
+			}
+		}
+
+		config.TemporalConfig = temporalConfig
+	}
+
+	// Override based on legacy request fields (for backward compatibility)
+	if req.MergeStrategy == "streaming" && req.MergeConfig.Strategy == "" {
 		config.Strategy = processor.StreamingMerge
 	}
-	if req.JoinType == "inner" {
+	if req.JoinType == "inner" && req.MergeConfig.JoinType == "" {
 		config.JoinType = processor.InnerJoin
-	} else if req.JoinType == "left" {
+	} else if req.JoinType == "left" && req.MergeConfig.JoinType == "" {
 		config.JoinType = processor.LeftJoin
+	}
+
+	// Auto-merge mode optimizations
+	if req.MergeConfig.AutoMode {
+		// For auto-merge, use more aggressive validation and optimization
+		config.ValidateSchema = true
+		config.DuplicatePolicy = processor.KeepFirst // Default policy for auto-merge
 	}
 
 	// Start merge operation

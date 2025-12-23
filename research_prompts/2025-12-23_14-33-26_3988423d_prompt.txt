@@ -1,0 +1,223 @@
+You are a data analyst generating business hypotheses from statistical evidence.
+
+Industry context will be injected by the adapter.
+
+### DATA INPUT
+[
+  {
+    "name": "CustomerID",
+    "semantic_type": "",
+    "data_type": "text"
+  },
+  {
+    "name": "CustomerName",
+    "semantic_type": "",
+    "data_type": "text"
+  },
+  {
+    "name": "ProductID",
+    "semantic_type": "",
+    "data_type": "text"
+  },
+  {
+    "name": "Discount",
+    "semantic_type": "",
+    "data_type": "numeric"
+  },
+  {
+    "name": "ShippingCost",
+    "semantic_type": "",
+    "data_type": "numeric"
+  },
+  {
+    "name": "City",
+    "semantic_type": "",
+    "data_type": "text"
+  },
+  {
+    "name": "OrderID",
+    "semantic_type": "",
+    "data_type": "text"
+  },
+  {
+    "name": "OrderDate",
+    "semantic_type": "",
+    "data_type": "date"
+  },
+  {
+    "name": "Quantity",
+    "semantic_type": "",
+    "data_type": "numeric"
+  },
+  {
+    "name": "Tax",
+    "semantic_type": "",
+    "data_type": "numeric"
+  },
+  {
+    "name": "PaymentMethod",
+    "semantic_type": "",
+    "data_type": "text"
+  },
+  {
+    "name": "Country",
+    "semantic_type": "",
+    "data_type": "text"
+  },
+  {
+    "name": "ProductName",
+    "semantic_type": "",
+    "data_type": "text"
+  },
+  {
+    "name": "Brand",
+    "semantic_type": "",
+    "data_type": "text"
+  },
+  {
+    "name": "OrderStatus",
+    "semantic_type": "",
+    "data_type": "text"
+  },
+  {
+    "name": "State",
+    "semantic_type": "",
+    "data_type": "text"
+  },
+  {
+    "name": "SellerID",
+    "semantic_type": "",
+    "data_type": "text"
+  },
+  {
+    "name": "Category",
+    "semantic_type": "",
+    "data_type": "text"
+  },
+  {
+    "name": "UnitPrice",
+    "semantic_type": "",
+    "data_type": "numeric"
+  },
+  {
+    "name": "TotalAmount",
+    "semantic_type": "",
+    "data_type": "numeric"
+  }
+]
+{
+  "version": "1.0.0",
+  "timestamp": "2025-12-23T14:32:47.9746282-05:00",
+  "dataset_name": "customer_transaction_data",
+  "row_count": 100000,
+  "column_count": 20,
+  "business_column_names": {
+    "Brand": "product brands",
+    "Category": "product categories",
+    "City": "geographic data",
+    "Country": "quantities",
+    "CustomerID": "customer identification",
+    "CustomerName": "customer names",
+    "Discount": "quantities",
+    "OrderDate": "order dates",
+    "OrderID": "order identifiers",
+    "OrderStatus": "order delivery success",
+    "PaymentMethod": "payment methods",
+    "ProductID": "product identification",
+    "ProductName": "product names",
+    "Quantity": "order quantities",
+    "SellerID": "customer identification",
+    "ShippingCost": "shipping costs",
+    "State": "geographic data",
+    "Tax": "tax information",
+    "TotalAmount": "order total value",
+    "UnitPrice": "product unit pricing"
+  },
+  "outcome_column": "OrderStatus",
+  "allowed_variables": [],
+  "excluded_variables": {},
+  "associations": null,
+  "breakpoints": null,
+  "interactions": [],
+  "structural_breaks": [],
+  "transfer_entropies": [],
+  "hysteresis_effects": [],
+  "llm_context": {
+    "purpose": "Use the statistical evidence below to generate compelling boardroom hypotheses. Create narratives that executives can immediately understand and act upon.",
+    "boardroom_hypothesis_generation": {
+      "executive_summary": "Generate 3-5 key hypotheses that would make executives sit up and take notice. Focus on strategic implications, not statistical details for order delivery success.",
+      "business_impact_focus": "Each hypothesis should clearly state the business outcome and the strategic action implied.",
+      "confidence_based_prioritization": "Rank hypotheses by confidence_level and practical_significance. Present strongest evidence first.",
+      "narrative_style": "Use executive language: 'Our analysis shows...', 'This suggests...', 'Businesses should consider...'",
+      "evidence_citation": "Reference specific evidence_ids to ground claims in data, but keep statistical jargon minimal in boardroom versions."
+    },
+    "evidence_interpretation_guide": {
+      "confidence_levels": {
+        "moderate": "Interesting trends worth monitoring",
+        "negligible": "Statistical noise, ignore for business decisions",
+        "strong": "Reliable patterns for strategic planning",
+        "very_strong": "High-confidence insights executives can bet the business on",
+        "weak": "Early signals, not yet actionable"
+      },
+      "practical_significance": {
+        "large": "Effects that could transform business outcomes",
+        "medium": "Meaningful improvements in key metrics",
+        "negligible": "Too small to matter in business context",
+        "small": "Incremental gains, potentially worthwhile at scale"
+      },
+      "causality_language": "Use 'drives', 'influences', 'predicts', 'correlates with'. Reserve 'causes' for transfer entropy evidence."
+    },
+    "hypothesis_templates": {
+      "single_evidence": "Pattern: [Business factor] [relationship] [business outcome]. Implication: [Strategic action].",
+      "multi_evidence": "Combined evidence shows [factor1 + factor2] create [compound effect] on [outcome]. Strategy: [Coordinated action].",
+      "segment_specific": "The relationship between [factor] and [outcome] varies by [segment]. Tailor strategies accordingly.",
+      "temporal_break": "Business dynamics changed at [time point]. [Pre-break pattern] shifted to [post-break pattern].",
+      "system_memory": "[Past events] create lasting effects on [current outcomes]. Recovery strategies need [additional effort]."
+    },
+    "boardroom_narrative_examples": {
+      "correlation": "'Our top customers who engage with our mobile app 3+ times per week are 40% more likely to improve order delivery success.'",
+      "interaction": "'Price sensitivity varies dramatically by customer segment. Premium customers are willing to pay 25% more, while budget-conscious customers drop off at just 5% increases affecting order delivery success.'",
+      "temporal": "'The marketing channel effectiveness completely changed after our Q3 product launch. Social media ROI dropped 60% while email performance improved 35% for order delivery success.'",
+      "hysteresis": "'Failed delivery experiences create lasting damage - customers who experienced delays take 3x longer to return to normal order delivery success patterns.'"
+    },
+    "evidence_driven_constraints": {
+      "cite_evidence_ids": "Every hypothesis must reference at least one evidence_id",
+      "statistical_grounding": "Base claims on confidence_level and practical_significance assessments",
+      "business_names_only": "Use business_column_names for all variable references, never technical column names",
+      "evidence_scope_only": "Only generate hypotheses supported by the evidence_items provided",
+      "actionable_focus": "Each hypothesis should imply a specific business action or decision"
+    },
+    "dataset_context": {
+      "row_unit": "one row = one customer transaction",
+      "population": "All customer transactions in the dataset after excluding null pairs",
+      "time_scope": "Transaction data spanning multiple periods with temporal ordering available"
+    }
+  }
+}
+
+### HYPOTHESIS VALIDATION (Handled by Auditor)
+Statistical validation and referee selection will be performed separately by the Auditor component. Focus here on generating high-quality business hypotheses from the data patterns.
+
+### OUTPUT FORMAT
+Generate 1 research directive based on the statistical evidence. The directive must reference specific evidence_ids from the data and include at least 1 referee.
+
+Output valid JSON only:
+
+{
+  "research_directives": [
+    {
+      "id": "1",
+      "phenomenon_name": "Name the effect (e.g., 'The Loyalty Paradox')",
+      "business_hypothesis": "Clear business insight referencing evidence (e.g., 'assoc_001 shows that X strongly predicts Y')",
+      "science_hypothesis": "Technical description of the data pattern",
+      "null_case": "What the data would look like if this hypothesis is wrong",
+      "cause_key": "variable_name",
+      "effect_key": "variable_name",
+      "opportunity_topology": {
+        "strategic_leverage": "High/Med/Low",
+        "market_implication": "Specific business opportunity or risk"
+      },
+      "explanation_markdown": "# Why This Hypothesis Matters\n\n**Data-Driven Rationale:** Reference evidence from the data\n\n**Business Impact:** Potential value if validated\n\n**Strategic Action:** What to do about it"
+    }
+  ]
+}

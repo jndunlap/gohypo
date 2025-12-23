@@ -1,12 +1,22 @@
 {{define "upload_modal"}}
 <!-- Upload Modal -->
-<div id="upload-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50" style="display: none;">
+<div id="upload-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50" style="display: none;">
     <div class="flex items-center justify-center min-h-screen p-4">
         <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full border border-gray-200">
             <!-- Modal Header -->
-            <div class="flex items-center justify-start gap-2 px-6 py-4 border-b border-gray-200 bg-gray-50">
-                <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Add Dataset</h3>
-                <button id="close-upload-modal" class="p-1 text-gray-400 hover:text-gray-600 rounded hover:bg-gray-50">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">Add Dataset</h2>
+                        <p class="text-sm text-gray-600">Upload files or connect to APIs</p>
+                    </div>
+                </div>
+                <button id="close-upload-modal" class="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-white transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
@@ -15,11 +25,48 @@
 
             <!-- Modal Body -->
             <div class="px-6 py-6">
-                <div class="mb-6">
-                    <p class="text-sm text-gray-700 mb-6 leading-relaxed">
-                        Upload Excel or CSV files to add datasets to your research catalog.
-                        AI will automatically analyze structure and prepare data for analysis.
-                    </p>
+                <!-- Upload Type Tabs -->
+                <div class="mb-8">
+                    <div class="border-b border-gray-200">
+                        <nav class="-mb-px flex space-x-8">
+                            <button id="file-upload-tab" class="tab-button border-b-2 border-blue-600 py-3 px-1 text-sm font-medium text-blue-600 transition-colors">
+                                <div class="flex items-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                    </svg>
+                                    File Upload
+                                </div>
+                            </button>
+                            <button id="api-connect-tab" class="tab-button border-b-2 border-transparent py-3 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300 transition-colors">
+                                <div class="flex items-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9"></path>
+                                    </svg>
+                                    API Connection
+                                </div>
+                            </button>
+                        </nav>
+                    </div>
+                </div>
+
+                <!-- File Upload Tab Content -->
+                <div id="file-upload-content" class="tab-content">
+                    <!-- Quick Info Banner -->
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <h3 class="text-sm font-medium text-green-800">Simple & Fast</h3>
+                                <p class="mt-1 text-sm text-green-700">
+                                    Upload Excel or CSV files. Our AI will automatically analyze the structure and prepare your data for research.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
 
                     <form id="upload-form" hx-post="/api/dataset/upload"
                           hx-target="#upload-result"
@@ -27,38 +74,88 @@
                           hx-swap="none"
                           class="space-y-4">
 
-                        <!-- Workspace Selection -->
-                        <div class="mb-6">
-                            <label for="workspace-select" class="block text-sm font-semibold text-gray-900 mb-3 font-mono">
-                                Workspace
-                            </label>
-                            <select id="workspace-select" name="workspace_id" class="block w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 disabled:bg-gray-50 disabled:text-gray-500">
-                                <option disabled>Loading workspaces...</option>
-                            </select>
-                            <p class="mt-2 text-sm text-gray-600">Choose workspace for this dataset.</p>
+                        <!-- Basic Settings -->
+                        <div class="bg-gray-50 -mx-6 px-6 py-4 mb-6">
+                            <h3 class="text-lg font-medium text-gray-900 mb-4">Upload Settings</h3>
+
+                            <div class="space-y-4">
+                                <!-- Current Workspace Display -->
+                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                                            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <h4 class="text-sm font-medium text-blue-900">Current Workspace</h4>
+                                            <p class="text-xs text-blue-700" id="current-workspace-name">Loading...</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Workspace Selection (if needed) -->
+                                <div class="hidden" id="workspace-selector">
+                                    <label for="workspace-select" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Select Different Workspace
+                                    </label>
+                                    <select id="workspace-select" name="workspace_id" class="block w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500">
+                                        <option disabled>Loading workspaces...</option>
+                                    </select>
+                                    <p class="mt-1 text-xs text-gray-500">Choose a different workspace to store this dataset</p>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- File Upload Section -->
                         <div class="mb-6">
-                            <label class="block text-sm font-semibold text-gray-900 mb-3 font-mono">
-                                Dataset File
-                            </label>
-                            <div id="drop-zone" class="relative border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 hover:bg-gray-50 transition-colors cursor-pointer">
+                            <div class="flex items-center justify-between mb-3">
+                                <label class="block text-sm font-medium text-gray-900">
+                                    Dataset File
+                                </label>
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    Ready to upload
+                                </span>
+                            </div>
+                            <div id="drop-zone" class="relative border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-400 hover:bg-blue-50/50 transition-all duration-200 cursor-pointer group">
                                 <div class="space-y-4">
                                     <!-- Upload Icon -->
-                                    <div id="upload-icon" class="mx-auto w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center mb-4">
-                                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <div class="mx-auto w-14 h-14 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl flex items-center justify-center mb-4 group-hover:from-blue-200 group-hover:to-blue-300 transition-all duration-200 shadow-sm">
+                                        <svg class="w-7 h-7 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                                         </svg>
                                     </div>
 
                                     <div>
-                                        <p class="text-sm font-semibold text-gray-900" id="drop-zone-text">
-                                            Drop file here or <span class="text-gray-700 hover:text-gray-900 font-medium">browse</span>
+                                        <p class="text-lg font-semibold text-gray-900 mb-1" id="drop-zone-text">
+                                            Drop your file here
                                         </p>
-                                        <p class="text-xs text-gray-600 mt-2">
-                                            Excel (.xlsx, .xls) and CSV (.csv) files up to 50MB
+                                        <p class="text-sm font-medium text-blue-600 hover:text-blue-700 cursor-pointer mb-2">
+                                            or click to browse
                                         </p>
+                                        <div class="flex items-center justify-center space-x-4 text-xs text-gray-500">
+                                            <span class="flex items-center">
+                                                <svg class="w-4 h-4 mr-1 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                                </svg>
+                                                Excel (.xlsx, .xls)
+                                            </span>
+                                            <span class="flex items-center">
+                                                <svg class="w-4 h-4 mr-1 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                                </svg>
+                                                CSV (.csv)
+                                            </span>
+                                            <span class="flex items-center">
+                                                <svg class="w-4 h-4 mr-1 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                                </svg>
+                                                Up to 50MB
+                                            </span>
+                                        </div>
                                     </div>
                                     <input type="file"
                                            id="dataset-file"
@@ -71,19 +168,19 @@
 
                             <!-- File Preview -->
                             <div id="file-preview" class="mt-4 hidden">
-                                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
-                                    <div class="flex items-center space-x-3">
-                                        <div class="w-8 h-8 bg-gray-200 rounded-lg flex items-center justify-center">
-                                            <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <div class="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200 shadow-sm">
+                                    <div class="flex items-center space-x-4">
+                                        <div class="w-12 h-12 bg-gradient-to-br from-green-100 to-emerald-100 rounded-xl flex items-center justify-center shadow-sm">
+                                            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                                             </svg>
                                         </div>
                                         <div>
-                                            <p class="text-sm font-medium text-gray-900 font-mono" id="file-name">—</p>
-                                            <p class="text-xs text-gray-600" id="file-size">—</p>
+                                            <p class="text-sm font-semibold text-green-900" id="file-name">—</p>
+                                            <p class="text-xs text-green-700 font-medium" id="file-size">—</p>
                                         </div>
                                     </div>
-                                    <button type="button" id="remove-file" class="text-gray-500 hover:text-gray-700 p-1">
+                                    <button type="button" id="remove-file" class="text-green-600 hover:text-green-800 p-2 hover:bg-green-100 rounded-lg transition-all duration-200 hover:shadow-sm">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                                         </svg>
@@ -111,13 +208,210 @@
                         <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200 mt-6">
                             <button type="button"
                                     id="cancel-upload"
-                                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
+                                    class="btn-secondary px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
                                 Cancel
                             </button>
                             <button type="submit"
-                                    class="px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-md hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    class="btn-primary px-6 py-2.5 text-sm font-medium text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                                     id="upload-submit-btn">
                                 Upload Dataset
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- API Connection Tab Content -->
+                <div id="api-connect-content" class="tab-content hidden">
+                    <!-- Simple Setup Header -->
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <h3 class="text-sm font-medium text-green-800">Connect to Live Data</h3>
+                                <p class="mt-1 text-sm text-green-700">
+                                    Connect to any REST API and create a live dataset. Just enter your endpoint and authentication details.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form id="api-connect-form" hx-post="/api/datasets/create-api"
+                          hx-target="#api-result"
+                          hx-swap="none"
+                          class="space-y-6">
+
+                        <!-- Quick Setup Section -->
+                        <div class="bg-gray-50 -mx-6 px-6 py-4 mb-6">
+                            <h3 class="text-lg font-medium text-gray-900 mb-4">API Setup</h3>
+
+                            <div class="space-y-4">
+                                <!-- Dataset Name -->
+                                <div>
+                                    <label for="api-dataset-name" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Dataset Name
+                                    </label>
+                                    <input type="text"
+                                           id="api-dataset-name"
+                                           name="name"
+                                           class="block w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                           placeholder="e.g., Sales Data, Customer List"
+                                           required>
+                                </div>
+
+                                <!-- API Endpoint -->
+                                <div>
+                                    <label for="api-base-url" class="block text-sm font-medium text-gray-700 mb-2">
+                                        API Endpoint URL
+                                    </label>
+                                    <input type="url"
+                                           id="api-base-url"
+                                           name="base_url"
+                                           class="block w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                           placeholder="https://api.example.com/v1/data"
+                                           required>
+                                    <p class="mt-1 text-xs text-gray-500">The URL where your data is accessible</p>
+                                </div>
+
+                                <!-- Authentication (Simplified) -->
+                                <div>
+                                    <label for="api-auth-simple" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Authentication <span class="text-xs text-gray-400">(Optional)</span>
+                                    </label>
+                                    <select id="api-auth-simple" name="auth_method" class="block w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="none">No Authentication</option>
+                                        <option value="bearer">API Key / Bearer Token</option>
+                                        <option value="basic">Username & Password</option>
+                                    </select>
+                                </div>
+
+                                <!-- Auth Token Field (for API Key/Bearer) -->
+                                <div id="auth-token-field" class="hidden">
+                                    <label for="api-auth-token" class="block text-sm font-medium text-gray-700 mb-2">
+                                        API Key or Token
+                                    </label>
+                                    <input type="password"
+                                           id="api-auth-token"
+                                           name="auth_token"
+                                           class="block w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                           placeholder="Enter your API key or bearer token">
+                                </div>
+
+                                <!-- Basic Auth Fields -->
+                                <div id="basic-auth-fields" class="hidden space-y-3">
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label for="api-username" class="block text-sm font-medium text-gray-700 mb-2">
+                                                Username
+                                            </label>
+                                            <input type="text"
+                                                   id="api-username"
+                                                   name="username"
+                                                   class="block w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                   placeholder="Username">
+                                        </div>
+                                        <div>
+                                            <label for="api-password" class="block text-sm font-medium text-gray-700 mb-2">
+                                                Password
+                                            </label>
+                                            <input type="password"
+                                                   id="api-password"
+                                                   name="password"
+                                                   class="block w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                   placeholder="Password">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Test Connection -->
+                                <div class="flex items-center justify-between pt-2">
+                                    <button type="button"
+                                            onclick="testAPIConnection()"
+                                            class="inline-flex items-center px-4 py-2 border border-blue-300 rounded-md text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        Test Connection
+                                    </button>
+                                    <span id="api-test-result" class="text-sm text-gray-600"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Advanced Options (Minimal) -->
+                        <div class="border border-gray-200 rounded-lg">
+                            <button type="button"
+                                    onclick="toggleAdvancedSettings()"
+                                    class="w-full flex items-center justify-between p-4 text-left focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg">
+                                <div>
+                                    <h3 class="text-sm font-medium text-gray-900">Advanced Options</h3>
+                                    <p class="text-xs text-gray-600">Optional settings for large datasets</p>
+                                </div>
+                                <svg id="advanced-chevron" class="w-4 h-4 text-gray-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+
+                            <div id="advanced-settings" class="hidden px-4 pb-4 space-y-4">
+                                <!-- Data Path -->
+                                <div>
+                                    <label for="api-data-path" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Data Path <span class="text-xs text-gray-400">(JSONPath)</span>
+                                    </label>
+                                    <input type="text"
+                                           id="api-data-path"
+                                           name="data_path"
+                                           class="block w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                           placeholder="data.items or . (leave empty for root)"
+                                           value=".">
+                                    <p class="mt-1 text-xs text-gray-500">Path to the data array in the API response</p>
+                                </div>
+
+                                <!-- Pagination -->
+                                <div>
+                                    <label for="api-pagination-type" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Pagination
+                                    </label>
+                                    <select id="api-pagination-type" name="pagination_type" class="block w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="none">No Pagination</option>
+                                        <option value="offset">Offset-based</option>
+                                        <option value="cursor">Cursor-based</option>
+                                        <option value="page">Page-based</option>
+                                    </select>
+                                    <p class="mt-1 text-xs text-gray-500">How the API handles multiple pages of data</p>
+                                </div>
+
+                                <!-- Sync Settings (Simplified) -->
+                                <div>
+                                    <label for="api-sync-interval" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Auto-refresh
+                                    </label>
+                                    <select id="api-sync-interval" name="sync_interval" class="block w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="0">Manual only</option>
+                                        <option value="3600000000000">Every hour</option>
+                                        <option value="86400000000000">Daily</option>
+                                        <option value="604800000000000">Weekly</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="api-result" class="text-sm"></div>
+
+                        <!-- API Modal Footer -->
+                        <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200 mt-6">
+                            <button type="button"
+                                    id="cancel-api-connect"
+                                    class="btn-secondary px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                                Cancel
+                            </button>
+                            <button type="submit"
+                                    class="btn-primary px-6 py-2.5 text-sm font-medium text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                    id="api-connect-submit-btn">
+                                Create API Dataset
                             </button>
                         </div>
                     </form>
@@ -128,10 +422,187 @@
 </div>
 
 
+<style>
+/* Tab styles */
+.tab-button {
+    transition: all 0.15s ease;
+}
+
+.tab-button:hover {
+    color: #374151;
+}
+
+/* API form specific styles */
+#auth-token-field,
+#basic-auth-fields {
+    transition: all 0.2s ease;
+}
+
+/* Advanced settings collapsible */
+#advanced-settings {
+    transition: all 0.2s ease;
+}
+
+.rotate-180 {
+    transform: rotate(180deg);
+}
+
+/* Form improvements */
+.form-section {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.form-section h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #111827;
+}
+
+.form-section h4 {
+    margin: 0 0 0.75rem 0;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #374151;
+}
+
+/* Input improvements */
+input[type="text"],
+input[type="url"],
+input[type="password"],
+input[type="number"],
+select {
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+input[type="text"]:focus,
+input[type="url"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Button improvements */
+.btn-primary {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    transition: all 0.15s ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.btn-secondary {
+    transition: all 0.15s ease;
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: #e5e7eb;
+    transform: translateY(-1px);
+}
+
+/* Status indicators */
+.status-success {
+    color: #059669;
+}
+
+.status-error {
+    color: #dc2626;
+}
+
+.status-info {
+    color: #2563eb;
+}
+
+/* Responsive grid for API settings */
+@media (max-width: 768px) {
+    .grid-cols-1.md\\:grid-cols-2 {
+        grid-template-columns: 1fr;
+    }
+
+    .grid-cols-1.md\\:grid-cols-3 {
+        grid-template-columns: 1fr;
+    }
+
+    .modal-content {
+        margin: 1rem;
+        max-width: none;
+    }
+}
+
+/* Animation for advanced settings */
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#advanced-settings:not(.hidden) {
+    animation: slideDown 0.2s ease-out;
+}
+
+/* Loading spinner */
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Test result styling */
+#api-test-result {
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+/* Help text styling */
+.help-text {
+    color: #6b7280;
+    font-size: 0.75rem;
+    line-height: 1.25;
+}
+
+/* Optional field indicator */
+.optional-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.375rem;
+    background: #f3f4f6;
+    color: #6b7280;
+    font-size: 0.625rem;
+    font-weight: 500;
+    border-radius: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+</style>
+
 <script>
 // Upload state management
 let selectedFile = null;
 let uploadProgressInterval = null;
+
+// Tab management
+let currentTab = 'file-upload';
 
 // Reset circular progress back to upload icon
 function resetCircularProgress() {
@@ -199,16 +670,30 @@ window.loadWorkspaces = async function() {
                 return a.name.localeCompare(b.name);
             });
 
+            // Get current workspace from URL
+            const currentWorkspaceId = getCurrentWorkspaceId();
+            let currentWorkspaceName = 'Default Workspace';
+
             sortedWorkspaces.forEach(workspace => {
                 const option = document.createElement('option');
                 option.value = workspace.id;
                 option.textContent = workspace.name;
                 if (workspace.is_default) {
                     option.textContent += ' (Default)';
+                }
+                // Select current workspace or default workspace
+                if (workspace.id === currentWorkspaceId || (workspace.is_default && !currentWorkspaceId)) {
                     option.selected = true;
+                    currentWorkspaceName = workspace.name;
                 }
                 select.appendChild(option);
             });
+
+            // Update current workspace display
+            const currentWorkspaceElement = document.getElementById('current-workspace-name');
+            if (currentWorkspaceElement) {
+                currentWorkspaceElement.textContent = currentWorkspaceName;
+            }
 
             console.log(`Loaded ${data.workspaces.length} workspaces for upload modal`);
         } else {
@@ -241,18 +726,221 @@ window.loadWorkspaces = async function() {
     }
 }
 
+// Tab switching functions
+function switchTab(tabName) {
+    // Update tab buttons
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('border-gray-900', 'text-gray-900');
+        btn.classList.add('border-transparent', 'text-gray-500');
+    });
+
+    document.getElementById(tabName + '-tab').classList.remove('border-transparent', 'text-gray-500');
+    document.getElementById(tabName + '-tab').classList.add('border-gray-900', 'text-gray-900');
+
+    // Update tab content
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.add('hidden');
+    });
+
+    document.getElementById(tabName + '-content').classList.remove('hidden');
+
+    currentTab = tabName;
+
+    // Load workspaces for API tab if needed
+    if (tabName === 'api-connect') {
+        loadAPIWorkspaces();
+    }
+}
+
+// API-specific functions
+function loadAPIWorkspaces() {
+    const select = document.getElementById('api-workspace-select');
+    if (!select || select.options.length > 1) return; // Already loaded
+
+    // Reuse the same workspace loading logic
+    loadWorkspacesForSelect(select);
+}
+
+async function loadWorkspacesForSelect(selectElement) {
+    if (!selectElement) return;
+
+    // Show loading state
+    selectElement.innerHTML = '<option disabled>Loading workspaces...</option>';
+    selectElement.disabled = true;
+
+    try {
+        const response = await fetch('/api/workspaces');
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        selectElement.innerHTML = ''; // Clear loading option
+
+        if (data.workspaces && data.workspaces.length > 0) {
+            // Sort workspaces: default first, then alphabetically
+            const sortedWorkspaces = data.workspaces.sort((a, b) => {
+                if (a.is_default) return -1;
+                if (b.is_default) return 1;
+                return a.name.localeCompare(b.name);
+            });
+
+            // Get current workspace from URL
+            const currentWorkspaceId = getCurrentWorkspaceId();
+
+            sortedWorkspaces.forEach(workspace => {
+                const option = document.createElement('option');
+                option.value = workspace.id;
+                option.textContent = workspace.name;
+                if (workspace.is_default) {
+                    option.textContent += ' (Default)';
+                }
+                // Select current workspace or default workspace
+                if (workspace.id === currentWorkspaceId || (workspace.is_default && !currentWorkspaceId)) {
+                    option.selected = true;
+                }
+                selectElement.appendChild(option);
+            });
+        } else {
+            // Fallback option if no workspaces found
+            const option = document.createElement('option');
+            option.value = '550e8400-e29b-41d4-a716-446655440001';
+            option.textContent = 'Default Workspace';
+            option.selected = true;
+            selectElement.appendChild(option);
+        }
+    } catch (error) {
+        console.error('Failed to load workspaces:', error);
+        selectElement.innerHTML = ''; // Clear loading option
+
+        // Fallback to default workspace
+        const option = document.createElement('option');
+        option.value = '550e8400-e29b-41d4-a716-446655440001';
+        option.textContent = 'Default Workspace (Offline)';
+        option.selected = true;
+        selectElement.appendChild(option);
+    } finally {
+        selectElement.disabled = false;
+    }
+}
+
+function testAPIConnection() {
+    const testButton = event.target;
+    const originalText = testButton.innerHTML;
+    const testResult = document.getElementById('api-test-result');
+
+    // Update button state
+    testButton.disabled = true;
+    testButton.innerHTML = '<svg class="w-4 h-4 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>Testing...';
+    testResult.innerHTML = '<span class="text-blue-600">Testing connection...</span>';
+
+    const config = collectAPIConfig();
+
+    fetch('/api/datasets/preview-api', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ api_config: config, limit: 1 })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            testResult.innerHTML = `<span class="text-red-600">❌ ${data.error}</span>`;
+        } else {
+            const recordCount = data.total_records || 0;
+            testResult.innerHTML = `<span class="text-green-600">✅ Connected - ${recordCount} records available</span>`;
+
+            // Show data preview if successful
+            if (data.headers && data.rows) {
+                showDataPreview(data);
+            }
+        }
+    })
+    .catch(error => {
+        console.error('API test failed:', error);
+        testResult.innerHTML = '<span class="text-red-600">❌ Connection failed - check URL and authentication</span>';
+    })
+    .finally(() => {
+        // Reset button
+        testButton.disabled = false;
+        testButton.innerHTML = originalText;
+    });
+}
+
+function showDataPreview(data) {
+    // Create a simple preview of the data structure
+    if (data.headers && data.headers.length > 0) {
+        const previewHtml = `
+            <div class="mt-3 p-3 bg-gray-50 rounded-md">
+                <p class="text-xs font-medium text-gray-700 mb-2">Data Preview:</p>
+                <div class="text-xs text-gray-600 font-mono">
+                    Columns: ${data.headers.slice(0, 5).join(', ')}${data.headers.length > 5 ? '...' : ''}
+                </div>
+            </div>
+        `;
+        document.getElementById('api-test-result').innerHTML += previewHtml;
+    }
+}
+
+function toggleAdvancedSettings() {
+    const advancedSection = document.getElementById('advanced-settings');
+    const chevron = document.getElementById('advanced-chevron');
+
+    if (advancedSection.classList.contains('hidden')) {
+        advancedSection.classList.remove('hidden');
+        chevron.classList.add('rotate-180');
+    } else {
+        advancedSection.classList.add('hidden');
+        chevron.classList.remove('rotate-180');
+    }
+}
+
+function collectAPIConfig() {
+    return {
+        base_url: document.getElementById('api-base-url').value,
+        data_path: document.getElementById('api-data-path').value,
+        entity_path: document.getElementById('api-entity-path').value,
+        auth_method: document.getElementById('api-auth-simple').value,
+        auth_token: document.getElementById('api-auth-token').value,
+        username: document.getElementById('api-username').value,
+        password: document.getElementById('api-password').value,
+        pagination_type: document.getElementById('api-pagination-type').value,
+        page_size: parseInt(document.getElementById('api-page-size').value),
+        max_pages: parseInt(document.getElementById('api-max-pages').value),
+        rate_limit: parseInt(document.getElementById('api-rate-limit').value),
+        sync_interval: document.getElementById('api-sync-interval').value,
+        timeout: 30000,
+        retry_attempts: 3
+    };
+}
+
 // Modal control functions
+console.log('[Upload Modal] Script loading...');
 window.showUploadModal = function() {
+    console.log('[Upload Modal] showUploadModal called');
     const modal = document.getElementById('upload-modal');
     if (modal) {
+        console.log('[Upload Modal] Modal element found, showing modal');
         modal.style.display = 'block';
         document.body.classList.add('overflow-hidden');
 
         // Load workspaces when modal opens
-        loadWorkspaces();
-        window.resetUploadState();
+        if (typeof loadWorkspaces === 'function') {
+            loadWorkspaces();
+        }
+        if (typeof window.resetUploadState === 'function') {
+            window.resetUploadState();
+        }
+    } else {
+        console.error('[Upload Modal] Modal element not found');
     }
 };
+
+// Function to get current workspace from URL or default
+function getCurrentWorkspaceId() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('workspace') || '550e8400-e29b-41d4-a716-446655440001'; // Default workspace ID
+}
+console.log('[Upload Modal] showUploadModal function defined:', typeof window.showUploadModal);
 
 
 // File validation and size formatting
@@ -544,6 +1232,29 @@ document.addEventListener('DOMContentLoaded', function() {
     // Modal controls
     document.getElementById('close-upload-modal').addEventListener('click', hideUploadModal);
     document.getElementById('cancel-upload').addEventListener('click', hideUploadModal);
+    document.getElementById('cancel-api-connect').addEventListener('click', hideUploadModal);
+
+    // Tab switching
+    document.getElementById('file-upload-tab').addEventListener('click', () => switchTab('file-upload'));
+    document.getElementById('api-connect-tab').addEventListener('click', () => switchTab('api-connect'));
+
+    // Authentication method changes
+    document.getElementById('api-auth-simple').addEventListener('change', function() {
+        const method = this.value;
+        const tokenField = document.getElementById('auth-token-field');
+        const basicFields = document.getElementById('basic-auth-fields');
+
+        // Hide all auth fields first
+        tokenField.classList.add('hidden');
+        basicFields.classList.add('hidden');
+
+        // Show relevant fields
+        if (method === 'bearer' || method === 'api_key') {
+            tokenField.classList.remove('hidden');
+        } else if (method === 'basic') {
+            basicFields.classList.remove('hidden');
+        }
+    });
 
     // Close modal when clicking outside
     document.getElementById('upload-modal').addEventListener('click', function(e) {
@@ -658,6 +1369,58 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
             document.getElementById('upload-progress').classList.add('hidden');
+        }
+    });
+
+    // API form submission handling
+    document.getElementById('api-connect-form').addEventListener('htmx:beforeRequest', function() {
+        document.getElementById('api-connect-submit-btn').disabled = true;
+        document.getElementById('api-connect-submit-btn').textContent = 'Creating API Dataset...';
+    });
+
+    document.getElementById('api-connect-form').addEventListener('htmx:afterRequest', function(evt) {
+        document.getElementById('api-connect-submit-btn').disabled = false;
+        document.getElementById('api-connect-submit-btn').textContent = 'Create API Dataset';
+
+        const resultDiv = document.getElementById('api-result');
+        if (resultDiv) {
+            resultDiv.innerHTML = '';
+        }
+
+        if (evt.detail.xhr.status === 201) { // Created
+            try {
+                const response = JSON.parse(evt.detail.xhr.responseText);
+                console.log('[API] API dataset creation successful:', response);
+
+                // Show success message
+                if (resultDiv) {
+                    resultDiv.innerHTML = '<div class="p-3 bg-green-50 border border-green-200 rounded-md"><div class="flex items-center"><svg class="w-4 h-4 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><span class="text-sm text-green-800">API dataset created successfully! Syncing data...</span></div></div>';
+                }
+
+                // Close modal after a delay
+                setTimeout(() => {
+                    hideUploadModal();
+                    window.location.reload();
+                }, 2000);
+
+            } catch (e) {
+                console.error('[API] Failed to parse response:', e);
+                if (resultDiv) {
+                    resultDiv.innerHTML = '<div class="p-3 bg-red-50 border border-red-200 rounded-md"><div class="flex items-center"><svg class="w-4 h-4 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg><span class="text-sm text-red-800">Failed to process API creation response</span></div></div>';
+                }
+            }
+        } else {
+            // Handle error response
+            try {
+                const errorResponse = JSON.parse(evt.detail.xhr.responseText);
+                if (resultDiv && errorResponse.error) {
+                    resultDiv.innerHTML = `<div class="p-3 bg-red-50 border border-red-200 rounded-md"><div class="flex items-center"><svg class="w-4 h-4 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg><span class="text-sm text-red-800">${errorResponse.error}</span></div></div>`;
+                }
+            } catch (e) {
+                if (resultDiv) {
+                    resultDiv.innerHTML = '<div class="p-3 bg-red-50 border border-red-200 rounded-md"><div class="flex items-center"><svg class="w-4 h-4 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg><span class="text-sm text-red-800">API dataset creation failed</span></div></div>';
+                }
+            }
         }
     });
 });

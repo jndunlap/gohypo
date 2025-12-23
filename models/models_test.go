@@ -11,36 +11,51 @@ func TestRefereeGates_Validate(t *testing.T) {
 		expectError  bool
 	}{
 		{
-			"Valid three referees",
-			RefereeGates{
-				SelectedReferees: []string{"Permutation_Shredder", "Chow_Stability_Test", "Transfer_Entropy"},
-				Rationale:        "Comprehensive validation",
+			name: "Valid three referees",
+			refereeGates: RefereeGates{
+				SelectedReferees: []RefereeSelection{
+					{Name: "Permutation_Shredder", Category: "VALIDATION", Priority: 1},
+					{Name: "Chow_Stability_Test", Category: "VALIDATION", Priority: 2},
+					{Name: "Transfer_Entropy", Category: "CAUSALITY", Priority: 3},
+				},
+				Rationale: "Comprehensive validation",
 			},
-			false,
+			expectError: false,
 		},
 		{
-			"Invalid - only two referees",
-			RefereeGates{
-				SelectedReferees: []string{"Permutation_Shredder", "Chow_Stability_Test"},
-				Rationale:        "Missing third referee",
+			name: "Valid - two referees",
+			refereeGates: RefereeGates{
+				SelectedReferees: []RefereeSelection{
+					{Name: "Permutation_Shredder", Category: "VALIDATION", Priority: 1},
+					{Name: "Chow_Stability_Test", Category: "VALIDATION", Priority: 2},
+				},
+				Rationale: "Two referees is valid",
 			},
-			true,
+			expectError: false,
 		},
 		{
-			"Invalid - duplicate referee",
-			RefereeGates{
-				SelectedReferees: []string{"Permutation_Shredder", "Permutation_Shredder", "Chow_Stability_Test"},
-				Rationale:        "Duplicate referee",
+			name: "Invalid - duplicate referee",
+			refereeGates: RefereeGates{
+				SelectedReferees: []RefereeSelection{
+					{Name: "Permutation_Shredder", Category: "VALIDATION", Priority: 1},
+					{Name: "Permutation_Shredder", Category: "VALIDATION", Priority: 2},
+					{Name: "Chow_Stability_Test", Category: "VALIDATION", Priority: 3},
+				},
+				Rationale: "Duplicate referee",
 			},
-			true,
+			expectError: true,
 		},
 		{
-			"Invalid - unknown referee",
-			RefereeGates{
-				SelectedReferees: []string{"Permutation_Shredder", "Chow_Stability_Test", "Unknown_Referee"},
-				Rationale:        "Unknown referee",
+			name: "Invalid - unknown referee",
+			refereeGates: RefereeGates{
+				SelectedReferees: []RefereeSelection{
+					{Name: "Permutation_Shredder", Category: "VALIDATION", Priority: 1},
+					{Name: "Chow_Stability_Test", Category: "VALIDATION", Priority: 2},
+					{Name: "Unknown_Referee", Category: "UNKNOWN", Priority: 3},
+				},
+				Rationale: "Unknown referee",
 			},
-			true,
+			expectError: true,
 		},
 	}
 

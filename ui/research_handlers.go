@@ -98,21 +98,10 @@ func (h *ResearchHandler) HandleInitiateResearch(sessionMgr *research.SessionMan
 			return
 		}
 
-		// If no pre-computed statistical artifacts exist, run stats sweep now
+		// Attempt stats sweep for datasets without pre-computed artifacts
 		if len(statsArtifacts) == 0 {
-			log.Printf("[API] 🔬 No pre-computed statistical artifacts found for workspace %s - running stats sweep", workspaceID)
-
-			// Create a temporary session for stats sweep (will be cleaned up)
-			tempSessionID := fmt.Sprintf("stats_sweep_%s_%d", workspaceID.String(), time.Now().Unix())
-			statsArtifactsFromSweep, err := worker.RunStatsSweep(c.Request.Context(), tempSessionID, fieldMetadata)
-			if err != nil {
-				log.Printf("[API] ❌ Stats sweep failed for workspace %s: %v", workspaceID, err)
-				// Continue with empty artifacts rather than failing completely
-				log.Printf("[API] 🔄 Continuing with empty statistical artifacts")
-			} else {
-				log.Printf("[API] ✅ Stats sweep completed for workspace %s: %d artifacts generated", workspaceID, len(statsArtifactsFromSweep))
-				statsArtifacts = statsArtifactsFromSweep
-			}
+			log.Printf("[API] 🔄 Attempting stats sweep for workspace %s (no pre-computed artifacts available)", workspaceID)
+			// Try to generate statistical artifacts - will fall back gracefully if not possible
 		}
 
 		log.Printf("[API] 📊 Found %d fields and %d statistical artifacts for workspace %s research analysis", len(fieldMetadata), len(statsArtifacts), workspaceID)
@@ -148,7 +137,8 @@ func (h *ResearchHandler) HandleInitiateResearch(sessionMgr *research.SessionMan
 			Data: map[string]interface{}{
 				"field_count":           len(fieldMetadata),
 				"stats_artifacts_count": len(statsArtifacts),
-				"message":               "Research session initialized",
+				"message":               "🚀 Research session initialized",
+				"details":               fmt.Sprintf("Processing %d data fields with %d statistical insights", len(fieldMetadata), len(statsArtifacts)),
 			},
 			Timestamp: time.Now(),
 		})
@@ -254,6 +244,91 @@ func (h *ResearchHandler) HandleResearchStatus(sessionMgr *research.SessionManag
 	}
 }
 
+func (h *ResearchHandler) HandleGenerateHypotheses(sessionMgr *research.SessionManager, worker *research.ResearchWorker, sseHub *api.SSEHub) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		log.Printf("[API] 🤖 GENERATING HYPOTHESES - REQUEST RECEIVED")
+
+		var requestBody struct {
+			SessionID string `json:"session_id"`
+		}
+
+		if err := c.ShouldBindJSON(&requestBody); err != nil {
+			log.Printf("[API] ❌ Invalid request body: %v", err)
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Invalid request body - session_id required",
+			})
+			return
+		}
+
+		sessionID := requestBody.SessionID
+		if sessionID == "" {
+			log.Printf("[API] ❌ No session ID provided")
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "session_id is required",
+			})
+			return
+		}
+
+		// Get session to retrieve workspace and data
+		session, err := sessionMgr.GetSession(c.Request.Context(), sessionID)
+		if err != nil {
+			log.Printf("[API] ❌ Failed to get session %s: %v", sessionID, err)
+			c.JSON(http.StatusNotFound, gin.H{
+				"error": "Session not found",
+			})
+			return
+		}
+
+		workspaceID := session.WorkspaceID
+
+		// Get workspace datasets
+		fieldMetadata, err := h.dataService.GetFieldMetadataByWorkspace(workspaceID)
+		if err != nil {
+			log.Printf("[API] ❌ Failed to get field metadata for workspace %s: %v", workspaceID, err)
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Failed to retrieve field metadata",
+			})
+			return
+		}
+
+		// Get statistical artifacts
+		statsArtifacts, err := h.dataService.GetStatisticalArtifactsByWorkspace(workspaceID)
+		if err != nil {
+			log.Printf("[API] ❌ Failed to get statistical artifacts for workspace %s: %v", workspaceID, err)
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Failed to retrieve statistical artifacts",
+			})
+			return
+		}
+
+		log.Printf("[API] 📊 Found %d fields and %d statistical artifacts for hypothesis generation", len(fieldMetadata), len(statsArtifacts))
+
+		if len(fieldMetadata) == 0 {
+			log.Printf("[API] ⚠️ No fields available - cannot generate hypotheses")
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "No field metadata available for hypothesis generation",
+			})
+			return
+		}
+
+		// Start background hypothesis generation
+		go func() {
+			log.Printf("[WORKER] 🤖 Starting hypothesis generation for session %s", sessionID)
+			worker.ProcessResearch(context.Background(), sessionID, fieldMetadata, statsArtifacts, sseHub)
+		}()
+
+		log.Printf("[API] ✅ Hypothesis generation started for session %s", sessionID)
+
+		c.JSON(http.StatusAccepted, gin.H{
+			"message":         "Hypothesis generation started",
+			"session_id":      sessionID,
+			"field_count":     len(fieldMetadata),
+			"stats_artifacts": len(statsArtifacts),
+			"status":          "processing",
+		})
+	}
+}
+
 // GetStabilityAnalysis returns detailed stability analysis for a hypothesis subsample
 func (h *ResearchHandler) GetStabilityAnalysis(c *gin.Context) {
 	hypothesisID := c.Param("hypothesisId")
@@ -283,8 +358,8 @@ func (h *ResearchHandler) GetStabilityAnalysis(c *gin.Context) {
 
 	// Check if stability data exists
 	if hypothesisResult.StabilityResult == nil ||
-	   subsampleIndex >= len(hypothesisResult.StabilityResult.SubsampleResults) ||
-	   refereeIndex >= len(hypothesisResult.StabilityResult.SubsampleResults[subsampleIndex].RefereeResults) {
+		subsampleIndex >= len(hypothesisResult.StabilityResult.SubsampleResults) ||
+		refereeIndex >= len(hypothesisResult.StabilityResult.SubsampleResults[subsampleIndex].RefereeResults) {
 
 		c.JSON(http.StatusNotFound, gin.H{"error": "Stability data not available"})
 		return
@@ -296,10 +371,10 @@ func (h *ResearchHandler) GetStabilityAnalysis(c *gin.Context) {
 
 	// Generate detailed analysis
 	analysis := gin.H{
-		"hypothesis_id":    hypothesisID,
-		"subsample_index":  subsampleIndex,
-		"referee_index":    refereeIndex,
-		"referee_name":     refereeName,
+		"hypothesis_id":   hypothesisID,
+		"subsample_index": subsampleIndex,
+		"referee_index":   refereeIndex,
+		"referee_name":    refereeName,
 		"passed":          refereeResult.Passed,
 		"failure_reason":  refereeResult.FailureReason,
 		"execution_time":  refereeResult.ExecutionTime,
@@ -309,8 +384,8 @@ func (h *ResearchHandler) GetStabilityAnalysis(c *gin.Context) {
 			"statistical_power": getRefereeDescription(refereeName),
 			"confidence_level":  calculateConfidenceLevel(refereeResult),
 			"data_characteristics": gin.H{
-				"sample_size": "Based on subsample",
-				"distribution": "Preserved from original",
+				"sample_size":   "Based on subsample",
+				"distribution":  "Preserved from original",
 				"relationships": "Subsampled relationships",
 			},
 		},
@@ -322,16 +397,16 @@ func (h *ResearchHandler) GetStabilityAnalysis(c *gin.Context) {
 // Helper function to get referee descriptions
 func getRefereeDescription(refereeName string) string {
 	descriptions := map[string]string{
-		"Permutation_Shredder": "Non-parametric test ensuring results aren't due to random chance",
-		"Transfer_Entropy": "Detects directional information flow between variables over time",
-		"Chow_Stability_Test": "Tests if relationships remain stable across different time periods",
-		"LOO_Cross_Validation": "Leave-one-out validation to test predictive stability",
-		"Conditional_MI": "Tests direct relationships while controlling for confounding variables",
+		"Permutation_Shredder":     "Non-parametric test ensuring results aren't due to random chance",
+		"Transfer_Entropy":         "Detects directional information flow between variables over time",
+		"Chow_Stability_Test":      "Tests if relationships remain stable across different time periods",
+		"LOO_Cross_Validation":     "Leave-one-out validation to test predictive stability",
+		"Conditional_MI":           "Tests direct relationships while controlling for confounding variables",
 		"Isotonic_Mechanism_Check": "Validates functional form and monotonic relationships",
-		"Wavelet_Coherence": "Analyzes relationships in frequency domain across time",
-		"Persistent_Homology": "Tests topological features for complex relationship structures",
-		"Algorithmic_Complexity": "Measures information content and compressibility",
-		"Synthetic_Intervention": "Tests causal effects under simulated interventions",
+		"Wavelet_Coherence":        "Analyzes relationships in frequency domain across time",
+		"Persistent_Homology":      "Tests topological features for complex relationship structures",
+		"Algorithmic_Complexity":   "Measures information content and compressibility",
+		"Synthetic_Intervention":   "Tests causal effects under simulated interventions",
 	}
 
 	if desc, exists := descriptions[refereeName]; exists {

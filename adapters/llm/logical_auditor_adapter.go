@@ -2,6 +2,7 @@ package llm
 
 import (
 	"context"
+	"fmt"
 	"gohypo/ai"
 	"gohypo/models"
 	"gohypo/ports"
@@ -41,22 +42,31 @@ Output valid JSON only.`
 	return result, nil
 }
 
-// buildAuditorPrompt constructs the prompt for logical auditor analysis
+// buildAuditorPrompt constructs the prompt for auditor analysis
 func (laa *LogicalAuditorAdapter) buildAuditorPrompt(req ports.LogicalAuditorRequest) (string, error) {
-	// Use the logical_auditor.txt template with dynamic content injection
 	templateData := map[string]string{
-		"BUSINESS_HYPOTHESIS": req.BusinessHypothesis,
-		"SCIENCE_HYPOTHESIS":  req.ScienceHypothesis,
-		"NULL_CASE":          req.NullCase,
-		"STATISTICAL_RELATIONSHIP_JSON": req.StatisticalEvidence,
-		"VARIABLE_CONTEXT_JSON":         req.VariableContext,
-		"RIGOR_LEVEL":                   req.RigorLevel,
-		"COMPUTATIONAL_BUDGET":         req.ComputationalBudget,
+		"business_hypothesis":       req.BusinessHypothesis,
+		"science_hypothesis":        req.ScienceHypothesis,
+		"null_case":                 req.NullCase,
+		"cause_key":                 req.CauseKey,
+		"effect_key":                req.EffectKey,
+		"statistical_relationships": req.StatisticalEvidence,
+		"variable_context":          req.VariableContext,
+		"sample_size":               fmt.Sprintf("%d", req.SampleSize),
+		"sparsity_ratio":            fmt.Sprintf("%.3f", req.SparsityRatio),
+		"cardinality_cause":         fmt.Sprintf("%d", req.CardinalityCause),
+		"cardinality_effect":        fmt.Sprintf("%d", req.CardinalityEffect),
+		"skewness_cause":            fmt.Sprintf("%.3f", req.SkewnessCause),
+		"skewness_effect":           fmt.Sprintf("%.3f", req.SkewnessEffect),
+		"temporal_coverage":         fmt.Sprintf("%.3f", req.TemporalCoverage),
+		"confounding_signals":       req.ConfoundingSignals,
+		"rigor_level":               req.RigorLevel,
+		"computational_budget":      req.ComputationalBudget,
 	}
 
-	prompt, err := laa.StructuredClient.PromptManager.RenderPrompt("logical_auditor", templateData)
+	prompt, err := laa.StructuredClient.PromptManager.RenderPrompt("auditor", templateData)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to render auditor prompt template: %w", err)
 	}
 
 	return prompt, nil

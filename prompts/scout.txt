@@ -1,0 +1,127 @@
+You are a comprehensive data analyst specializing in dataset enrichment, relationship analysis, and integration strategy.
+
+FIELD NAMES TO ANALYZE:
+{field_names}
+
+SAMPLE VALUES (if available):
+{sample_values}
+
+DATASET SUMMARIES (for merge analysis):
+{dataset_summaries}
+
+Perform complete dataset intelligence analysis:
+
+1. BASIC IDENTIFICATION
+   - Primary business domain (Finance, Sales, HR, Operations, Marketing, etc.)
+   - Dataset descriptive name in snake_case (3-5 words)
+   - Clean filename identifier (2-4 words, suitable for files/tables)
+   - Detailed 2-3 sentence description based on field names
+
+2. DATA PROFILING
+   - Classify each field by data type: identifiers, quantitative, temporal, categorical, boolean, complex
+   - Data quality indicators: completeness, uniqueness, validity, consistency, accuracy
+   - Structural patterns: normalized, denormalized, star schema, wide table, long table
+   - Business process indicators: transactional, reference, analytical, operational
+   - Integration readiness: standardization level, ETL complexity, API suitability
+   - Governance profile: sensitivity level, retention requirements, compliance needs
+   - Profiling confidence score (0.0-1.0)
+
+3. RELATIONSHIP ANALYSIS
+   - Potential primary keys and unique identifiers
+   - Foreign key candidates and referential patterns
+   - Relationship types: ONE_TO_ONE, ONE_TO_MANY, MANY_TO_MANY
+   - Join key recommendations: INNER, LEFT, FULL OUTER, CROSS
+   - Referential integrity assessment
+
+4. TEMPORAL ANALYSIS
+   - Time-related fields: dates, times, timestamps, periods, durations
+   - Temporal granularity: SECOND/MILLISECOND, MINUTE/HOUR, DAY, WEEK/MONTH, QUARTER/YEAR
+   - Temporal relationship types: SEQUENTIAL, PARALLEL, HIERARCHICAL, STATE_TRANSITIONS, CROSS_TEMPORAL
+   - Time-based join opportunities: TIME_RANGE_JOIN, EXACT_TIME_MATCH, PERIOD_ALIGNMENT
+
+5. SEMANTIC ANALYSIS
+   - Primary domain and sub-domains classification
+   - Main entities represented: People, Transactions, Products, Locations, Time, Measurements
+   - Relationship patterns: SAME_ENTITY_DIFFERENT_ASPECTS, RELATED_ENTITIES, TEMPORAL_SEQUENCE, HIERARCHICAL, CROSS_REFERENCE
+   - Semantic similarity assessment between datasets
+
+6. SCHEMA COMPATIBILITY (for multiple datasets)
+   - Compatibility score (0.0-1.0) for each dataset pair
+   - Common fields analysis with exact/partial matches
+   - Relationship classification: IDENTICAL, APPENDABLE, JOINABLE, UNIONABLE, INCOMPATIBLE
+   - Merge strategy recommendations: UNION, JOIN, APPEND, TRANSFORM
+   - Potential issues: data type conflicts, naming inconsistencies, missing fields
+
+7. MERGE STRATEGY RECOMMENDATIONS (for multiple datasets)
+   - Overall integration strategy: SINGLE_MERGE, STAGED_MERGES, SEPARATE_MAINTENANCE, HYBRID_APPROACH
+   - Merge sequence prioritization by entity importance
+   - Optimal merge type per pair: UNION, JOIN, APPEND, CROSS_JOIN, NO_MERGE
+   - Data transformation requirements: standardization, type conversion, key generation, duplicate handling
+   - Business value assessment and risk evaluation
+   - Implementation complexity (1-10) and success confidence (0.0-1.0)
+
+OUTPUT REQUIREMENTS:
+Return a comprehensive JSON object with all analysis sections. For single dataset analysis, omit multi-dataset sections. For multiple datasets, include all relationship and merge analysis sections.
+
+{
+  "basic_identification": {
+    "domain": "Sales",
+    "dataset_name": "customer_purchase_history",
+    "filename": "customer_purchases_2024",
+    "description": "Detailed description..."
+  },
+  "data_profiling": {
+    "field_analysis": {...},
+    "quality_indicators": {...},
+    "structural_patterns": "...",
+    "business_processes": [...],
+    "integration_readiness": {...},
+    "governance_profile": {...},
+    "profiling_confidence": 0.91
+  },
+  "relationship_analysis": {
+    "primary_keys": [...],
+    "foreign_keys": [...],
+    "relationships": [...],
+    "join_recommendations": {...}
+  },
+  "temporal_analysis": {
+    "temporal_fields": [...],
+    "granularity": "...",
+    "relationship_types": [...],
+    "join_opportunities": [...]
+  },
+  "semantic_analysis": {
+    "domain_classification": {...},
+    "entities": [...],
+    "relationship_patterns": [...]
+  },
+  "schema_compatibility": {
+    "dataset_pairs": [
+      {
+        "datasets": ["dataset1", "dataset2"],
+        "compatibility_score": 0.85,
+        "common_fields": [...],
+        "relationship_type": "JOINABLE",
+        "merge_strategy": "JOIN",
+        "issues": [...],
+        "confidence": 0.92
+      }
+    ]
+  },
+  "merge_strategy": {
+    "integration_strategy": "STAGED_MERGES",
+    "merge_sequence": [...],
+    "merge_types": {...},
+    "transformations_required": [...],
+    "business_value": "...",
+    "risks": [...],
+    "implementation_complexity": 6,
+    "success_confidence": 0.87,
+    "alternatives": [...]
+  },
+  "insights": ["Key findings and recommendations..."],
+  "analysis_confidence": 0.89
+}
+
+Respond with valid JSON only.

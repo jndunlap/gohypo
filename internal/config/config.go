@@ -52,7 +52,8 @@ type PathConfig struct {
 
 // DataConfig holds data processing settings
 type DataConfig struct {
-	ExcelFile string
+	ExcelFile    string
+	AutoLoadCSVs bool
 }
 
 // ProfilingConfig holds performance profiling settings
@@ -161,7 +162,8 @@ func loadPathConfig() *PathConfig {
 
 func loadDataConfig() *DataConfig {
 	return &DataConfig{
-		ExcelFile: getEnvOrDefault("EXCEL_FILE", ""),
+		ExcelFile:    getEnvOrDefault("EXCEL_FILE", ""),
+		AutoLoadCSVs: getEnvBoolOrDefault("AUTO_LOAD_CSVS", true),
 	}
 }
 
@@ -229,4 +231,5 @@ func getEnvDurationOrDefault(key string, defaultValue time.Duration) time.Durati
 	}
 	return defaultValue
 }
+
 

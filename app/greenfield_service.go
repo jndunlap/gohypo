@@ -191,7 +191,11 @@ func (s *GreenfieldService) analyzeHypothesisRisk(
 // convertDirectiveToResponse converts a ResearchDirective to ResearchDirectiveResponse
 func (s *GreenfieldService) convertDirectiveToResponse(directive greenfield.ResearchDirective) models.ResearchDirectiveResponse {
 	// Generate default referees based on the directive's validation strategy
-	selectedReferees := []string{"Permutation_Shredder", "Chow_Stability_Test", "Transfer_Entropy"}
+	selectedReferees := []models.RefereeSelection{
+		{Name: "Permutation_Shredder", Category: "VALIDATION", Priority: 1},
+		{Name: "Chow_Stability_Test", Category: "VALIDATION", Priority: 2},
+		{Name: "Transfer_Entropy", Category: "CAUSALITY", Priority: 3},
+	}
 
 	return models.ResearchDirectiveResponse{
 		ID: string(directive.ID),

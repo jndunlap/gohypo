@@ -68,14 +68,27 @@ type ValidationStrategy struct {
 }
 
 type RefereeGates struct {
-	SelectedReferees []string `json:"selected_referees" description:"Referees selected for dynamic e-value validation"`
-	ConfidenceTarget float64  `json:"confidence_target" description:"Target confidence level (e.g., 0.999)"`
-	Rationale        string   `json:"rationale" description:"Explanation of why these 3 referees were selected"`
+	SelectedReferees []RefereeSelection `json:"selected_referees" description:"Referees selected for dynamic e-value validation"`
+	ConfidenceTarget float64            `json:"confidence_target" description:"Target confidence level (e.g., 0.999)"`
+	Rationale        string             `json:"rationale" description:"Explanation of why these referees were selected"`
 	// Legacy fields for backward compatibility
 	StabilityThreshold float64 `json:"stability_threshold,omitempty" description:"Legacy field"`
 	PValueThreshold    float64 `json:"p_value_threshold,omitempty" description:"Legacy field"`
 	StabilityScore     float64 `json:"stability_score,omitempty" description:"Legacy field"`
 	PermutationRuns    int     `json:"permutation_runs,omitempty" description:"Legacy field"`
+}
+
+// RefereeSelection represents a selected referee with its properties
+type RefereeSelection struct {
+	Name                string                 `json:"name" description:"Referee name"`
+	Category            string                 `json:"category" description:"Referee category"`
+	Priority            int                    `json:"priority" description:"Selection priority"`
+	Rationale           string                 `json:"rationale" description:"Why this referee was selected"`
+	ComputationalCost   int                    `json:"computational_cost" description:"Computational cost rating"`
+	StatisticalPower    string                 `json:"statistical_power" description:"Statistical power description"`
+	AssumptionChecks    []string               `json:"assumption_checks" description:"Required assumption checks"`
+	FailureImplications string                 `json:"failure_implications" description:"What failure means"`
+	TriggeredBy         map[string]interface{} `json:"triggered_by" description:"What triggered this selection"`
 }
 
 // Validate ensures the RefereeGates structure contains valid referee selections
@@ -88,10 +101,10 @@ func (rg *RefereeGates) Validate() error {
 	// Check for duplicates
 	seen := make(map[string]bool)
 	for _, referee := range rg.SelectedReferees {
-		if seen[referee] {
-			return fmt.Errorf("duplicate referee selection: %s", referee)
+		if seen[referee.Name] {
+			return fmt.Errorf("duplicate referee selection: %s", referee.Name)
 		}
-		seen[referee] = true
+		seen[referee.Name] = true
 	}
 
 	// Validate referee names against approved list
@@ -111,13 +124,13 @@ func (rg *RefereeGates) Validate() error {
 	for _, selected := range rg.SelectedReferees {
 		found := false
 		for _, valid := range validReferees {
-			if selected == valid {
+			if selected.Name == valid {
 				found = true
 				break
 			}
 		}
 		if !found {
-			return fmt.Errorf("invalid referee: %s", selected)
+			return fmt.Errorf("invalid referee: %s", selected.Name)
 		}
 	}
 

@@ -85,3 +85,68 @@ type MergeReasoningResult struct {
 	Recommendations          string            `json:"recommendations"`
 	AnalysisDetails          string            `json:"analysis_details"`
 }
+
+// ConsolidatedScoutResult represents comprehensive dataset intelligence analysis
+type ConsolidatedScoutResult struct {
+	BasicIdentification struct {
+		Domain      string `json:"domain"`
+		DatasetName string `json:"dataset_name"`
+		Filename    string `json:"filename"`
+		Description string `json:"description"`
+	} `json:"basic_identification"`
+
+	DataProfiling struct {
+		FieldAnalysis        map[string]interface{} `json:"field_analysis"`
+		DataQualityProfile   map[string]interface{} `json:"data_quality_profile"`
+		StructuralPatterns   string                 `json:"structural_patterns"`
+		BusinessProcesses    []string               `json:"business_processes"`
+		IntegrationReadiness map[string]interface{} `json:"integration_readiness"`
+		GovernanceProfile    map[string]interface{} `json:"governance_profile"`
+		ProfilingConfidence  float64                `json:"profiling_confidence"`
+	} `json:"data_profiling"`
+
+	RelationshipAnalysis struct {
+		PrimaryKeys         []string `json:"primary_keys"`
+		ForeignKeys         []string `json:"foreign_keys"`
+		Relationships       []map[string]interface{} `json:"relationships"`
+		JoinRecommendations map[string]interface{}   `json:"join_recommendations"`
+	} `json:"relationship_analysis"`
+
+	TemporalAnalysis struct {
+		TemporalFields     []string `json:"temporal_fields"`
+		Granularity        string   `json:"granularity"`
+		RelationshipTypes  []string `json:"relationship_types"`
+		JoinOpportunities  []string `json:"join_opportunities"`
+	} `json:"temporal_analysis"`
+
+	SemanticAnalysis struct {
+		DomainClassification map[string]interface{} `json:"domain_classification"`
+		Entities            []string               `json:"entities"`
+		RelationshipPatterns []string               `json:"relationship_patterns"`
+	} `json:"semantic_analysis"`
+
+	SchemaCompatibility []struct {
+		Datasets           []string `json:"datasets"`
+		CompatibilityScore float64  `json:"compatibility_score"`
+		CommonFields       []string `json:"common_fields"`
+		RelationshipType   string   `json:"relationship_type"`
+		MergeStrategy      string   `json:"merge_strategy"`
+		Issues             []string `json:"issues"`
+		Confidence         float64  `json:"confidence"`
+	} `json:"schema_compatibility,omitempty"`
+
+	MergeStrategy *struct {
+		IntegrationStrategy      string            `json:"integration_strategy"`
+		MergeSequence            []string          `json:"merge_sequence"`
+		MergeTypes               map[string]string `json:"merge_types"`
+		TransformationsRequired  []string          `json:"transformations_required"`
+		BusinessValue            string            `json:"business_value"`
+		Risks                    []string          `json:"risks"`
+		ImplementationComplexity int               `json:"implementation_complexity"`
+		SuccessConfidence        float64           `json:"success_confidence"`
+		Alternatives             []string          `json:"alternatives"`
+	} `json:"merge_strategy,omitempty"`
+
+	Insights         []string `json:"insights"`
+	AnalysisConfidence float64 `json:"analysis_confidence"`
+}

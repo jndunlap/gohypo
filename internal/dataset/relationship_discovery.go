@@ -203,6 +203,7 @@ func (rde *RelationshipDiscoveryEngine) analyzeDatasetPair(ds1, ds2 *domainDatas
 		rde.analyzeSemanticSimilarity,
 		rde.analyzeKeyRelationships,
 		rde.analyzeTemporalPatterns,
+		rde.analyzeTimeseriesCompatibility, // New timeseries-specific analysis
 	}
 
 	var bestRelationship *domainDataset.DatasetRelation
@@ -413,6 +414,252 @@ func (rde *RelationshipDiscoveryEngine) analyzeTemporalPatterns(ds1, ds2 *domain
 	return nil
 }
 
+// analyzeTimeseriesCompatibility performs comprehensive timeseries analysis
+func (rde *RelationshipDiscoveryEngine) analyzeTimeseriesCompatibility(ds1, ds2 *domainDataset.Dataset) *domainDataset.DatasetRelation {
+	// Check if both datasets have temporal characteristics
+	hasTime1 := rde.hasTemporalFields(ds1)
+	hasTime2 := rde.hasTemporalFields(ds2)
+
+	if !hasTime1 || !hasTime2 {
+		return nil
+	}
+
+	// Look for common temporal patterns
+	fields1 := make([]string, len(ds1.Metadata.Fields))
+	for i, field := range ds1.Metadata.Fields {
+		fields1[i] = field.Name
+	}
+
+	fields2 := make([]string, len(ds2.Metadata.Fields))
+	for i, field := range ds2.Metadata.Fields {
+		fields2[i] = field.Name
+	}
+
+	// Find time columns
+	timeCol1 := rde.detectTimeColumn(fields1)
+	timeCol2 := rde.detectTimeColumn(fields2)
+
+	if timeCol1 == "" || timeCol2 == "" {
+		return nil
+	}
+
+	// Check if time columns have the same name (strong indicator of compatibility)
+	timeColumnsCompatible := timeCol1 == timeCol2
+
+	// Determine confidence based on compatibility factors
+	confidence := 0.7
+	recommendedStrategy := "temporal_join"
+
+	if timeColumnsCompatible {
+		confidence = 0.9
+		recommendedStrategy = "timeseries_union"
+	}
+
+	// Check for frequency compatibility
+	freq1 := rde.inferFrequency(fields1)
+	freq2 := rde.inferFrequency(fields2)
+
+	frequencyMatch := false
+	if freq1 != "" && freq2 != "" && freq1 == freq2 {
+		confidence += 0.1
+		frequencyMatch = true
+	}
+
+	// Determine merge strategy based on analysis
+	mergeStrategy := "auto_join"
+	if timeColumnsCompatible && frequencyMatch {
+		mergeStrategy = "auto_append" // Same time column and frequency suggests append
+	} else if timeColumnsCompatible {
+		mergeStrategy = "auto_join" // Same time column, different frequency suggests join
+	}
+
+	// Analyze potential data overlap and gaps
+	dataCharacteristics := rde.analyzeTimeseriesCharacteristics(fields1, fields2)
+
+	return &domainDataset.DatasetRelation{
+		WorkspaceID:     ds1.WorkspaceID,
+		SourceDatasetID: ds1.ID,
+		TargetDatasetID: ds2.ID,
+		RelationType:    "timeseries_merge_candidate",
+		Confidence:      confidence,
+		Metadata: map[string]interface{}{
+			"analysis_type":            "timeseries_compatibility",
+			"time_column_1":            timeCol1,
+			"time_column_2":            timeCol2,
+			"time_columns_compatible":  timeColumnsCompatible,
+			"inferred_frequency_1":     freq1,
+			"inferred_frequency_2":     freq2,
+			"frequency_match":          frequencyMatch,
+			"recommended_merge_type":   recommendedStrategy,
+			"merge_strategy":           mergeStrategy,
+			"temporal_alignment":       "timestamp_based",
+			"data_characteristics":     dataCharacteristics,
+			"expected_gap_handling":    "forward_fill",
+			"timezone_normalization":   "UTC",
+		},
+		DiscoveredAt: time.Now(),
+	}
+}
+
+// analyzeTimeseriesCharacteristics analyzes the characteristics of timeseries datasets
+func (rde *RelationshipDiscoveryEngine) analyzeTimeseriesCharacteristics(fields1, fields2 []string) map[string]interface{} {
+	characteristics := make(map[string]interface{})
+
+	// Analyze numeric columns (potential metrics)
+	numericCols1 := rde.countNumericColumns(fields1)
+	numericCols2 := rde.countNumericColumns(fields2)
+
+	characteristics["numeric_columns_1"] = numericCols1
+	characteristics["numeric_columns_2"] = numericCols2
+	characteristics["numeric_columns_match"] = numericCols1 == numericCols2
+
+	// Analyze categorical columns (potential dimensions)
+	categoricalCols1 := rde.countCategoricalColumns(fields1)
+	categoricalCols2 := rde.countCategoricalColumns(fields2)
+
+	characteristics["categorical_columns_1"] = categoricalCols1
+	characteristics["categorical_columns_2"] = categoricalCols2
+	characteristics["categorical_columns_match"] = categoricalCols1 == categoricalCols2
+
+	// Check for common column patterns
+	commonCols := rde.findCommonColumns(fields1, fields2)
+	characteristics["common_columns"] = commonCols
+	characteristics["common_columns_count"] = len(commonCols)
+
+	// Assess merge complexity
+	if len(commonCols) > 0 && numericCols1 == numericCols2 {
+		characteristics["merge_complexity"] = "low"
+		characteristics["recommended_approach"] = "direct_merge"
+	} else if len(commonCols) > 0 {
+		characteristics["merge_complexity"] = "medium"
+		characteristics["recommended_approach"] = "align_and_merge"
+	} else {
+		characteristics["merge_complexity"] = "high"
+		characteristics["recommended_approach"] = "manual_review"
+	}
+
+	return characteristics
+}
+
+// countNumericColumns estimates numeric columns based on naming patterns
+func (rde *RelationshipDiscoveryEngine) countNumericColumns(fields []string) int {
+	count := 0
+	numericPatterns := []string{"count", "amount", "value", "price", "cost", "rate", "ratio", "percentage", "score", "metric", "quantity"}
+
+	for _, field := range fields {
+		fieldLower := strings.ToLower(field)
+		for _, pattern := range numericPatterns {
+			if strings.Contains(fieldLower, pattern) {
+				count++
+				break
+			}
+		}
+	}
+
+	return count
+}
+
+// countCategoricalColumns estimates categorical columns
+func (rde *RelationshipDiscoveryEngine) countCategoricalColumns(fields []string) int {
+	count := 0
+	categoricalPatterns := []string{"name", "type", "category", "class", "group", "status", "state", "id", "code"}
+
+	for _, field := range fields {
+		fieldLower := strings.ToLower(field)
+		for _, pattern := range categoricalPatterns {
+			if strings.Contains(fieldLower, pattern) {
+				count++
+				break
+			}
+		}
+	}
+
+	return count
+}
+
+// findCommonColumns finds columns with similar names
+func (rde *RelationshipDiscoveryEngine) findCommonColumns(fields1, fields2 []string) []string {
+	common := []string{}
+
+	for _, field1 := range fields1 {
+		field1Lower := strings.ToLower(strings.ReplaceAll(field1, "_", ""))
+
+		for _, field2 := range fields2 {
+			field2Lower := strings.ToLower(strings.ReplaceAll(field2, "_", ""))
+
+			// Check for exact match or high similarity
+			if field1Lower == field2Lower {
+				common = append(common, field1)
+				break
+			}
+
+			// Check for partial matches
+			if len(field1Lower) > 3 && len(field2Lower) > 3 {
+				if strings.Contains(field1Lower, field2Lower) || strings.Contains(field2Lower, field1Lower) {
+					common = append(common, field1)
+					break
+				}
+			}
+		}
+	}
+
+	return common
+}
+
+// detectTimeColumn identifies the most likely timestamp column
+func (rde *RelationshipDiscoveryEngine) detectTimeColumn(headers []string) string {
+	priorityPatterns := []string{
+		"timestamp", "datetime", "time", "date",
+		"created_at", "updated_at", "occurred_at", "recorded_at",
+		"period", "event_time", "transaction_time",
+	}
+
+	for _, pattern := range priorityPatterns {
+		for _, header := range headers {
+			if strings.ToLower(header) == pattern {
+				return header
+			}
+		}
+	}
+
+	// Fallback to any column containing temporal keywords
+	temporalKeywords := []string{"time", "date", "created", "updated", "occurred"}
+	for _, header := range headers {
+		headerLower := strings.ToLower(header)
+		for _, keyword := range temporalKeywords {
+			if strings.Contains(headerLower, keyword) {
+				return header
+			}
+		}
+	}
+
+	return ""
+}
+
+// inferFrequency attempts to infer data frequency from column names
+func (rde *RelationshipDiscoveryEngine) inferFrequency(headers []string) string {
+	frequencyIndicators := map[string]string{
+		"hourly":   "hour",
+		"daily":    "day",
+		"weekly":   "week",
+		"monthly":  "month",
+		"yearly":   "year",
+		"annual":   "year",
+		"quarterly": "month", // Approximate
+	}
+
+	for _, header := range headers {
+		headerLower := strings.ToLower(header)
+		for indicator, freq := range frequencyIndicators {
+			if strings.Contains(headerLower, indicator) {
+				return freq
+			}
+		}
+	}
+
+	return ""
+}
+
 // generateMergeSuggestions creates automatic merge recommendations
 func (rde *RelationshipDiscoveryEngine) generateMergeSuggestions(datasets []*domainDataset.Dataset, relationships []*domainDataset.DatasetRelation) []MergeSuggestion {
 	var suggestions []MergeSuggestion
@@ -584,6 +831,7 @@ func (rde *RelationshipDiscoveryEngine) determineMergeType(datasets []*domainDat
 	hasSchemaMatch := false
 	hasSemanticMatch := false
 	hasTemporalMatch := false
+	hasTimeseriesMatch := false
 
 	for _, rel := range relationships {
 		switch rel.RelationType {
@@ -593,7 +841,15 @@ func (rde *RelationshipDiscoveryEngine) determineMergeType(datasets []*domainDat
 			hasSemanticMatch = true
 		case "temporal_relationship":
 			hasTemporalMatch = true
+		case "timeseries_merge_candidate":
+			hasTimeseriesMatch = true
 		}
+	}
+
+	// Prioritize timeseries relationships
+	if hasTimeseriesMatch {
+		// Timeseries data typically benefits from temporal joins
+		return AutoJoin
 	}
 
 	// Determine merge type based on relationship patterns

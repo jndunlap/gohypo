@@ -85,12 +85,8 @@ func (rw *ResearchWorker) generateHypothesesWithContext(ctx context.Context, ses
 	}
 	log.Printf("[ResearchWorker] Processing %d fields for hypothesis generation", len(fieldMetadata))
 
-	// Extract discovery briefs and stats artifacts from context data
-	var discoveryBriefs interface{}
+	// Extract stats artifacts from context data
 	var statsArtifacts []map[string]interface{}
-	if discoveryBriefsRaw, ok := contextData["discovery_briefs"]; ok {
-		discoveryBriefs = discoveryBriefsRaw
-	}
 	if statsArtifactsRaw, ok := contextData["statistical_artifacts"].([]interface{}); ok {
 		statsArtifacts = make([]map[string]interface{}, 0, len(statsArtifactsRaw))
 		for _, sa := range statsArtifactsRaw {
@@ -132,7 +128,7 @@ func (rw *ResearchWorker) generateHypothesesWithContext(ctx context.Context, ses
 		SnapshotID:              core.SnapshotID(""), // Not used in UI flow
 		FieldMetadata:           fieldMetadata,
 		StatisticalArtifacts:    statsArtifacts,
-		DiscoveryBriefs:         discoveryBriefs,
+		DiscoveryBriefs:         nil,
 		ValidatedHypothesisSummary: validatedHypothesisSummary,
 		Directives:              3,
 	}
@@ -333,7 +329,8 @@ func (rw *ResearchWorker) createPendingHypothesesForUI(ctx context.Context, sess
 		refereeCount := len(directive.RefereeGates.SelectedReferees)
 		pendingRefereeResults := make([]models.RefereeResult, refereeCount)
 
-		for j, refereeName := range directive.RefereeGates.SelectedReferees {
+		for j, refereeSelection := range directive.RefereeGates.SelectedReferees {
+			refereeName := refereeSelection.Name
 			if refereeName == "" {
 				log.Printf("[ResearchWorker] ⚠️ Directive %s has empty referee name at index %d", directive.ID, j)
 				continue
